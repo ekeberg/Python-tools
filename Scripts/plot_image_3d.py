@@ -1,7 +1,7 @@
 #! /usr/bin/python
 
 import matplotlib
-matplotlib.use('WxAgg')
+#matplotlib.use('WxAgg')
 matplotlib.interactive(True)
 from pylab import *
 import spimage

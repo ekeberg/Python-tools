@@ -104,7 +104,10 @@ def to_png_parallel(*arguments):
             spimage.sp_image_free(img)
         def run(self):
             while not self.working_queue.empty():
-                print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
+                try:
+                    print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
+                except NotImplementedError:
+                    pass
                 try:
                     #f = self.working_queue.get_nowait()
                     f = self.working_queue.get()
