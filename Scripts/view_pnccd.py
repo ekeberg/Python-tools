@@ -1,4 +1,4 @@
-#! /usr/bin/python
+
 import sys, h5py, pylab
 
 def view_pnccd(filename):

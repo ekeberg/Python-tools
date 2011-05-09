@@ -1,4 +1,4 @@
-#! /usr/bin/python
+
 import sys, h5py, pylab, spimage
 
 def split_pnccd(filename):

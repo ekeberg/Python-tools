@@ -1,4 +1,3 @@
-#! /usr/bin/python
 
 import matplotlib
 #matplotlib.use('WxAgg')

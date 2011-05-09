@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 rse in the tile stands for real space error.
