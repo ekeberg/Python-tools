@@ -1,4 +1,3 @@
-#!/usr/bin/python
 
 import sys, os, spimage
 from PyQt4.QtCore import *

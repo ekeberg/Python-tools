@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 
 """
 This program converts all .h5 files in the current

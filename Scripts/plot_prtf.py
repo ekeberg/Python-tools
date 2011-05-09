@@ -1,4 +1,3 @@
-#! /usr/bin/python
 
 import sys,math
 sys.path.append("/home/ekeberg/Scripts")

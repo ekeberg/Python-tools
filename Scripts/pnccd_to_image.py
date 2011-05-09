@@ -1,4 +1,4 @@
-#! /usr/bin/python
+
 import sys, h5py, pylab, spimage
 
 def pnccd_to_image(infile, outfile):
