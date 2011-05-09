@@ -3,21 +3,28 @@ from pylab import *
 import os
 import re
 import sys
+from optparse import OptionParser
 
-def copy_good(last_iteration, threshold, out_dir, prefix):
-    ls_out = os.listdir('.')
-    dirs = [f for f in ls_out if re.search('[0-9]{6}', f)]a
+def copy_good(last_iteration, threshold, in_dir, out_dir, prefix):
+    ls_out = os.listdir(in_dir)
+    dirs = [f for f in ls_out if re.search('[0-9]{6}', f)]
 
-    log = open("%s/%s.log")
+    if prefix:
+        log = file("%s/%s.log" % (out_dir, prefix), "wp")
+    else:
+        log = file("%s/copy_good.log" % out_dir, "wp")
+
     count = 0
     for d in dirs:
         l = loadtxt("%s/uwrapc.log" % (d), skiprows=47)
         ferr = l[-1][3]
 
         if ferr < threshold:
-            os.system("cp %s/real_space-%.7d.h5 %s/%.4d.h5" % (d,last_iteration,count),prefix)
-            log.write("%d %s/real_space-%.7d.h5" % (count, d, last_iteration))
+            os.system("cp %s/real_space-%.7d.h5 %s/%s%.4d.h5" % (d,last_iteration,out_dir,
+                                                                 prefix,count))
+            log.write("%d %s/real_space-%.7d.h5\n" % (count, d, last_iteration))
         count += 1
+    log.close()
 
 if __name__ == "__main__":
     parser = OptionParser(usage="%prog filename -f iteration_number -e threshold -o output_dir -p prefix")
@@ -32,20 +39,7 @@ if __name__ == "__main__":
     parser.add_option("-p", action="store", type="string", dest="prefix", default="",
                       help="Optional prefix to outputed files")
     (options,args) = parser.parse_args()
-    
-    if len(args) < 1:
-        parser.error("A filename must be specified")
 
-    setup = 0
-    try:
-        setup = Setup(options.wavelength, options.distance,
-                      options.pixel_size, options.number)
-    except:
-        print "Error in arguments"
-        exit(1)
-    plot_prtf(args[0],setup)
-    pylab.show()
-
-    copy_good(options.file, options.threshold, options.out_dir, options.prefix)
+    copy_good(options.file, options.threshold, options.input_dir, options.output_dir, options.prefix)
 
 

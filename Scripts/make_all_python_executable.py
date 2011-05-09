@@ -15,7 +15,7 @@ python_version = "/usr/bin/python2.6"
 l = os.listdir(path)
 if "scripts.py" in l: l.remove("scripts.py")
 files = ["%s/%s" % (path,f) for f in l if re.search("\.py$",f)]
-print files
+#print files
 
 #expr = re.compile('^(.(?!home/ekeberg/Scripts/global))*$')
 #expr = re.compile('^(.(?!%s/global))*$' % path)
