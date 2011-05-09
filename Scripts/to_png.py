@@ -6,7 +6,7 @@ directory to .png using the HAWK program
 image_to_png
 """
 import os, re, sys, spimage
-from guppy import hpy
+#from guppy import hpy
 
 def read_files():
     l = os.listdir('.')
