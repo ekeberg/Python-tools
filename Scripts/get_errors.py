@@ -5,11 +5,8 @@ import re
 import sys
 
 def get_errors():
-    ls_out = os.popen('ls').readlines()
-
-    expr = re.compile('[0-9]{6}')
-    dirs = filter(expr.search,ls_out)
-    dirs = [d[:-1] for d in dirs]
+    ls_out = os.listdir('.')
+    dirs = [d for d in ls_out if re.search('^[0-9]{6}$', d)]
 
     ferr = zeros(len(dirs))
 
