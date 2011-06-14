@@ -134,3 +134,4 @@ def scale_image_3d(img, factor):
     rs = abs(pylab.ifftn(pylab.fftshift(ft),[sizeX,sizeY,sizeZ]))
     #return rs
     img.image[:,:] = rs[:,:]
+

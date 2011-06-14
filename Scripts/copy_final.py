@@ -2,6 +2,7 @@
 import os
 import re
 import sys
+from optparse import OptionParser
 
 def copy_final(in_dir,out_dir):
     l = os.listdir(in_dir)
@@ -25,7 +26,14 @@ def copy_final(in_dir,out_dir):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 3:
-        print "Usage: copy_final.py <in_dir> <out_dir>"
+    parser = OptionParser(usage="%prog filename [options]")
+    parser.add_option("-i", action="store", type="string", dest="indir",
+                          help="Input directory")
+    parser.add_option("-o", action="store", type="string", dest="outdir",
+                          help="Output directory")
+    (options,args) = parser.parse_args()
+
+    if not (options.indir and options.outdir):
+        parser.print_usage()
         sys.exit(1)
-    copy_final(sys.argv[1],sys.argv[2])
+    copy_final(options.indir,options.outdir)

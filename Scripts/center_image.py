@@ -1,10 +1,10 @@
-
 from pylab import *
 from spimage import *
 import sys
+from optparse import OptionParser
 
-def center_image(filename,outfile):
-    sigma = 3
+def center_image(filename,outfile,sigma=3):
+    """Finds a localized strong object and puts it in the center. The sigma variable describes the size of the object"""
     img = sp_image_read(filename,0)
     side = shape(img.image)[0]
     x = arange(shape(img.image)[0],dtype='float64') -\
@@ -51,4 +51,13 @@ def center_image(filename,outfile):
     
 
 if __name__ == "__main__":
-    center_image(sys.argv[1],sys.argv[2])
+    parser = OptionParser(usage="%prog -i INFILE -o OUTFILE [-s SIGMA]")
+    parser.add_option("-i", action="store", type="string", dest="infile",
+                       help="Input file")
+    parser.add_option("-o", action="store", type="string", dest="outfile",
+                       help="Output file")
+    parser.add_option("-s", action="store", type="float", dest="sigma", default=3,
+                       help="Width of the particle that is centered in pixels (optional)")
+    (options,args) = parser.parse_args()
+
+    center_image(options.infile,options.outfile,options.sigma)

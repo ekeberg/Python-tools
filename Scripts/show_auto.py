@@ -29,6 +29,7 @@ class AppForm(QMainWindow):
         x_array = arange(shape(self.image)[0]) - self.img.detector.image_center[0]
         y_array = arange(shape(self.image)[1]) - self.img.detector.image_center[1]
         X_array, Y_array = meshgrid(x_array, y_array)
+        X_array = transpose(X_array); Y_array = transpose(Y_array)
         self.r = sqrt(X_array**2 + Y_array**2)
 
         self.auto_unfiltered = fftshift(abs(fft2(self.image)))

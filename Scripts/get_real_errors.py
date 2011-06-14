@@ -1,4 +1,6 @@
-
+"""
+Important: This scipt is replaced by the more general get_errors. It is saved until get_errors is tested but should not be used    
+"""
 from pylab import *
 import os
 import re

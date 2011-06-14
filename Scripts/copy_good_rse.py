@@ -1,6 +1,7 @@
 
 """
 rse in the tile stands for real space error.
+Important: This script is replaced by the general copy_good.py and is only saved awaiting it to be tested properly.
 """
 
 from pylab import *
