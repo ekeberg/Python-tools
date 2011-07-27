@@ -31,6 +31,7 @@ class Worker(multiprocessing.Process):
 
 
 def run_parallel(jobs, function, n_cpu=0):
+    """Execute the function for each input given in the array jobs and return the results in an array."""
     if not n_cpu: n_cpu = multiprocessing.cpu_count()
     working_queue = multiprocessing.Queue()
     #return_queue = multiprocessing.Queue()
