@@ -1,19 +1,13 @@
-import socket
-import sys
-import os
+from net_tools import *
 
-class Sender:
-    def __init__(self, host, port, filename):
-        self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        self.s.connect((host, port))
-        self.filename = filename
-    def send(self):
-        flo = self.s.makefile('w', 0)
-        ppn = file(self.filename,'r')
-        flo.writelines(ppn.readlines())
-        flo.close()
-        print 'done sending'
+# s1 = Sender('localhost', 5011, "boo_in.h5")
+# s1.send()
 
-s = Sender('localhost', 1234, 'foo_in.h5')
-s.send()
+# s2 = Sender('localhost', 5011, "foo_in.h5")
+# s2.send()
 
+# s3 = Sender('localhost', 5011, "foo_in.txt")
+# s3.send()
+
+runc = RunCommandClient('localhost', 5011)
+runc.start()
