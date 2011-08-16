@@ -26,20 +26,11 @@ class RunCommandServer:
             self.command = command
             self.args = args
         def run(self):
-            print 'will run command'
-            comm = subprocess.Popen([self.command, self.args],stdout=subprocess.PIPE)
-            print 'did so'
             flo = self.socket.makefile('w',0)
-            print 'opened flo'
+            comm = pexpect.spawn(self.command, timeout=10000)
             while True:
-                print 'inside while'
-                l = comm.stdout.readline()
-                print l
-                flo.write(l)
-                flo.flush()
-                if not comm.poll() and not l:
-                    break
-            print 'while loop returned'
+                l = comm.readline()
+                self.socket.send(l)
             flo.close()
             self.socket.close()
 
@@ -50,12 +41,16 @@ class RunCommandClient:
         self.port = portn
     def start(self):
         self.socket.connect((self.host, self.port))
-        flo = self.socket.makefile('r', 0)
-        while not flo.closed:
-            l = flo.readline()
-            if l:
-                sys.stdout.writelines(l)
-        flo.close()
+        # flo = self.socket.makefile('r', 0)
+        # while not flo.closed:
+        #     l = flo.readline()
+        #     if l:
+        #         sys.stdout.writelines(l)
+        # flo.close()
+        l = True
+        while l:
+            l = self.socket.recv(1024)
+            print l
         self.socket.close()
 
 class Reciever:

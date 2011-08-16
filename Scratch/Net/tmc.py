@@ -9,5 +9,5 @@ from net_tools import *
 # s3 = Sender('localhost', 5011, "foo_in.txt")
 # s3.send()
 
-runc = RunCommandClient('gauguin', 5011)
+runc = RunCommandClient('localhost', 5011)
 runc.start()
