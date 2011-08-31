@@ -5,7 +5,8 @@ home = os.path.expanduser('~')
 #home = "/home/%s" % pwd.getpwuid(os.getuid())[0]
 path = "%s/Python/Scripts" % home
 
-python_version = "/usr/bin/python2.6"
+#python_version = "/usr/bin/python2.6"
+python_version = "/usr/local/bin/python64"
 
 #l = os.popen("find %s" % path).readlines()
 #files = [f[:-1] for f in l]
@@ -41,7 +42,7 @@ if not os.path.isdir("%s/global" % path):
 #               (files[i],path,names[i]))
 
 for i in range(len(files)):
-    os.system("echo \"#! /usr/bin/python2.6\" > %s/global/python_script_%s" % (path,names[i]))
+    os.system("echo \"#! %s\" > %s/global/python_script_%s" % (python_version,path,names[i]))
     os.system("cat %s >> %s/global/python_script_%s" % (files[i],path,names[i]))
 
 os.system("chmod 744 %s/global/*" % path)

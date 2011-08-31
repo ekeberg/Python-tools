@@ -86,6 +86,53 @@ def get_attenuation_length(photon_energy,material):
     #print 2.0*constants.re*conversions.ev_to_nm(photon_energy)*1e-9*f2*material[0]/average_density
     return 1.0/(2.0*constants.re*conversions.ev_to_nm(photon_energy)*1e-9*f2*material.density/average_density)
 
+def size_to_nyquist_angle(size, wavelength):
+    """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
+    return wavelength/size
+
+def plot_stuff():
+    distance = pylab.arange(50,200,0.1)
+    pixel_size = 0.015
+    pixels_radially = 2048
+    wavelength = 5.7
+    gaps = pylab.array([1.0,2.0,3.0,4.0,3.0*2.0])
+    particle_size = 500.0
+    missing_limit = 2.8
+    binning = 4
+    fig = pylab.figure(1)
+    fig.clear()
+    
+    missing_data_plot = fig.add_subplot(411)
+    maximum_resolution_plot = fig.add_subplot(412)
+    combined_plot = fig.add_subplot(413)
+    sampling_plot = fig.add_subplot(414)
+    
+    for g in gaps:
+        missing_data_plot.plot(distance, g/distance/size_to_nyquist_angle(particle_size, wavelength),
+                               label="%g mm gap" % g)
+    missing_data_plot.plot([distance[0],distance[-1]],[missing_limit,missing_limit],color='black')
+    missing_data_plot.legend()
+    missing_data_plot.set_ylabel("Missing nyquist pixels")
+
+    maximum_resolution_plot.plot(distance, wavelength/2.0/(pixels_radially*pixel_size/distance))
+    maximum_resolution_plot.set_ylabel("Maximum resolution [nm]")
+    maximum_resolution_plot.set_xlabel("Detector distance [mm]")
+
+    def resolution(distance):
+        return wavelength/2.0/(pixels_radially*pixel_size/distance)
+    for g in gaps:
+        combined_plot.plot(resolution(distance), g/distance/size_to_nyquist_angle(particle_size, wavelength),
+                           label="%g mm gap" % g)
+    combined_plot.plot([resolution(distance)[0],resolution(distance)[-1]],[missing_limit,missing_limit],color='black')
+    combined_plot.legend()
+    combined_plot.set_ylabel("Missing nyquist pixels")
+    combined_plot.set_xlabel("Resolution at edge [nm]")
+
+    sampling_plot.plot(distance,size_to_nyquist_angle(particle_size, wavelength)/(pixel_size*binning/distance))
+    sampling_plot.set_ylabel("Sampling ratio")
+    sampling_plot.set_xlabel("Detector distance [mm]")
+
+    pylab.show()
 
 def calculate_pattern():
     photon_energy = 540
