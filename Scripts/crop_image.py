@@ -1,14 +1,15 @@
+"""Script to crop an h5 image and pad with zeros around it"""
+import spimage
+import sys
+import image_manipulation
 
-import spimage, pylab, sys
+def crop_image(in_file, out_file, side, center=None):
+    """Function to crop an h5 image and pad with zeros around it"""
 
-def crop_image(in_file, out_file, sideX, sideY = 0):
-    if sideY == 0:
-        sideY = sideX
-    try:
-        img = spimage.sp_image_read(in_file,0)
-    except:
-        print "Error: %s is not a readable .h5 file\n" % in_file
-        exit(1)
+    img = spimage.sp_image_read(in_file, 0)
+
+    if not center:
+        center = img.detector.image_center[:2]
 
     shifted = 0
     if img.shifted:
@@ -17,30 +18,10 @@ def crop_image(in_file, out_file, sideX, sideY = 0):
 
     print "shifted = ", shifted
 
-    lowX = img.detector.image_center[0]-(sideX/2.0-0.5)
-    highX = img.detector.image_center[0]+(sideX/2.0-0.5)
-    lowY = img.detector.image_center[1]-(sideY/2.0-0.5)
-    highY = img.detector.image_center[1]+(sideY/2.0-0.5)
-
-    print lowX, " ", highX
-    print lowY, " ", highY
-
-    if lowX != pylab.floor(lowX):
-        lowX = int(pylab.floor(lowX))
-        highX = int(pylab.floor(highX))
-        img.detector.image_center[0] -= 0.5
-    else:
-        lowX = int(lowX)
-        highX = int(highX)
-    if lowY != pylab.floor(lowY):
-        lowY = int(pylab.floor(lowY))
-        highY = int(pylab.floor(highY))
-        img.detector.image_center[1] -= 0.5
-    else:
-        lowY = int(lowY)
-        highY = int(highY)
-
-    cropped = spimage.rectangle_crop(img,lowX,lowY,highX,highY)
+    #cropped = spimage.rectangle_crop(img,lowX,lowY,highX,highY)
+    cropped = spimage.sp_image_alloc(side, side)
+    cropped.image[:,:] = image_manipulation.crop_and_pad(img.image, center, side)
+    cropped.mask[:,:] = image_manipulation.crop_and_pad(img.mask, center, side)
 
     print "did crop"
 
@@ -54,23 +35,40 @@ def crop_image(in_file, out_file, sideX, sideY = 0):
     #print "orientation = ", cropped.detector.orientation
     #print spimage.sp_3matrix_get(cropped.detector.orientation,0,0,0)
 
-    try:
-        spimage.sp_image_write(cropped,out_file,16)
-    except:
-        print "Error: can not write to %s\n" % out_file
+    spimage.sp_image_write(cropped, out_file, 16)
+
+    spimage.sp_image_free(img)
+    spimage.sp_image_free(cropped)
 
     print "end"
 
 if __name__ == "__main__":
+    from optparse import OptionParser
+    from optparse import OptionGroup
+    parser = OptionParser(usage="%prog filename -i infile -o outfile -s side [-c center]")
+    parser.add_option("-i", action="store", type="string", dest="infile",
+                      help="Input file")
+    parser.add_option("-o", action="store", type="float", dest="outfile",
+                      help="Output file")
+    parser.add_option("-s", action="store", type="int", dest="side",
+                      help="New side in pixels.")
+    parser.add_option("-c", action="store", type="string", dest="number", default=None,
+                      help="Image center to crop around. If not given the center specified in the image is used.")
+    (options,args) = parser.parse_args()
+
+    if options.center:
+        center = center.split('x')
+        if len(center) != 2:
+            raise ValueError("crop_image: Center must be of the form form %fx%f.")
+        center = array([float(center[0]), float(center[1])])
+    else:
+        center = None
+
     try:
-        try:
-            yside = sys.argv[4]
-        except:
-            yside = 0
-        crop_image(str(sys.argv[1]),str(sys.argv[2]),int(sys.argv[3]),yside)
+        crop_image(options.infile, options.outfile, options.side, center)
     except:
         print """
-Usage:  python_script_crop_image <in.h5> <out.h5> xside [yside]
+Usage:  python_script_crop_image <in.h5> <out.h5> side
 
 Crops the image to the specified size symmetrically
 around the image center. If only one side is given

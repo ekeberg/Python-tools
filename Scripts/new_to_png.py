@@ -5,6 +5,9 @@ directory to .png using the HAWK program
 image_to_png
 """
 import os, re, sys, spimage
+import scripts
+from optparse import OptionParser
+from optparse import OptionGroup
 
 def to_png(*arguments):
     if len(arguments) <= 0:
@@ -40,6 +43,7 @@ def to_png(*arguments):
     png_files = filter(expr.search,l)
 
     files = [f for f in h5_files if f[:-2]+"png" not in png_files]
+    files.sort()
 
     print "Converting %d files" % len(files)
 
@@ -99,7 +103,41 @@ def to_png(*arguments):
             spimage.sp_image_write(img,f[:-2]+"png",color)
             spimage.sp_image_free(img)
 
+def read_files(in_dir, out_dir):
+    in_files = os.listdir(in_dir)
+    h5_files = [f for f in in_files if  re.search('.h5$',f)]
+    out_files = os.listdir(in_dir)
+    png_files = [f for f in out_files if  re.search('.png$',f)]
+    files = [in_dir+'/'+f for f in h5_files if f[:-2]+"png" not in png_files]
+    files.sort()
+    return files
 
 if __name__ == "__main__":
-    to_png(*sys.argv[1:])
+    parser = OptionParser(usage="%prog [options]")
+    parser.add_option("-c", "--color", action="store", type="string", dest="colorscale", default="jet",
+                      help="Colorscale")
+    parser.add_option("-l", "--log", action="store_true", dest="log", default=False,
+                      help="Log scale")
+    parser.add_option("-s", "--shift", action="store_true", dest="shift", default=False,
+                      help="Shift image")
+    parser.add_option("-m", "--mask", action="store_true", dest="mask", default=False,
+                      help="Plot mask")
+    parser.add_option("-i", "--input", action="store", type="string", dest="input", default=".",
+                      help="Input directory")
+    parser.add_option("-o", "--output", action="store", type="string", dest="output", default=".",
+                      help="Output directory")
+    (options,args) = parser.parse_args()
+
+    plot_setup = scripts.to_png.PlotSetup()
+    plot_setup.set_color(options.colorscale)
+    print options.log
+    plot_setup.set_log(options.log)
+    plot_setup.set_shift(options.shift)
+    plot_setup.set_mask(options.mask)
+
+    files = read_files(options.input, options.output)
+
+    scripts.to_png.to_png_parallel(files, options.output, plot_setup)
+
+    #scripts.to_png.to_png(*sys.argv[1:])
 

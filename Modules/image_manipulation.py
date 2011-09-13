@@ -135,3 +135,35 @@ def scale_image_3d(img, factor):
     #return rs
     img.image[:,:] = rs[:,:]
 
+def crop_and_pad(image, center, side):
+    """Crops the image around the center to the side given. If the
+    cropped area is larger than the original image it is padded with zeros"""
+    dims = len(pylab.shape(image))
+    if dims != 3 and dims != 2:
+        raise ValueError("crop_and_pad: Input image must be 2 or three dimensional")
+    if len(center) != dims:
+        raise ValueError("crop_and_pad: Center must be same length as image dimensions")
+
+    ret = pylab.zeros((side,)*dims,dtype=image.dtype)
+    
+    low_in = pylab.array(center)-side/2.0-0.5
+    high_in = pylab.array(center)+side/2.0-0.5
+
+    low_out = pylab.zeros(dims)
+    high_out = pylab.array((side,)*dims)
+
+    for i in range(dims):
+        if low_in[i] < 0:
+            low_out[i] += abs(low_in[i])
+            low_in[i] = 0
+        if high_in[i] > pylab.shape(image)[i]:
+            high_out[i] -= abs(pylab.shape(image)[i] - high_in[i])
+            high_in[i] = pylab.shape(image)[i]
+
+    if dims == 2:
+        ret[low_out[0]:high_out[0],low_out[1]:high_out[1]] = image[low_in[0]:high_in[0],low_in[1]:high_in[1]]
+    else:
+        ret[low_out[0]:high_out[0],low_out[1]:high_out[1],low_out[2]:high_out[2]] = \
+            image[low_in[0]:high_in[0],low_in[1]:high_in[1],low_in[2]:high_in[2]]
+
+    return ret

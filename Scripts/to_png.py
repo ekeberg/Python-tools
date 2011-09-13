@@ -6,10 +6,41 @@ image_to_png
 """
 import os, re, sys, spimage
 #from guppy import hpy
+from optparse import OptionParser
+from optparse import OptionGroup
 
-def read_files():
-    l = os.listdir('.')
-    files = [f for f in l if  re.search('.h5$',f)]
+class PlotSetup:
+    scales = {"Phase" : spimage.SpColormapPhase,
+              "Jet" : spimage.SpColormapJet,
+              "Gray" : spimage.SpColormapGrayScale}
+    def __init__(self):
+        self.color = self.scales["Jet"]
+        self.shift = False
+        self.log = 0
+        self.mask = False
+    def set_color(self, color_string):
+        try:
+            self.color = self.scales[color_string]
+        except KeyError:
+            pass
+    def set_log(self, log_bool):
+        self.log = log_bool*spimage.SpColormapLogScale
+    def get_color(self):
+        return self.color | self.log
+    def set_shift(self, shift_bool):
+        self.shift = shift_bool
+    def get_shift(self):
+        return self.shift
+    def set_mask(self, mask_bool):
+        self.mask = mask_bool
+    def get_mask(self):
+        return self.mask
+    
+
+def read_files(directory):
+    l = os.listdir(directory)
+    files = ['%s/%s' % (directory, f) for f in l if  re.search('.h5$',f)]
+    files.sort()
     return files
 
 def evaluate_arguments(arguments):
@@ -86,20 +117,21 @@ def get_support_function(bool):
             pass
     return support_function
 
-def to_png_parallel(*arguments):
+def to_png_parallel(input_files, output_dir, plot_setup):
     import multiprocessing
     import Queue
 
     class Worker(multiprocessing.Process):
-        def __init__(self, working_queue, process_function, color):
+        def __init__(self, working_queue, out_dir, process_function, color):
             multiprocessing.Process.__init__(self)
             self.working_queue = working_queue
+            self.out_dir = out_dir
             self.process_function = process_function
             self.color = color
         def process(self, f):
             img = spimage.sp_image_read(f,0)
             img = self.process_function(img)
-            spimage.sp_image_write(img,f[:-2]+"png",self.color)
+            spimage.sp_image_write(img,self.out_dir+"/"+f[:-2]+"png",self.color)
             spimage.sp_image_free(img)
         def run(self):
             while not self.working_queue.empty():
@@ -128,42 +160,65 @@ def to_png_parallel(*arguments):
             super_list = split(array(files),len(files)/n)
         return super_list
 
-    def run_threads(arguments,nThreads):
-        color,shift_flag,support_flag = evaluate_arguments(arguments)
-        shift_function = get_shift_function(shift_flag)
-        support_function = get_support_function(support_flag)
+    def run_threads(nThreads):
+        #color,shift_flag,support_flag = evaluate_arguments(arguments)
+        shift_function = get_shift_function(plot_setup.get_shift())
+        support_function = get_support_function(plot_setup.get_mask())
         def process_function(img):
             support_function(img)
             return shift_function(img)
         
-        files = read_files()
         #super_list = split_files(files,10)
 
         working_queue = multiprocessing.Queue()
         # for job in super_list:
         #     working_queue.put(job)
-        for f in files:
+        for f in input_files:
             working_queue.put(f)
 
         for i in range(nThreads):
-            Worker(working_queue, process_function, color).start()
+            Worker(working_queue, output_dir, process_function, plot_setup.get_color()).start()
 
-    run_threads(arguments,multiprocessing.cpu_count())
+    run_threads(multiprocessing.cpu_count())
 
-def to_png(*arguments):
-    color,shift_flag,support_flag = evaluate_arguments(arguments)
+def to_png(input_dir, output_dir, plot_setup):
+    #color,shift_flag,support_flag = evaluate_arguments(arguments)
     files = read_files()
 
-    shift_function = get_shift_function(shift_flag)
-    support_function = get_support_function(support_flag)
+    shift_function = get_shift_function(plot_setup.get_shift())
+    support_function = get_support_function(plot_setup.get_mask())
 
     for f in files:
         img = spimage.sp_image_read(f,0)
         support_function(img)
         img = sp_image_shift(img)
-        spimage.sp_image_write(img,f[:-2]+"png",color)
+        spimage.sp_image_write(img,output_dir+"/"+f[:-2]+"png",plot_setup.get_color())
         spimage.sp_image_free(img)
 
 if __name__ == "__main__":
-    to_png_parallel(*sys.argv[1:])
+    parser = OptionParser(usage="%prog [options]")
+    parser.add_option("-c", "--color", action="store", type="string", dest="colorscale", default="jet",
+                      help="Colorscale")
+    parser.add_option("-l", "--log", action="store_true", dest="log", default=False,
+                      help="Log scale")
+    parser.add_option("-s", "--shift", action="store_true", dest="shift", default=False,
+                      help="Shift image")
+    parser.add_option("-m", "--mask", action="store_true", dest="mask", default=False,
+                      help="Plot mask")
+    parser.add_option("-i", "--input", action="store", type="string", dest="input", default=".",
+                      help="Input directory")
+    parser.add_option("-o", "--output", action="store", type="string", dest="output", default=".",
+                      help="Output directory")
+    (options,args) = parser.parse_args()
+
+    plot_setup = PlotSetup()
+    plot_setup.set_color(options.colorscale)
+    print options.log
+    plot_setup.set_log(options.log)
+    plot_setup.set_shift(options.shift)
+    plot_setup.set_mask(options.mask)
+
+    files = read_files(options.input, options.output)
+
+    to_png_parallel(files, options.output, plot_setup)
 

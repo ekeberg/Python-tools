@@ -12,7 +12,7 @@ def plot_phases(in_file,*arguments):
 
     fig = pylab.figure(1)
     ax = fig.add_subplot(111)
-n
+
     try:
         img = spimage.sp_image_read(in_file,0)
     except:

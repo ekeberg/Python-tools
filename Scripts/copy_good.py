@@ -7,9 +7,9 @@ from optparse import OptionParser
 
 def copy_good(last_iteration, threshold, in_dir, out_dir, prefix, error_type="fourier"):
     column_numbers = {"fourier" : 3, "real" : 2}
-        if not error_type in column_numbers.keys():
-            print "Error: invalid error_type"
-            exit(1)
+    if not error_type in column_numbers.keys():
+        print "Error: invalid error_type"
+        exit(1)
     ls_out = os.listdir(in_dir)
     dirs = [f for f in ls_out if re.search('[0-9]{6}', f)]
 

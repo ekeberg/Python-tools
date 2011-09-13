@@ -6,7 +6,7 @@ home = os.path.expanduser('~')
 path = "%s/Python/Scripts" % home
 
 #python_version = "/usr/bin/python2.6"
-python_version = "/usr/local/bin/python64"
+python_version = "/usr/bin/python"
 
 #l = os.popen("find %s" % path).readlines()
 #files = [f[:-1] for f in l]

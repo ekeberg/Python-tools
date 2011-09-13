@@ -22,3 +22,18 @@ def elser_particle(resolution):
 
     particle[particle_mask] = 0.0
     return particle
+
+
+
+images = []
+images_big = []
+images_binary = []
+sides = (2**pylab.arange(7))[1:]
+for s in sides:
+    print "generate side %d particle" % s
+    images.append(elser_particle(s))
+    image_ft = pylab.fftn(images[-1])
+    images_big.append(abs(pylab.ifftn(pylab.fftshift(image_ft),[sides[-1],sides[-1],sides[-1]])))
+    images_binary.append(images_big[-1] > 1.5*pylab.average(images_big[-1].flatten()))
+
+    
