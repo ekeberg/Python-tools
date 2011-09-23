@@ -4,8 +4,12 @@ import pylab
 import spimage
 import sys
 
-def center_image_2d(img):
-    sigma = 3
+def center_image_2d(img, radius):
+    """For an image with an object surounded by empty space, this function
+    puts it in the center. A rough idea about the size of the object is
+    needed in the form of the variable radius."""
+    #sigma = 3
+    sigma = radius
     #img = sp_image_read(filename,0)
     side = pylab.shape(img.image)[0]
     x = pylab.arange(pylab.shape(img.image)[0],dtype='float64') -\
@@ -46,8 +50,12 @@ def center_image_2d(img):
     return shift
     
 
-def center_image_3d(img):
-    sigma = 3
+def center_image_3d(img, radius):
+    """For an image with an object surounded by empty space, this function
+    puts it in the center. A rough idea about the size of the object is
+    needed in the form of the variable radius."""
+    #sigma = 3
+    sigma = radius
     #img = sp_image_read(filename,0)
     side = pylab.shape(img.image)[0]
     x = pylab.arange(pylab.shape(img.image)[0],dtype='float64') -\
@@ -59,8 +67,9 @@ def center_image_3d(img):
     #X,Y,Z = meshgrid(x,y,z)
     #kernel = X**2+Y**2
     #kernel = exp(-(X**2+Y**2+Z**2)/2.0/sigma**2)
-    kernel = pylab.exp(-(x[:,pylab.newaxis,pylab.newaxis]**2+y[pylab.newaxis,:,pylab.newaxis]**2+
-                   z[pylab.newaxis,pylab.newaxis,:]**2)/2.0/sigma**2)
+    kernel = pylab.exp(-(x[:,pylab.newaxis,pylab.newaxis]**2+
+                         y[pylab.newaxis,:,pylab.newaxis]**2+
+                         z[pylab.newaxis,pylab.newaxis,:]**2)/2.0/sigma**2)
 
     #img.image[:,:] = kernel[:,:]
     #sp_image_write(img,"foo_kernel.h5",0)
