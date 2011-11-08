@@ -1,6 +1,7 @@
 
 import sys
 import pylab
+from optparse import OptionParser
 
 def read_data(f):
     try:
@@ -40,5 +41,7 @@ def plot_2d(*arguments):
     return data
 
 if __name__ == "__main__":
-    plot_2d(*sys.argv[1:])
+    parser = OptionParser(usage="%prog <data>")
+    (options, args) = parser.parse_args()
+    plot_2d(args[0])
     pylab.show()

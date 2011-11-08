@@ -1,20 +1,24 @@
 
 import sys
 import os
+from optparse import OptionParser
 
 sys.path.append('%s/Python/Modules' % os.path.expanduser('~'))
 
 import conversions
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
+    parser = OptionParser(usage="%prog <wavelength in nm>")
+    (options, args) = parser.parse_args()
+
+    if len(args) < 1:
         print "Must provide an argument"
         exit(1)
 
     try:
-        argument = float(sys.argv[1])
+        argument = float(args[0])
     except ValueError:
         print "Invalid argument, can't convert to float"
         exit(1)
 
-    print conversions.nm_to_ev(argument)
+    print str(conversions.nm_to_ev(argument))+" eV"

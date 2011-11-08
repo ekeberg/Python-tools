@@ -1,71 +1,42 @@
 
 import spimage, pylab, sys
+from optparse import OptionParser
 
-def image_to_png(arguments):
-    if isinstance(arguments,str):
-        arguments = [arguments]
-    elif not isinstance(arguments,list):
-        print "function to_png takes must have a list or string input"
-        return
-
-    if len(sys.argv) <= 1:
-        print """
-    Usage:  python_script_image_to_png <image_in.h5> <image_out.h5> [colorscale]
-
-    Colorscales:
-    Jet
-    Gray
-    PosNeg
-    InvertedPosNeg
-    Phase
-    InvertedPhase
-    Log (can be combined with the others)
-    Shift (can be combined with the others)
-
-    """
-        exit(1)
-
+def image_to_png(in_filename, out_filename, colorscale, shift):
     try:
-        img = spimage.sp_image_read(arguments[0],0)
+        img = spimage.sp_image_read(in_filename,0)
     except:
-        print "Error: %s is not a readable .h5 file\n" % arguments[0]
-        exit(1)
+        raise TypeError("%s is not a readable file" % in_filename)
 
-    log_flag = 0
-    shift_flag = 0
-
-    for flag in arguments[2:]:
-        if flag == 'PosNeg':
-            color = 8192
-        elif flag == 'InvertedPosNeg':
-            color = 16384
-        elif flag == 'Phase':
-            color = 256
-        elif flag == 'InvertedPhase':
-            color = 4096
-        elif flag == 'Jet':
-            color = 16
-        elif flag == 'Gray':
-            color = 1
-        elif flag == 'Log':
-            log_flag = 1
-        elif flag == 'Shift':
-            shift_flag = 1
-        else:
-            print "unknown flag %s" % flag
-
-    if log_flag == 1:
-        color += 128
-
-    if shift_flag == 1:
+    if shift == 1:
         img = spimage.sp_image_shift(img)
 
     try:
-        spimage.sp_image_write(img,arguments[1],color)
+        spimage.sp_image_write(img,out_filename,colorscale)
     except:
-        print "Error: Can not write %s\n" % arguments[1]
-        exit(1)
+        raise TypeError("Can not write %s" % out_filename)
 
 if __name__ == "__main__":
-    image_to_png(sys.argv[1:])
+    parser = OptionParser(usage="%prog [-c colorscale] -i <image_in.h5> -o <image_out.png>")
+    parser.add_option("-i", action="store", type="string", dest="infile", help="HDF5 file to convert to png.")
+    parser.add_option("-o", action="store", type="string", dest="outfile", help="Output file.")
+    parser.add_option("-l", action="store_true", dest="log", help="Use log scale.")
+    parser.add_option("-s", action="store_true", dest="shift", help="Shift image.")
+    parser.add_option("-m", action="store_true", dest="mask", help="Output mask.")
+    parser.add_option("-c", action="store", type="choice", dest="colorscale", help="Colorscale of output image.",
+                      choices=("gray", "jet", "phase", "hot", "rainbow", "traditional", "weighted_phase"), default="jet")
+    (options, args) = parser.parse_args()
+    
+    colorscale_dict = {"gray" : spimage.SpColormapGrayScale,
+                       "jet" : spimage.SpColormapJet,
+                       "phase" : spimage.SpColormapPhase,
+                       "hot": spimage.SpColormapHot,
+                       "rainbow" : spimage.SpColormapRainbow,
+                       "traditional" : spimage.SpColormapTraditional,
+                       "weighted_phase" : spimage.SpColormapWeightedPhase}
 
+    output_flag = colorscale_dict[options.colorscale]
+    if options.log: output_flag |= spimage.SpColormapLogScale
+    if options.mask: output_flag |= spimage.SpColormapMask
+
+    image_to_png(options.infile, options.outfile, output_flag, options.shift)

@@ -6,6 +6,7 @@ from pylab import *
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
 from matplotlib.figure import Figure
+from optparse import OptionParser
 
 class AppForm(QMainWindow):
     def __init__(self, filename, parent=None):
@@ -118,14 +119,15 @@ class AppForm(QMainWindow):
         self.update_image()
         
 def main():
-    try:
-        print "Reading file %s" % sys.argv[1]
-    except:
-        print """Usage: show_auto pattern.h5
-"""
+    parser = OptionParser(usage="%prog PATTERN")
+    (options, args) = parser.parse_args()
+    
+    if len(args) == 0:
+        print "Must provide a pattern."
         exit(1)
+
     app = QApplication(sys.argv)
-    form = AppForm(sys.argv[1])
+    form = AppForm(args[0])
     form.show()
     app.exec_()
 

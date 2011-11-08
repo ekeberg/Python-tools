@@ -1,5 +1,6 @@
 
 import spimage, sys
+from optparse import OptionParser
 
 def image_info(filename):
     try:
@@ -36,10 +37,11 @@ def image_info(filename):
                                         img.detector.pixel_size[1])
 
 if __name__ == "__main__":
-    try:
-        image_info(sys.argv[1])
-    except:
-        print """
-Usage:  python_script_image_info <in.h5>
-"""
+    parser = OptionParser(usage="%prog <image.h5>")
+    (options,args) = parser.parse_args()
+    if len(args) < 1:
+        print "You have to provide an h5 image file."
+
+    image_info(args[0])
+
 

@@ -1,6 +1,7 @@
 
 import sys
 import pylab
+from optparse import OptionParser
 
 def plot_1d(arguments):
     if isinstance(arguments,str):
@@ -29,5 +30,7 @@ def plot_1d(arguments):
     return data
 
 if __name__ == "__main__":
-    plot_1d(sys.argv[1:])
+    parser = OptionParser(usage="%prog <data>")
+    (options, args) = parser.parse_args()
+    plot_1d(args[0])
     pylab.show()

@@ -21,3 +21,10 @@ def gaussian_blur(image, sigma):
     product = pylab.ifftn(image_ft)
     return product
 
+def remove_duplicates(input_list):
+    seen = []
+    for index, value in enumerate(input_list):
+        if value in seen:
+            input_list.pop(index)
+        else:
+            seen.append(value)

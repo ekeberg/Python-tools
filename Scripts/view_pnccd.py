@@ -1,12 +1,9 @@
 
 import sys, h5py, pylab
+from optparse import OptionParser
 
 def view_pnccd(filename):
-    try:
-        f = h5py.File(filename)
-    except:
-        print "Error reading file %s. It may not be a pnCCD file." % filename
-        exit(1)
+    f = h5py.File(filename)
 
     data1 = f.values()[1].values()[3].value
     data2 = f.values()[1].values()[4].value
@@ -20,13 +17,11 @@ def view_pnccd(filename):
     pylab.show()
 
 if __name__ == '__main__':
-    if len(sys.argv) < 1:
-        print """
-Usage: view_pnccd <filename.h5>
-
-This program is used to view the output from cass.
-
-"""
+    parser = OptionParser(usage="%prog PNCCD_FILE")
+    (options, args) = parser.parse_args()
+    
+    if len(args) == 0:
+        print "You must provide a pnCCD file"
         exit(0)
     
-    view_pnccd(sys.argv[1])
+    view_pnccd(args[0])

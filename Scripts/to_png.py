@@ -206,9 +206,9 @@ if __name__ == "__main__":
     parser.add_option("-m", "--mask", action="store_true", dest="mask", default=False,
                       help="Plot mask")
     parser.add_option("-i", "--input", action="store", type="string", dest="input", default=".",
-                      help="Input directory")
+                      help="Input directory. Default is .")
     parser.add_option("-o", "--output", action="store", type="string", dest="output", default=".",
-                      help="Output directory")
+                      help="Output directory. Default is .")
     (options,args) = parser.parse_args()
 
     plot_setup = PlotSetup()

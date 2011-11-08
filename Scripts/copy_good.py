@@ -33,7 +33,7 @@ def copy_good(last_iteration, threshold, in_dir, out_dir, prefix, error_type="fo
 
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog -f iteration_number -e threshold -o output_dir -p prefix")
+    parser = OptionParser(usage="%prog -f iteration_number -t threshold -o output_dir -p prefix")
     parser.add_option("-f", action="store", type="int", dest="file",
                       help="Iteration number to use")
     parser.add_option("-t", action="store", type="float", dest="threshold",

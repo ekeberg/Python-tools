@@ -1,12 +1,12 @@
 
 import sys, h5py, pylab, spimage
+from optparse import OptionParser
 
 def pnccd_to_image(infile, outfile):
     try:
         f = h5py.File(infile)
     except:
-        print "Error reading file %s. It may not be a pnCCD file." % filename
-        exit(1)
+        raise IOError("Can't read %s. It may not be a pnCCD file." % filename)
 
     i1 = f.keys().index('data')
     i2 = f.values()[i1].keys().index('data1')
@@ -19,13 +19,13 @@ def pnccd_to_image(infile, outfile):
     spimage.sp_image_free(img)
 
 if __name__ == '__main__':
-    if len(sys.argv) < 2:
-        print """
-Usage: pnccd_to_image <infile.h5> <outfile.h5>
-
-This program is used to convert pnccd files to hawk files.
-
-"""
-        exit(0)
+    parser = OptionParser(usage="%prog -i <pnccd_file.h5> -o <output_file>")
+    parser.add_option("-i", "--input", action="store", type="string", dest="input",
+                      help="Name of image to convert.")
+    parser.add_option("-o", "--output", action="store", type="string", dest="output",
+                      help="Writes output to this file.")
+    (options, args) = parser.parse_args()
     
-    pnccd_to_image(sys.argv[1],sys.argv[2])
+    pnccd_to_image(options.input, options.output)
+
+

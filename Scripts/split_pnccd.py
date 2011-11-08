@@ -1,12 +1,9 @@
 
 import sys, h5py, pylab, spimage
+from optparse import OptionParser
 
 def split_pnccd(filename):
-    try:
-        f = h5py.File(filename)
-    except:
-        print "Error reading file %s. It may not be a pnCCD file." % filename
-        exit(1)
+    f = h5py.File(filename)
 
     i1 = f.keys().index('data')
     i2 = f.values()[i1].keys().index('data1')
@@ -24,13 +21,11 @@ def split_pnccd(filename):
     
 
 if __name__ == '__main__':
-    if len(sys.argv) <= 1:
-        print """
-Usage: view_pnccd <filename.h5>
-
-This program is used to view the output from cass.
-
-"""
-        exit(0)
+    parser = OptionParser(usage="%prog PNCCD_FILE")
+    (options, args) = parser.parse_args()
     
-    split_pnccd(sys.argv[1])
+    if len(args) == 0:
+        print "You must provide a pnCCD file"
+        exit(1)
+    
+    split_pnccd(args[0])

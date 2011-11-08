@@ -1,12 +1,13 @@
 
 import spimage, pylab, sys, re
+from optparse import OptionParser
 
-def plot_image(in_file,*arguments):
+def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
     
     try:
         img = spimage.sp_image_read(in_file,0)
     except:
-        print "Error: %s is not a readable .h5 file\n" % in_file
+        raise TypeError("Error: %s is not a readable .h5 file\n" % in_file)
 
     plot_flags = ['abs','mask','phase','real','imag']
     shift_flags = ['shift']
@@ -16,55 +17,68 @@ def plot_image(in_file,*arguments):
     shift_flag = 0
     log_flag = 0
 
-    for flag in arguments:
-        flag = flag.lower()
-        if flag in plot_flags:
-            plot_flag = flag
-        elif flag in shift_flags:
-            shift_flag = flag
-        elif flag in log_flags:
-            log_flag = flag
-        else:
-            print "unknown flag %s" % flag
+    colormap = "jet"
+    if function == "phase":
+        colormap = "hsv"
 
-    if shift_flag:
+    if plot_shifted:
         img = spimage.sp_image_shift(img)
 
     def no_log(x):
         return x
 
-    if log_flag:
+    if plot_log:
         log_function = pylab.log
     else:
         log_function = no_log
 
-    if (plot_flag == "mask"):
-        pylab.imshow(img.mask,origin='lower',interpolation="nearest")
-    elif(plot_flag == "phase"):
-        pylab.imshow(pylab.angle(img.image),cmap='hsv',origin='lower',interpolation="nearest")
-    elif(plot_flag == "real"):
-        pylab.imshow(log_function(pylab.real(img.image)),origin='lower',interpolation="nearest")
-    elif(plot_flag == "imag"):
-        pylab.imshow(log_function(pylab.imag(img.image)),origin='lower',interpolation="nearest")
+    if plot_mask:
+        plot_input = img.mask
     else:
-        pylab.imshow(log_function(abs(img.image)),origin='lower',interpolation="nearest")
-
+        plot_input = img.image
+        
+    function_dict = {"abs" : abs, "phase" : pylab.angle, "real" : pylab.real, "imag" : pylab.imag}
+    
+    pylab.imshow(log_function(function_dict[function](plot_input)), cmap=colormap, origin="lower", interpolation="nearest")
     pylab.show()
 
+    # if (plot_flag == "mask"):
+    #     pylab.imshow(img.mask,origin='lower',interpolation="nearest")
+    # elif(plot_flag == "phase"):
+    #     pylab.imshow(pylab.angle(img.image),cmap='hsv',origin='lower',interpolation="nearest")
+    # elif(plot_flag == "real"):
+    #     pylab.imshow(log_function(pylab.real(img.image)),origin='lower',interpolation="nearest")
+    # elif(plot_flag == "imag"):
+    #     pylab.imshow(log_function(pylab.imag(img.image)),origin='lower',interpolation="nearest")
+    # else:
+    #     pylab.imshow(log_function(abs(img.image)),origin='lower',interpolation="nearest")
+
+    # pylab.show()
+
 if __name__ == "__main__":
-    try:
-        plot_image(str(sys.argv[1]),*(sys.argv[2:]))
-    except:
-        print """
-Usage:  python_script_plot_image <image.h5> [arguments]
+    parser = OptionParser(usage="%prog image")
+    parser.add_option("-m", action="store_true", dest="mask", help="Plot the mask.")
+    parser.add_option("-f", action="store", type="choice", dest="function", help="What to plot in the image.",
+                      choices=("abs", "phase", "real", "imag"), default="abs")
+    parser.add_option("-l", action="store_true", dest="log", help="Plot in log scale.")
+    parser.add_option("-s", action="store_true", dest="shift", help="Shift image.")
+    (options, args) = parser.parse_args()
+    
+    plot_image(args[0], options.function, options.mask, options.log, options.shift)
+    
+#     try:
+#         plot_image(str(sys.argv[1]),*(sys.argv[2:]))
+#     except:
+#         print """
+# Usage:  python_script_plot_image <image.h5> [arguments]
 
-Arguments:
-abs    plot the absolute value of the image (default)
-mask   plot the image mask
-phase  plot the phase of the image
-log    plot the image in log scale 
-shift  shift the image before plotting
+# Arguments:
+# abs    plot the absolute value of the image (default)
+# mask   plot the image mask
+# phase  plot the phase of the image
+# log    plot the image in log scale 
+# shift  shift the image before plotting
 
-Several or none of the above arguments might be combined
+# Several or none of the above arguments might be combined
 
-"""
+# """
