@@ -10,22 +10,62 @@ atomic_mass,scattering_factors = pickle.load(_elements_file)
 _elements_file.close()
 elements = atomic_mass.keys()
 
-class Material:
-    def __init__(self,density,**kwargs):
-        self.density = density
-        self.elements = kwargs
+class ChemicalComposition(object):
+    def __init__(self, **kwargs):
+        self._elements = kwargs
         bad_elements = []
-        for key in self.elements:
+        for key in self._elements:
             if key not in atomic_mass.keys():
-                #self.elements.append((key,kwargs[key]))
-                #self.elements.pop(key)
                 bad_elements.append(key)
-                print "%s is not an element. Ignoring it." % key
-            #else:
-        for b in bad_elements:
-            self.elements.pop(b)
+                raise IndexError("%s is not an element." % key)
+        for element in bad_elements:
+            self._elements.pop(b)
+
+    def element_ratios(self):
+        """Returns relative ratios of elements (not relative masses)"""
+        return self._elements
+
+    def element_ratio_sum(self):
+        """Returns the sum of all relative ratios of elements (not relative masses)"""
+        return sum(self._elements.values())
         
-            
+    def element_mass_ratios(self):
+        """Return relative masses of all elements in the material"""
+        mass_ratios = {}
+        for element in self._elements:
+            mass_ratios[element] = self._elements[element]*atomic_mass[element]
+        return mass_ratios
+        
+    def element_mass_ratio_sum(self):
+        """Returns the sum of all relative mass ratios returned bu element_mass_ratios()"""
+        mass_ratios = self.element_mass_ratios()
+        return sum(mass_ratios.values())
+
+
+class Material(object):
+    def __init__(self, density, **kwargs):
+        self._density = density
+        self._chemical_composition = ChemicalComposition(**kwargs)
+        
+    def element_ratios(self):
+        """Returns relative ratios of elements (not relative masses)"""
+        return self._chemical_composition.element_ratios()
+    
+    def element_ratio_sum(self):
+        """Returns the sum of all relative ratios of elements (not relative masses)"""
+        return self._chemical_composition.element_ratio_sum()
+        
+    def element_mass_ratios(self):
+        """Return relative masses of all elements in the material"""
+        return self._chemical_composition.element_mass_ratio()
+        
+    def element_mass_ratio_sum(self):
+        """Returns the sum of all relative mass ratios returned bu element_mass_ratios()"""
+        return self._chemical_composition.element_mass_ratio_sum()
+
+    def material_density(self):
+        return self._density
+           
 materials = {"protein" : Material(1350,H=86,C=52,N=13,O=15,P=0,S=3),
              "water" : Material(1000,O=1,H=2),
              "virus" : Material(1455,H=72.43,C=47.52,N=13.55,O=17.17,P=1.11,S=0.7),
@@ -33,25 +73,28 @@ materials = {"protein" : Material(1350,H=86,C=52,N=13,O=15,P=0,S=3),
 
 def get_scattering_factor(element,photon_energy):
     """
-    get the scattering factor for an element through linear interpolation.
+    get the scattering factor for an element through linear interpolation. Photon energy is given in eV.
     """
     f1 = pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,1])
     f2 = pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,2])
-    return [f1,f2] 
+#return [f1,f2] 
+    return f1+f2*1.j
 
 def get_scattering_power(photon_energy,material,complex=False):
     """Returns the scattering factor for a volume of 1 m^3 of the material"""
     average_density = 0.0
     total_atomic_ammounts = 0.0
     f1 = 0.0; f2 = 0.0
-    for element,value in material.elements.iteritems():
+    for element,value in material.elements_ratios().iteritems():
         # sum up average atom density
         average_density += value*atomic_mass[element]*constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
         f = get_scattering_factor(element,photon_energy)
-        f1 += value*f[0]
-        f2 += value*f[1]
+#        f1 += value*f[0]
+#        f2 += value*f[1]
+        f1 += value*real(f)
+        f2 += value*imag(f)
 
     average_density /= total_atomic_ammounts
     f1 /= total_atomic_ammounts
@@ -69,14 +112,16 @@ def get_attenuation_length(photon_energy,material):
     average_density = 0.0
     total_atomic_ammounts = 0.0
     f1 = 0.0; f2 = 0.0
-    for element,value in material.elements.iteritems():
+    for element,value in material.element_ratios().iteritems():
         # sum up average atom density
         average_density += value*atomic_mass[element]*constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
         f = get_scattering_factor(element,photon_energy)
-        f1 += value*f[0]
-        f2 += value*f[1]
+#        f1 += value*f[0]
+#        f2 += value*f[1]
+        f1 += value*real(f)
+        f2 += value*imag(f)
     average_density /= total_atomic_ammounts
     f1 /= total_atomic_ammounts
     f2 /= total_atomic_ammounts
