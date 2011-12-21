@@ -183,7 +183,7 @@ def to_png_parallel(input_files, output_dir, plot_setup):
 
 def to_png(input_dir, output_dir, plot_setup):
     #color,shift_flag,support_flag = evaluate_arguments(arguments)
-    files = read_files()
+    files = read_files(input_dir)
 
     shift_function = get_shift_function(plot_setup.get_shift())
     support_function = get_support_function(plot_setup.get_mask())
@@ -218,7 +218,7 @@ if __name__ == "__main__":
     plot_setup.set_shift(options.shift)
     plot_setup.set_mask(options.mask)
 
-    files = read_files(options.input, options.output)
+    files = read_files(options.input)
 
     to_png_parallel(files, options.output, plot_setup)
 

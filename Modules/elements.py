@@ -1,14 +1,18 @@
-import pylab
-import pickle
-import conversions
-import constants
-import sys
-import os
+import pylab as _pylab
+import pickle as _pickle
+import conversions as _conversions
+import constants as _constants
+import sys as _sys
+import os as _os
 
-_elements_file = open('%s/Python/Resources/elements.dat' % (os.path.expanduser("~")))
-atomic_mass,scattering_factors = pickle.load(_elements_file)
+_elements_file = open('%s/Python/Resources/elements.dat' % (_os.path.expanduser("~")))
+atomic_mass,scattering_factors = _pickle.load(_elements_file)
 _elements_file.close()
 elements = atomic_mass.keys()
+
+_atomsf_file = open('%s/Python/Resources/atomsf.dat' % (_os.path.expanduser("~")))
+atomsf_data = _pickle.load(_atomsf_file)
+_atomsf_file.close()
 
 class ChemicalComposition(object):
     def __init__(self, **kwargs):
@@ -75,8 +79,8 @@ def get_scattering_factor(element,photon_energy):
     """
     get the scattering factor for an element through linear interpolation. Photon energy is given in eV.
     """
-    f1 = pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,1])
-    f2 = pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,2])
+    f1 = _pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,1])
+    f2 = _pylab.interp(photon_energy,scattering_factors[element][:,0],scattering_factors[element][:,2])
 #return [f1,f2] 
     return f1+f2*1.j
 
@@ -87,7 +91,7 @@ def get_scattering_power(photon_energy,material,complex=False):
     f1 = 0.0; f2 = 0.0
     for element,value in material.elements_ratios().iteritems():
         # sum up average atom density
-        average_density += value*atomic_mass[element]*constants.u
+        average_density += value*atomic_mass[element]*_constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
         f = get_scattering_factor(element,photon_energy)
@@ -114,7 +118,7 @@ def get_attenuation_length(photon_energy,material):
     f1 = 0.0; f2 = 0.0
     for element,value in material.element_ratios().iteritems():
         # sum up average atom density
-        average_density += value*atomic_mass[element]*constants.u
+        average_density += value*atomic_mass[element]*_constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
         f = get_scattering_factor(element,photon_energy)
@@ -128,23 +132,67 @@ def get_attenuation_length(photon_energy,material):
 
     n0 = material.density/average_density
 
-    #print 2.0*constants.re*conversions.ev_to_nm(photon_energy)*1e-9*f2*material[0]/average_density
-    return 1.0/(2.0*constants.re*conversions.ev_to_nm(photon_energy)*1e-9*f2*material.density/average_density)
+    #print 2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material[0]/average_density
+    return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material.density/average_density)
 
 def size_to_nyquist_angle(size, wavelength):
     """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
     return wavelength/size
 
+class Atom5G(object):
+    """This class is used as a container for the CCP4 scattering factors.
+    They are 2D scattering factors using the 5 gaussian model at the Cu K-alpha
+    wavelength (1.5418 A)."""
+    def __init__(self, element):
+        self.element = element
+
+    def scattering_factor(self, s, b_factor = 0.):
+        """Evaluate the scattering factor"""
+        return (self.a[0]*_pylab.exp(-self.b[0]*s**2) +
+                self.a[1]*_pylab.exp(-self.b[1]*s**2) +
+                self.a[2]*_pylab.exp(-self.b[2]*s**2) +
+                self.a[3]*_pylab.exp(-self.b[3]*s**2)) * _pylab.exp(-b_factor*s**2/4.)
+
+def parse_atomsf(file_path='atomsf.lib'):
+    file_handle = open(file_path)
+    file_lines = file_handle.readlines()
+    data_lines = [line for line in file_lines if line[:2] != 'AD']
+
+    data_dict = {}
+
+    for i in range(len(data_lines)/5):
+        element = data_lines[i*5].split()[0]
+        atom_cont = Atom5G(element)
+        
+        variables = _pylab.float32(data_lines[i*5+1].split())
+        atom_cont.weight = variables[0]
+        atom_cont.number_of_electrons = variables[1]
+        atom_cont.c = variables[2]
+
+        variables = _pylab.float32(data_lines[i*5+2].split())
+        atom_cont.a = variables
+
+        variables = _pylab.float32(data_lines[i*5+3].split())
+        atom_cont.b = variables
+
+        variables = _pylab.float32(data_lines[i*5+4].split())
+        atom_cont.cu_f = complex(variables[0], variables[1])
+        atom_cont.mo_f = complex(variables[2], variables[3])
+
+        data_dict[element] = atom_cont
+
+    return data_dict
+
 def plot_stuff():
-    distance = pylab.arange(50,200,0.1)
+    distance = _pylab.arange(50,200,0.1)
     pixel_size = 0.015
     pixels_radially = 2048
     wavelength = 5.7
-    gaps = pylab.array([1.0,2.0,3.0,4.0,3.0*2.0])
+    gaps = _pylab.array([1.0,2.0,3.0,4.0,3.0*2.0])
     particle_size = 500.0
     missing_limit = 2.8
     binning = 4
-    fig = pylab.figure(1)
+    fig = _pylab.figure(1)
     fig.clear()
     
     missing_data_plot = fig.add_subplot(411)
@@ -177,18 +225,18 @@ def plot_stuff():
     sampling_plot.set_ylabel("Sampling ratio")
     sampling_plot.set_xlabel("Detector distance [mm]")
 
-    pylab.show()
+    _pylab.show()
 
 def calculate_pattern():
     photon_energy = 540
 
     virus_size = 275.0e-9
     virus_total_scattering_factor = (2.0*virus_size)**3*get_scattering_power(photon_energy,material_virus)
-    virus_total_cross_section = constants.re**2*virus_total_scattering_factor**2
+    virus_total_cross_section = _constants.re**2*virus_total_scattering_factor**2
 
     water_size = 1500.0e-9
     water_total_scattering_factor = (2.0*water_size)**3*get_scattering_power(photon_energy,material_water)
-    water_total_cross_section = constants.re**2*water_total_scattering_factor**2
+    water_total_cross_section = _constants.re**2*water_total_scattering_factor**2
 
     print "Virus cross section = ", virus_total_cross_section
     print "Water cross section = ", water_total_cross_section
@@ -196,31 +244,31 @@ def calculate_pattern():
 
     # scattering from ball
 
-    # wavelength = conversions.ev_to_nm(photon_energy)
-    # q_x = pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
-    # q_y = pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
+    # wavelength = _conversions.ev_to_nm(photon_energy)
+    # q_x = _pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
+    # q_y = _pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
 
-    # q_x_grid, q_y_grid = pylab.meshgrid(q_x,q_y)
-    # q = pylab.sqrt(q_x_grid**2+q_y_grid**2)
-    # s = pylab.float128(2.0*pylab.pi*virus_size*q*0.01)
-    # scattering = (pylab.sin(s) - s*pylab.cos(s))/3.0/s**3
-    # #scattering = (pylab.sin(s) - s)/3.0/s**3
-    # pylab.clf()
-    # pylab.imshow(pylab.float64(scattering))
+    # q_x_grid, q_y_grid = _pylab.meshgrid(q_x,q_y)
+    # q = _pylab.sqrt(q_x_grid**2+q_y_grid**2)
+    # s = _pylab.float128(2.0*_pylab.pi*virus_size*q*0.01)
+    # scattering = (_pylab.sin(s) - s*_pylab.cos(s))/3.0/s**3
+    # #scattering = (_pylab.sin(s) - s)/3.0/s**3
+    # _pylab.clf()
+    # _pylab.imshow(_pylab.float64(scattering))
 
     fov = 16000.0e-9 #m
     fs_n_of_pixels = 1024
     fs_pixel_size = fov/fs_n_of_pixels
-    # scattering_factor_virus = pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
-    # scattering_factor_virus_water = pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
+    # scattering_factor_virus = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
+    # scattering_factor_virus_water = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
 
     virus_scattering_factor = get_scattering_power(photon_energy,material_virus)*fs_pixel_size**3
     water_scattering_factor = get_scattering_power(photon_energy,material_water)*fs_pixel_size**3
 
-    # for x,x_i in zip((pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
+    # for x,x_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
     #     #print x_i
-    #     for y,y_i in zip((pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
-    #         for z,z_i in zip((pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
+    #     for y,y_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
+    #         for z,z_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
     #             if x**2+y**2+z**2 < virus_size**2:
     #                 scattering_factor_virus[x_i,y_i,z_i] = virus_scattering_factor
     #                 scattering_factor_virus_water[x_i,y_i,z_i] = virus_scattering_factor
@@ -231,8 +279,8 @@ def calculate_pattern():
     #                 scattering_factor_virus_water[x_i,y_i,z_i] = 0.0
 
 
-    # projected_scattering_factors_virus = pylab.sum(scattering_factor_virus,axis=1)
-    # projected_scattering_factors_virus_water = pylab.sum(scattering_factor_virus_water,axis=1)
+    # projected_scattering_factors_virus = _pylab.sum(scattering_factor_virus,axis=1)
+    # projected_scattering_factors_virus_water = _pylab.sum(scattering_factor_virus_water,axis=1)
 
     detector_size = 1024
     oversampling = 1
@@ -241,39 +289,39 @@ def calculate_pattern():
 
     _center = detector_size*oversampling/2
 
-    # amplitudes = pylab.fftshift(abs(pylab.fftn(projected_scattering_factors,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
+    # amplitudes = _pylab.fftshift(abs(_pylab.fftn(projected_scattering_factors,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
 
-    # intensities = input_intensities*constants.re**2*amplitudes**2
+    # intensities = input_intensities*_constants.re**2*amplitudes**2
 
 
-    scattering_factor_virus = pylab.zeros((fs_n_of_pixels,fs_n_of_pixels))
-    scattering_factor_virus_water = pylab.zeros((fs_n_of_pixels,fs_n_of_pixels))
+    scattering_factor_virus = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels))
+    scattering_factor_virus_water = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels))
 
     tmp_water_size = water_size
-    for y,y_i in zip((pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
+    for y,y_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
         if y_i%50 == 0: print y_i
-        tmp_water_size = tmp_water_size*(1.0+0.05*(-1.0+2.0*pylab.rand()))
-        for x,x_i in zip((pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
+        tmp_water_size = tmp_water_size*(1.0+0.05*(-1.0+2.0*_pylab.rand()))
+        for x,x_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
             if x**2 + y**2 < virus_size**2:
-                thickness = 2.0*pylab.sqrt(virus_size**2 - x**2 - y**2)/fs_pixel_size
+                thickness = 2.0*_pylab.sqrt(virus_size**2 - x**2 - y**2)/fs_pixel_size
                 scattering_factor_virus[x_i,y_i] = virus_scattering_factor*thickness
                 scattering_factor_virus_water[x_i,y_i] = virus_scattering_factor*thickness
-                #water_thickness = (2.0*pylab.sqrt(water_size**2 - x**2)/fs_pixel_size - thickness)*(1.0+0.05*pylab.rand())
-                water_thickness = (2.0*pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size - thickness)
+                #water_thickness = (2.0*_pylab.sqrt(water_size**2 - x**2)/fs_pixel_size - thickness)*(1.0+0.05*_pylab.rand())
+                water_thickness = (2.0*_pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size - thickness)
                 scattering_factor_virus_water[x_i,y_i] += water_scattering_factor*water_thickness
             elif x**2 < tmp_water_size**2:
-                #thickness = 2.0*pylab.sqrt(water_size**2 - x**2)/fs_pixel_size*(1.0+0.05*pylab.rand())
-                thickness = 2.0*pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size
+                #thickness = 2.0*_pylab.sqrt(water_size**2 - x**2)/fs_pixel_size*(1.0+0.05*_pylab.rand())
+                thickness = 2.0*_pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size
                 scattering_factor_virus_water[x_i,y_i] = water_scattering_factor*thickness
                 scattering_factor_virus[x_i,y_i] = 0.0
             else:
                 scattering_factor_virus_water[x_i,y_i] = 0.0
-            r = pylab.sqrt(x**2+y**2)
-            scattering_factor_virus[x_i,y_i] *= pylab.exp(-r**2/2.0/beam_width**2)
-            scattering_factor_virus_water[x_i,y_i] *= pylab.exp(-r**2/2.0/beam_width**2)
+            r = _pylab.sqrt(x**2+y**2)
+            scattering_factor_virus[x_i,y_i] *= _pylab.exp(-r**2/2.0/beam_width**2)
+            scattering_factor_virus_water[x_i,y_i] *= _pylab.exp(-r**2/2.0/beam_width**2)
 
-    amplitudes_virus = pylab.fftshift(abs(pylab.fftn(scattering_factor_virus,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
-    amplitudes_virus_water = pylab.fftshift(abs(pylab.fftn(scattering_factor_virus_water,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
+    amplitudes_virus = _pylab.fftshift(abs(_pylab.fftn(scattering_factor_virus,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
+    amplitudes_virus_water = _pylab.fftshift(abs(_pylab.fftn(scattering_factor_virus_water,[oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,_center-detector_size/2:_center+detector_size/2]
 
-    intensities_virus = input_intensities*constants.re**2*amplitudes_virus**2
-    intensities_virus_water = input_intensities*constants.re**2*amplitudes_virus_water**2
+    intensities_virus = input_intensities*_constants.re**2*amplitudes_virus**2
+    intensities_virus_water = input_intensities*_constants.re**2*amplitudes_virus_water**2
