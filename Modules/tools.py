@@ -28,3 +28,11 @@ def remove_duplicates(input_list):
             input_list.pop(index)
         else:
             seen.append(value)
+
+def factorial(n):
+    from scipy.special import gamma as gamma_
+    return gamma_(n+1)
+
+def bincoef(n, k):
+    from scipy.special import binom
+    return binom(n,k)

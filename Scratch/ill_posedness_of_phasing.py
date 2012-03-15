@@ -1,9 +1,9 @@
 from pylab import *
 
 
-N = 1600
-particle_size = 40
-mask_size = 40
+N = 100
+particle_size = 10
+mask_size = 10
 
 # def dft_1d(N):
 #     i = arange(N); j = arange(N)

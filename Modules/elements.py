@@ -10,11 +10,8 @@ atomic_mass,scattering_factors = _pickle.load(_elements_file)
 _elements_file.close()
 elements = atomic_mass.keys()
 
-_atomsf_file = open('%s/Python/Resources/atomsf.dat' % (_os.path.expanduser("~")))
-atomsf_data = _pickle.load(_atomsf_file)
-_atomsf_file.close()
-
 class ChemicalComposition(object):
+    """This class contains a set of relative abundances of materials."""
     def __init__(self, **kwargs):
         self._elements = kwargs
         bad_elements = []
@@ -47,6 +44,7 @@ class ChemicalComposition(object):
 
 
 class Material(object):
+    """Contains both the density and the chemical composition of the material"""
     def __init__(self, density, **kwargs):
         self._density = density
         self._chemical_composition = ChemicalComposition(**kwargs)
@@ -89,7 +87,7 @@ def get_scattering_power(photon_energy,material,complex=False):
     average_density = 0.0
     total_atomic_ammounts = 0.0
     f1 = 0.0; f2 = 0.0
-    for element,value in material.elements_ratios().iteritems():
+    for element,value in material.element_ratios().iteritems():
         # sum up average atom density
         average_density += value*atomic_mass[element]*_constants.u
         total_atomic_ammounts += value
@@ -97,14 +95,14 @@ def get_scattering_power(photon_energy,material,complex=False):
         f = get_scattering_factor(element,photon_energy)
 #        f1 += value*f[0]
 #        f2 += value*f[1]
-        f1 += value*real(f)
-        f2 += value*imag(f)
+        f1 += value*_pylab.real(f)
+        f2 += value*_pylab.imag(f)
 
     average_density /= total_atomic_ammounts
     f1 /= total_atomic_ammounts
     f2 /= total_atomic_ammounts
 
-    n0 = material.density/average_density
+    n0 = material.material_density()/average_density
     #return [n0*f1,n0*f2,n0]
     if complex:
         return n0*f1 + 1.0j*n0*f2
@@ -124,16 +122,16 @@ def get_attenuation_length(photon_energy,material):
         f = get_scattering_factor(element,photon_energy)
 #        f1 += value*f[0]
 #        f2 += value*f[1]
-        f1 += value*real(f)
-        f2 += value*imag(f)
+        f1 += value*_pylab.real(f)
+        f2 += value*_pylab.imag(f)
     average_density /= total_atomic_ammounts
     f1 /= total_atomic_ammounts
     f2 /= total_atomic_ammounts
 
-    n0 = material.density/average_density
+    n0 = material.material_density()/average_density
 
     #print 2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material[0]/average_density
-    return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material.density/average_density)
+    return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material.material_density()/average_density)
 
 def size_to_nyquist_angle(size, wavelength):
     """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
@@ -147,11 +145,16 @@ class Atom5G(object):
         self.element = element
 
     def scattering_factor(self, s, b_factor = 0.):
-        """Evaluate the scattering factor"""
+        """Evaluate the scattering factor. s should be given in 1/A"""
         return (self.a[0]*_pylab.exp(-self.b[0]*s**2) +
                 self.a[1]*_pylab.exp(-self.b[1]*s**2) +
                 self.a[2]*_pylab.exp(-self.b[2]*s**2) +
-                self.a[3]*_pylab.exp(-self.b[3]*s**2)) * _pylab.exp(-b_factor*s**2/4.)
+                self.a[3]*_pylab.exp(-self.b[3]*s**2)) * _pylab.exp(-b_factor*s**2/4.) + self.c
+    
+_atomsf_file = open('%s/Python/Resources/atomsf.dat' % (_os.path.expanduser("~")))
+atomsf_data = _pickle.load(_atomsf_file)
+_atomsf_file.close()
+
 
 def parse_atomsf(file_path='atomsf.lib'):
     file_handle = open(file_path)
