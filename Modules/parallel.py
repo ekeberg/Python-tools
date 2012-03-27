@@ -18,8 +18,6 @@ class Worker(multiprocessing.Process):
             except NotImplementedError:
                 pass
             try:
-                #f = self.working_queue.get_nowait()
-                print self.name, " get data "
                 i,data = self.working_queue.get_nowait()
                 print self.name, " got data ", i
             except Queue.Empty:
