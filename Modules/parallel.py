@@ -13,20 +13,34 @@ class Worker(multiprocessing.Process):
         self.process = process
         self.result = []
     def run(self):
-        while not self.working_queue.empty():
+        # while not self.working_queue.empty():
+        #     try:
+        #         print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
+        #     except NotImplementedError:
+        #         pass
+        #     try:
+        #         i,data = self.working_queue.get_nowait()
+        #         print self.name, " got data ", i
+        #     except Queue.Empty:
+        #         print self.name, " didn't get data"
+        #         break
+        #     self.return_dict[i] = self.process(*data)
+        # print "%s done" % self.name
+        # return
+        while True:
             try:
-                print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
-            except NotImplementedError:
-                pass
-            try:
-                i,data = self.working_queue.get_nowait()
-                print self.name, " got data ", i
+                tmp = self.working_queue.get(timeout=0.1) #timeout of 0.1 is choosen adhoc.
             except Queue.Empty:
-                print self.name, " didn't get data"
                 break
-            self.return_dict[i] = self.process(*data)
+            if tmp == None:
+                break
+            try:
+                print "%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize())
+            except NotImplementedError:
+                print "%s process %d" % (self.name, tmp[0])
+                pass
+            self.return_dict[tmp[0]] = self.process(*tmp[1])
         print "%s done" % self.name
-        return
 
 
 def run_parallel(jobs, function, n_cpu=0):
@@ -39,6 +53,7 @@ def run_parallel(jobs, function, n_cpu=0):
     workers = []
     for job,i in zip(jobs,range(len(jobs))):
         working_queue.put((i,job))
+
     # for i in range(n_cpu):
     #     #Worker(working_queue, return_queue, function).start()
     #     workers.append(Worker(working_queue, return_dict, function))
