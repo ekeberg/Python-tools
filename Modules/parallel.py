@@ -2,6 +2,7 @@
 import sys
 import multiprocessing
 import Queue
+from time import sleep
 #from guppy import hpy
 
 class Worker(multiprocessing.Process):
@@ -23,7 +24,7 @@ class Worker(multiprocessing.Process):
             except Queue.Empty:
                 print self.name, " didn't get data"
                 break
-            self.return_dict[i] = self.process(data)
+            self.return_dict[i] = self.process(*data)
         print "%s done" % self.name
         return
 
@@ -38,11 +39,16 @@ def run_parallel(jobs, function, n_cpu=0):
     workers = []
     for job,i in zip(jobs,range(len(jobs))):
         working_queue.put((i,job))
+    # for i in range(n_cpu):
+    #     #Worker(working_queue, return_queue, function).start()
+    #     workers.append(Worker(working_queue, return_dict, function))
+    #     workers[-1].start()
+    #     #print workers[-1].is_alive()
     for i in range(n_cpu):
-        #Worker(working_queue, return_queue, function).start()
         workers.append(Worker(working_queue, return_dict, function))
-        workers[-1].start()
-        #print workers[-1].is_alive()
+    for w in workers:
+        w.start()
+        
     for w in workers:
         w.join()
 
