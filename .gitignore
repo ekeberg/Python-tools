@@ -1,2 +1,6 @@
 *.pyc
 Scripts/global
+*.h5
+*.p
+*.data
+*.jpg
