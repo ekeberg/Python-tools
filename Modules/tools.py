@@ -21,6 +21,15 @@ def gaussian_blur(image, sigma):
     product = pylab.ifftn(image_ft)
     return product
 
+def circular_mask(side, radius = None):
+    import pylab
+    if not radius:
+        radius = side/2.
+    x = pylab.arange(-side/2.+0.5, side/2.+0.5)
+    radius2 = x**2 + x[:,pylab.newaxis]**2
+    mask = radius2 < radius**2
+    return mask
+
 def remove_duplicates(input_list):
     seen = []
     for index, value in enumerate(input_list):
