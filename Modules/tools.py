@@ -45,3 +45,25 @@ def factorial(n):
 def bincoef(n, k):
     from scipy.special import binom
     return binom(n,k)
+
+def radial_average(image):
+    """Calculates the radial average from the center to the edge (corners are not included)"""
+    import pylab
+    image_shape = pylab.shape(image)
+    if len(image_shape) != 2:
+        raise ValueError("Image must be 2d array")
+    if image_shape[0] != image_shape[1]:
+        raise ValueError("Image must be square")
+    side = image_shape[0]
+    x = pylab.arange(-side/2.+0.5, side/2.+0.5)
+    radius = pylab.int32(pylab.sqrt(x**2 + x[:, pylab.newaxis]**2))
+    in_range = radius < side/2.
+
+    radial_average = pylab.zeros(side/2)
+    weight = pylab.zeros(side/2)
+    for v, r in zip(image[in_range], radius[in_range]):
+        radial_average[r] += v
+        weight[r] += 1
+    radial_average /= weight
+    return radial_average
+    
