@@ -40,3 +40,10 @@ def quaternion_inverse(quat):
     q[1:] = -quat[1:]
     return q
 
+def quaternion_multiply(quat_1, quat_2):
+    q = pylab.zeros(4)
+    q[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
+    q[1] = quat_1[1]*quat_2[0] + quat_1[0]*quat_2[1] + quat_1[3]*quat_2[2] - quat_1[2]*quat_2[3]
+    q[2] = quat_1[2]*quat_2[0] + quat_1[0]*quat_2[2] - quat_1[3]*quat_2[1] + quat_1[1]*quat_2[3]
+    q[3] = quat_1[3]*quat_2[0] + quat_1[2]*quat_2[1] - quat_1[1]*quat_2[2] + quat_1[0]*quat_2[3]
+    return q
