@@ -6,12 +6,13 @@ from time import sleep
 #from guppy import hpy
 
 class Worker(multiprocessing.Process):
-    def __init__(self, working_queue, return_dict, process):
+    def __init__(self, working_queue, return_dict, process, quiet=False):
         multiprocessing.Process.__init__(self)
         self.working_queue = working_queue
         self.return_dict = return_dict
         self.process = process
         self.result = []
+        self.quiet = quiet
     def run(self):
         # while not self.working_queue.empty():
         #     try:
@@ -34,16 +35,17 @@ class Worker(multiprocessing.Process):
                 break
             if tmp == None:
                 break
-            try:
-                print "%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize())
-            except NotImplementedError:
-                print "%s process %d" % (self.name, tmp[0])
-                pass
+            if not self.quiet:
+                try:
+                    print "%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize())
+                except NotImplementedError:
+                    print "%s process %d" % (self.name, tmp[0])
+                    pass
             self.return_dict[tmp[0]] = self.process(*tmp[1])
-        print "%s done" % self.name
+        if not self.quiet: print "%s done" % self.name
 
 
-def run_parallel(jobs, function, n_cpu=0):
+def run_parallel(jobs, function, n_cpu=0, quiet=False):
     """Execute the function for each input given in the array jobs and return the results in an array."""
     if not n_cpu: n_cpu = multiprocessing.cpu_count()
     working_queue = multiprocessing.Queue()
@@ -60,7 +62,7 @@ def run_parallel(jobs, function, n_cpu=0):
     #     workers[-1].start()
     #     #print workers[-1].is_alive()
     for i in range(n_cpu):
-        workers.append(Worker(working_queue, return_dict, function))
+        workers.append(Worker(working_queue, return_dict, function, quiet))
     for w in workers:
         w.start()
         
