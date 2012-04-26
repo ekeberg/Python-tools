@@ -2,10 +2,13 @@ import pylab
 
 def random_quaternion():
     """Return a random rotation quaternion, as a length-4 array."""
-    #create a random quaternion
-    quat = -1. + 2.*pylab.rand(4)
-    #normalize it
-    quat /= pylab.norm(quat)
+    # The method of generating random rotations is taken from here:
+    # http://planning.cs.uiuc.edu/node198.html
+    random_base = pylab.rand(3)
+    quat = pylab.array([pylab.sqrt(1.-random_base[0])*pylab.sin(2.*pylab.pi*random_base[1]),
+                        pylab.sqrt(1.-random_base[0])*pylab.cos(2.*pylab.pi*random_base[1]),
+                        pylab.sqrt(random_base[0])*pylab.sin(2.*pylab.pi*random_base[2]),
+                        pylab.sqrt(random_base[0])*pylab.cos(2.*pylab.pi*random_base[2])])
     return quat
     
 
