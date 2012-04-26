@@ -33,3 +33,10 @@ def quaternion_to_matrix(quat):
                          [2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2],
                           2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
                           quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
+
+def quaternion_inverse(quat):
+    q = pylab.zeros(4)
+    q[0] = quat[0]
+    q[1:] = -quat[1:]
+    return q
+
