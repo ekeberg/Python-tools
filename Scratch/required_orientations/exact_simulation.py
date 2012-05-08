@@ -654,19 +654,31 @@ def gap_size_from_N(N):
 # ax.set_zlim((-1, 1))
 # draw()
 
-N_list = range(10, 200, 10)
-size_average = []
-size_std = []
-for N in N_list:
-    sizes = []
-    for i in range(10):
-        sizes.append(gap_size_from_N(N))
-        print "gap_size = %g" % sizes[-1]
-    size_average.append(average(sizes))
-    size_std.append(std(sizes))
-    print "average = %g, std = %g" % (size_average[-1], size_std[-1])
+def calculate_sizes():
+    N_list = range(10, 201, 10)
+    number_of_repetitions = 100
+    size_average = []
+    size_std = []
+    size_median = []
+    sizes_all = []
+    for N in N_list:
+        #sizes = []
+        jobs = ((N,),)*number_of_repetitions
+        sizes = parallel.run_parallel(jobs, gap_size_from_N)
+        # for i in range(number_of_repetiotions):
+        #     sizes.append(gap_size_from_N(N))
+        #     print "gap_size = %g" % sizes[-1]
+        size_average.append(average(sizes))
+        size_std.append(std(sizes))
+        size_median.append(median(sizes))
+        sizes_all.append(sizes)
+        print "average = %g, std = %g" % (size_average[-1], size_std[-1])
+    return size_average, size_std, size_median, sizes_all
 
 
+
+# translate gaps to nyquist pixels
+# calculate for which gap sizes full coverage is reached
 
 # N = 30
 # circles = []
