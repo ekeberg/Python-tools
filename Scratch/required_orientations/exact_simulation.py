@@ -3,6 +3,7 @@ import rotations
 import itertools
 import math
 import parallel
+import pickle
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -612,6 +613,7 @@ class RegionFinder(object):
 
 #N = 5
 def gap_size_from_N(N):
+    seed()
     circles = []
     for i in range(N):
         circles.append(Circle(rotations.random_quaternion()))
@@ -654,30 +656,68 @@ def gap_size_from_N(N):
 # ax.set_zlim((-1, 1))
 # draw()
 
-def calculate_sizes():
-    N_list = range(10, 201, 10)
-    number_of_repetitions = 100
-    size_average = []
-    size_std = []
-    size_median = []
-    sizes_all = []
+class Gaps(object):
+    def __init__(self, gaps, number_of_images, doc=None):
+        self._gaps = gaps
+        if doc: self._doc = doc
+        self._number_of_images = number_of_images
+
+    def gaps(self):
+        return self._gaps
+
+    def doc(self):
+        return self._doc
+
+    def number_of_images(self):
+        return self._number_of_images
+
+N_list = range(10, 601, 10)
+number_of_repetitions = 100
+def calculate_gaps(N_list, number_of_repetitions, filename):
+    """Pickle the result to file"""
+    gap_average = []
+    gap_std = []
+    gap_median = []
+    gaps_all = []
     for N in N_list:
-        #sizes = []
+        #gaps = []
         jobs = ((N,),)*number_of_repetitions
-        sizes = parallel.run_parallel(jobs, gap_size_from_N)
+        gaps = parallel.run_parallel(jobs, gap_size_from_N, quiet=True)
         # for i in range(number_of_repetiotions):
-        #     sizes.append(gap_size_from_N(N))
-        #     print "gap_size = %g" % sizes[-1]
-        size_average.append(average(sizes))
-        size_std.append(std(sizes))
-        size_median.append(median(sizes))
-        sizes_all.append(sizes)
-        print "average = %g, std = %g" % (size_average[-1], size_std[-1])
-    return size_average, size_std, size_median, sizes_all
+        #     gaps.append(gap_gap_from_N(N))
+        #     print "gap_gap = %g" % gaps[-1]
+        gap_average.append(average(gaps))
+        gap_std.append(std(gaps))
+        gap_median.append(median(gaps))
+        gaps_all.append(gaps)
+        print "(N = %d) average = %g, std = %g" % (N, gap_average[-1], gap_std[-1])
+        
+        gap_out = Gaps(array(gaps_all), N_list)
+        file_handle = open(filename, 'wb')
+        pickle.dump(gap_out, file_handle)
+        file_handle.close()
 
+    #return gap_average, gap_std, gap_median, array(gaps_all)
 
+#gap_average, gap_std, gap_median, gaps_all = calculate_gaps(N_list, number_of_repetitions)
 
 # translate gaps to nyquist pixels
+
+resolution_list = [10., 15., 20., 25., 30.] #This is the number of resolution elments along the object
+def plot_relolutions(resolution_list, gaps_all, N_list):
+    full_coverage_plot = []
+    for resolution in resolution_list:
+        conversion_factor = resolution/2. # nyquist = coordinate * conversion_factor
+        gaps_nyquist_all = gaps_all * conversion_factor
+        full_coverage_all = gaps_nyquist_all <= 1.
+        full_coverage_probability = average(full_coverage_all, axis=1)
+        full_coverage_plot.append(full_coverage_probability)
+
+    clf()
+    for i, p in enumerate(full_coverage_plot):
+        plot(N_list, p, label=str(resolution_list[i]))
+    legend()
+    draw()
 # calculate for which gap sizes full coverage is reached
 
 # N = 30

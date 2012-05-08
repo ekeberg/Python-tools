@@ -4,17 +4,20 @@ import pickle
 import parallel
 import rotations
 
+#the weird_factor is a measure of the correlation between pixel placement.
+weird_factor = 2. #should be 2  (0.6 looks better but not good. This would imply a lower correlation between the placement of pixels from one slice. I think only values above 2. makes sense.)
+
 class Setup(object):
     def __init__(self, object_diameter, resolution):
         self._object_diameter = object_diameter
         self._resolution = resolution
-        self.Ks = 4.*pi*(self._object_diameter/self._resolution)**2/2.
-        self.ks = 2.*pi*(self._object_diameter/self._resolution)/2.
+        self.Ks = 4.*pi*(self._object_diameter/self._resolution)**2/weird_factor
+        self.ks = 2.*pi*(self._object_diameter/self._resolution)/weird_factor
         self.Ks_int = int(self.Ks)
         self.ks_int = int(self.ks)
         # the adjusted values are lower since they take inte account that the outer shell has a thickness of 1.
-        self.Ks_adjusted = 4.*pi*(self._object_diameter/self._resolution-0.5)**2/2.
-        self.ks_adjusted = 2.*pi*(self._object_diameter/self._resolution-0.5)/2.
+        self.Ks_adjusted = 4.*pi*(self._object_diameter/self._resolution-0.5)**2/weird_factor
+        self.ks_adjusted = 2.*pi*(self._object_diameter/self._resolution-0.5)/weird_factor
         self.Ks_adjusted_int = int(self.Ks_adjusted)
         self.ks_adjusted_int = int(self.ks_adjusted)
 
@@ -76,6 +79,16 @@ class SliceInserter(object):
         self.shell_max_sum = sum(self.shell_mask)
         #self.mask = (self.x_coordinates**2 + self.y_coordinates**2) > (self.model_side/2.)**2
 
+    def get_shell_count(self):
+        x = arange(-self.model_side/2+0.5, self.model_side/2+0.5)
+        r = sqrt(x**2 + x[:, newaxis]**2 + x[:, newaxis, newaxis]**2)
+        return sum((r > (self.model_side/2.-1.)) * (r < self.model_side/2.))
+
+    def get_circle_count(self):
+        x = arange(-self.model_side/2+0.5, self.model_side/2+0.5)
+        r = sqrt(x**2 + x[:, newaxis]**2)
+        return sum((r > (self.model_side/2.-1.)) * (r < self.model_side/2.))
+
     def insert(self, model, rotation_matrix):
         x_rotated = int32(self.x_coordinates*rotation_matrix[0,0] + self.y_coordinates*rotation_matrix[0,1] +
                           (self.image_side/2-0.5) + 0.5)
@@ -118,13 +131,13 @@ class SimulationRealistic(object):
             return coverage
 
         jobs = [(inserter,)]*number_of_repeats
-        job_results = parallel.run_parallel(jobs, single_repeat)
+        job_results = parallel.run_parallel(jobs, single_repeat, quiet=True)
         return average(job_results, axis=0)
         
     def full_coverage(self, max_images, number_of_repeats, max_missing=0):
         model_side = self._setup.get_int_ratio()
         image_side = self._setup.get_int_ratio()
-        inserter = SliceInserter(model_side, image_side)
+        self.inserter = SliceInserter(model_side, image_side)
 
         def single_repeat(inserter):
             model = zeros((model_side,)*3)
@@ -135,8 +148,8 @@ class SimulationRealistic(object):
                 full_coverage[image_n] = (sum(model*inserter.shell_mask > 0) >= inserter.shell_max_sum-max_missing)
             return full_coverage
 
-        jobs = [(inserter,)]*number_of_repeats
-        job_results = parallel.run_parallel(jobs, single_repeat)
+        jobs = [(self.inserter,)]*number_of_repeats
+        job_results = parallel.run_parallel(jobs, single_repeat, quiet=True)
         return average(job_results, axis=0)
 
 class SimulationModel(object):
@@ -167,7 +180,7 @@ class SimulationModel(object):
             return coverage
 
         jobs = [(self._setup, max_images)]*number_of_repeats
-        job_results = parallel.run_parallel(jobs, single_repeat)
+        job_results = parallel.run_parallel(jobs, single_repeat, quiet=True)
         return average(job_results, axis=0)
 
     def full_coverage(self, max_images, number_of_repeats, max_missing=0):
@@ -193,7 +206,7 @@ class SimulationModel(object):
             return full_coverage
 
         jobs = [(self._setup, max_images)]*number_of_repeats
-        job_results = parallel.run_parallel(jobs, single_repeat)
+        job_results = parallel.run_parallel(jobs, single_repeat, quiet=True)
         return average(job_results, axis=0)
                 
 
@@ -205,38 +218,100 @@ if __name__ == "__main__":
     # sr = SimulationRealistic(setup)
 
 
-    max_images = 1300
+
     # an_full_coverage = a.full_coverage(arange(max_images))
     # sr_full_coverage = sr.full_coverage(max_images, 200)
     # sm_full_coverage = sm.full_coverage(max_images, 200)
     #an_full_coverage = a.at_most_n_missing(0, arange(max_images))
     #sr_full_coverage = sr.full_coverage(max_images, 1000)
     #sm_full_coverage = sm.full_coverage(max_images, 1000)
-
-
-    setup = Setup(83.*32, 83.)
-    a = Analytic(setup)
-    an_full_coverage = a.full_coverage(arange(max_images))
     
-    sm = SimulationModel(setup)
-    sm_full_coverage = sm.full_coverage(max_images, 1000)
-    
-    print "Ks = %d, ks = %d" % (setup.Ks, setup.ks)
-    
-    sr = SimulationRealistic(setup)
-    sr_full_coverage = sr.full_coverage(max_images, 1000)
+    max_images = 100
+    number_of_trials = 1000
+    #model_side_list = [6, 12, 18, 24]
+    model_side_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
-    print "old Ks = %d" % setup.Ks
-    setup.set_Ks(setup.Ks*1.1) #this seems to work pretty well (for some reason)
-    print "new Ks = %d" % setup.Ks
-    
-    #setup.set_ks(48.)
-    sm2 = SimulationModel(setup)
-    sm2_full_coverage = sm.full_coverage(max_images, 1000)
+    fig = figure(1)
+    fig.clear()
+    ax = fig.add_subplot(111)
 
-    plot(an_full_coverage, label='analytical')
-    plot(sr_full_coverage, label='realistic sim')
-    plot(sm_full_coverage, label='model sim')
-    plot(sm2_full_coverage, label='model sim adjusted')
-    legend()
+    for model_side in model_side_list:
+        setup = Setup(83.*model_side, 83.)
+        an = Analytic(setup)
+        an_full_coverage = an.full_coverage(arange(max_images))
+    
+        print "side = %d" % model_side
+        print "Ks = %d, ks = %d" % (setup.Ks, setup.ks)
+
+        # sr = SimulationRealistic(setup)
+        # sr_full_coverage = sr.full_coverage(max_images, number_of_trials)
+
+        # print "Ks = %d, ks = %d" % (sr.inserter.get_shell_count()/2, sr.inserter.get_circle_count()/2)
+
+        # inserter = SliceInserter(model_side*2, model_side*2)
+
+        # setup.set_Ks(inserter.get_shell_count()/2.)
+        # setup.set_ks(inserter.get_circle_count()/2.)
+        # an_adjust = Analytic(setup)
+        # an_adjust_full_coverage = an.full_coverage(arange(max_images))
+
+        # print "Ks = %d, ks = %d" % (setup.Ks, setup.ks)
+        
+        if model_side == model_side_list[0]:
+            ax.plot(an_full_coverage, label='analytical', color='blue')
+            #ax.plot(sr_full_coverage, label='realistic sim', color='green')
+            #ax.plot(an_adjust_full_coverage, label='adjusted analytical', color='red')
+        else:
+            ax.plot(an_full_coverage, color='blue')
+            #ax.plot(sr_full_coverage, color='green')
+            #ax.plot(an_adjust_full_coverage, color='red')
+
+    from exact_simulation import Gaps
+
+    # plot result from exact simulation as well
+    exact_simulation_filename = 'exact_28.p'
+    file_handle = open(exact_simulation_filename, 'rb')
+    gaps = pickle.load(file_handle)
+    file_handle.close()
+    
+    #gaps.number_of_images()
+    
+    #resolution_list = [10., 15., 20., 25., 30.] #This is the number of resolution elments along the object
+    resolution_list = array(model_side_list)*2
+    full_coverage_plot = []
+    for resolution in resolution_list:
+        conversion_factor = resolution/2. # nyquist = coordinate * conversion_factor
+        gaps_nyquist_all = gaps.gaps() * conversion_factor
+        full_coverage_all = gaps_nyquist_all <= 0.8
+        full_coverage_probability = average(full_coverage_all, axis=1)
+        full_coverage_plot.append(full_coverage_probability)
+
+    for i, p in enumerate(full_coverage_plot):
+        plot(gaps.number_of_images(), p, label=str(resolution_list[i]))
+
+            
+    ax.legend()
     show()
+
+    #ax.plot(sm_full_coverage, label='model sim')
+    #ax.plot(sm2_full_coverage, label='model sim adjusted')
+    #ax.plot(an_adjust_full_coverage, label='analytic adjusted')
+    #sm = SimulationModel(setup)
+    #sm_full_coverage = sm.full_coverage(max_images, number_of_trials)
+
+    # inserter = SliceInserter(model_side*2, model_side*2)
+    # setup2 = Setup(83.*model_side, 83.)
+    # setup2.set_Ks(inserter.get_shell_count()/2)
+    # setup2.set_ks(inserter.get_circle_count()/2)
+    # an_adjust = Analytic(setup2)
+    # an_adjust_full_coverage = an_adjust.full_coverage(arange(max_images))
+
+    # print "old Ks = %d" % setup.Ks
+    # setup.set_Ks(setup.Ks*1.1) #this seems to work pretty well (for some reason)
+    # print "new Ks = %d" % setup.Ks
+    
+    # #setup.set_ks(48.)
+    # sm2 = SimulationModel(setup)
+    # sm2_full_coverage = sm.full_coverage(max_images, number_of_trials)
+
+
