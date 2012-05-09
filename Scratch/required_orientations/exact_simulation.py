@@ -4,6 +4,7 @@ import itertools
 import math
 import parallel
 import pickle
+import time_tools
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -671,16 +672,18 @@ class Gaps(object):
     def number_of_images(self):
         return self._number_of_images
 
-N_list = range(10, 601, 10)
-number_of_repetitions = 100
+N_list = range(10, 21, 10)
+number_of_repetitions = 30
 def calculate_gaps(N_list, number_of_repetitions, filename):
     """Pickle the result to file"""
+    watch = time_tools.StopWatch()
     gap_average = []
     gap_std = []
     gap_median = []
     gaps_all = []
     for N in N_list:
         #gaps = []
+        watch.start()
         jobs = ((N,),)*number_of_repetitions
         gaps = parallel.run_parallel(jobs, gap_size_from_N, quiet=True)
         # for i in range(number_of_repetiotions):
@@ -690,7 +693,8 @@ def calculate_gaps(N_list, number_of_repetitions, filename):
         gap_std.append(std(gaps))
         gap_median.append(median(gaps))
         gaps_all.append(gaps)
-        print "(N = %d) average = %g, std = %g" % (N, gap_average[-1], gap_std[-1])
+        watch.stop()
+        print "(N = %d) average = %g, std = %g (time: %s)" % (N, gap_average[-1], gap_std[-1], watch.str())
         
         gap_out = Gaps(array(gaps_all), N_list)
         file_handle = open(filename, 'wb')
