@@ -226,10 +226,10 @@ if __name__ == "__main__":
     #sr_full_coverage = sr.full_coverage(max_images, 1000)
     #sm_full_coverage = sm.full_coverage(max_images, 1000)
     
-    max_images = 100
+    max_images = 600
     number_of_trials = 1000
     #model_side_list = [6, 12, 18, 24]
-    model_side_list = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    model_side_list = [2, 4, 6, 8, 10, 12, 14, 16, 18, 20]
 
     fig = figure(1)
     fig.clear()
@@ -269,7 +269,7 @@ if __name__ == "__main__":
     from exact_simulation import Gaps
 
     # plot result from exact simulation as well
-    exact_simulation_filename = 'exact_28.p'
+    exact_simulation_filename = 'exact_600.p'
     file_handle = open(exact_simulation_filename, 'rb')
     gaps = pickle.load(file_handle)
     file_handle.close()
@@ -282,12 +282,12 @@ if __name__ == "__main__":
     for resolution in resolution_list:
         conversion_factor = resolution/2. # nyquist = coordinate * conversion_factor
         gaps_nyquist_all = gaps.gaps() * conversion_factor
-        full_coverage_all = gaps_nyquist_all <= 0.8
+        full_coverage_all = gaps_nyquist_all <= 0.73
         full_coverage_probability = average(full_coverage_all, axis=1)
         full_coverage_plot.append(full_coverage_probability)
 
     for i, p in enumerate(full_coverage_plot):
-        plot(gaps.number_of_images(), p, label=str(resolution_list[i]))
+        plot(gaps.number_of_images()[:37], p, label=str(resolution_list[i]))
 
             
     ax.legend()
