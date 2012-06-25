@@ -1,6 +1,5 @@
 
 import sys,math
-sys.path.append("/home/ekeberg/Scripts")
 from plot_2d import *
 from optparse import OptionParser
 from optparse import OptionGroup
