@@ -1,13 +1,15 @@
 
-import spimage, pylab, sys, re
+#import spimage, pylab, sys, re
+import sphelper, pylab, sys, re
 from optparse import OptionParser
 
 def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
     
-    try:
-        img = spimage.sp_image_read(in_file,0)
-    except:
-        raise TypeError("Error: %s is not a readable .h5 file\n" % in_file)
+    # try:
+    #     #img = spimage.sp_image_read(in_file,0)
+    image, mask = sphelper.import_spimage(in_file, ['image', 'mask'])
+    # except:
+    #     raise TypeError("Error: %s is not a readable .h5 file\n" % in_file)
 
     plot_flags = ['abs','mask','phase','real','imag']
     shift_flags = ['shift']
@@ -22,7 +24,9 @@ def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
         colormap = "hsv"
 
     if plot_shifted:
-        img = spimage.sp_image_shift(img)
+        #img = spimage.sp_image_shift(img)
+        image = pylab.fftshift(image)
+        mask = pylab.fftshift(mask)
 
     def no_log(x):
         return x
@@ -33,9 +37,9 @@ def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
         log_function = no_log
 
     if plot_mask:
-        plot_input = img.mask
+        plot_input = mask
     else:
-        plot_input = img.image
+        plot_input = image
         
     function_dict = {"abs" : abs, "phase" : pylab.angle, "real" : pylab.real, "imag" : pylab.imag}
     

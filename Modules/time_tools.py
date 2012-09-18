@@ -6,7 +6,7 @@ class Progress:
         self._message = message
         self._number_of_iterations = number_of_iterations
         self._tasks_completed = 0
-        self._time = time.clock()
+        self._time = time.clock()*60.
         self._last_iteration_time = 0.0
         self._expected_time_left = 0.0
         self._last_output_time = 0.0
@@ -15,12 +15,12 @@ class Progress:
 
     def start(self):
         self._tasks_completed = 0
-        self._time = time.clock()
-        self._last_output_time = time.clock()
+        self._time = time.clock()*60.
+        self._last_output_time = self._time
 
     def iteration_completed(self):
         self._tasks_completed += 1
-        new_time = time.clock()
+        new_time = time.clock()*60.
         self._last_iteration_time = new_time - self._time
         self._time = new_time
         self._expected_time_left = self._last_iteration_time * (self._number_of_iterations -
@@ -36,7 +36,6 @@ class Progress:
 class StopWatch:
     def __init__(self):
         self._running = False
-        self.time_diff = 0.
 
     def start(self):
         self._running = True
@@ -48,7 +47,10 @@ class StopWatch:
         self._end_time = time.time()
         self._time_diff = self._end_time - self._start_time
 
-    def str(self):
+    def time(self):
+        return self._time_diff
+
+
         if self._time_diff < 1.:
             return "%g ms" % (self._time_diff*1000.)
         else:

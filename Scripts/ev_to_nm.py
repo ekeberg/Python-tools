@@ -16,7 +16,7 @@ if __name__ == "__main__":
         exit(1)
 
     try:
-        argument = float(args)
+        argument = float(args[0])
     except ValueError:
         print "Invalid argument, can't convert to float"
         exit(1)

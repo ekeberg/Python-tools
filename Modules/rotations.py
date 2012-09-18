@@ -47,3 +47,14 @@ def quaternion_multiply(quat_1, quat_2):
     q[2] = quat_1[2]*quat_2[0] + quat_1[0]*quat_2[2] - quat_1[3]*quat_2[1] + quat_1[1]*quat_2[3]
     q[3] = quat_1[3]*quat_2[0] + quat_1[2]*quat_2[1] - quat_1[1]*quat_2[2] + quat_1[0]*quat_2[3]
     return q
+
+def rotate(quat, point):
+    m = quaternion_to_matrix(quat)
+    return squeeze(array(m*transpose(matrix(point))))
+
+def rotate_array(quat, x, y, z):
+    m = quaternion_to_matrix(quat)
+    out_matrix = m*pylab.matrix([x, y, z])
+    out_array = pylab.array(out_matrix)
+    return out_array[0], out_array[1], out_array[2]
+
