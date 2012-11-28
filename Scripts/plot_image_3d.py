@@ -3,7 +3,8 @@ import matplotlib
 #matplotlib.use('WxAgg')
 matplotlib.interactive(True)
 from pylab import *
-import spimage
+#import spimage
+import sphelper
 import sys
 import numpy
 import time
@@ -16,29 +17,34 @@ def plot_image_3d(image_file, plot_shifted, plot_log, plot_mask):
     log = False
     plot_mask = False
     try:
-        img = spimage.sp_image_read(sys.argv[1],0)
+        #img = spimage.sp_image_read(sys.argv[1],0)
+        if plot_mask:
+            img = sphelper.import_spimage(sys.argv[1], ['mask'])
+        else:
+            img = sphelper.import_spimage(sys.argv[1])
     except:
         raise InputError("%s is not a readable h5 image." % image_file)
 
     if plot_shifted:
-        img_s = spimage.sp_image_shift(img)
-        spimage.sp_image_free(img)
-        img = img_s
+        img = fftshift(img)
+        # img_s = spimage.sp_image_shift(img)
+        # spimage.sp_image_free(img)
+        # img = img_s
 
-    if plot_mask:
-        plot_array = img.mask
-    else:
-        plot_array = abs(img.image)
+    # if plot_mask:
+    #     plot_array = img.mask
+    # else:
+    #     plot_array = abs(img.image)
 
     if plot_log:
-        s = mlab.pipeline.scalar_field(log10(0.001*max(plot_array.flatten())+plot_array))
+        s = mlab.pipeline.scalar_field(log10(0.001*max(img.flatten())+img))
     else:
-        s = mlab.pipeline.scalar_field(plot_array)
+        s = mlab.pipeline.scalar_field(img)
 
     mlab.pipeline.image_plane_widget(s,plane_orientation='x_axes',
-                                     slice_index=shape(img.image)[0]/2)
+                                     slice_index=shape(img)[0]/2)
     mlab.pipeline.image_plane_widget(s,plane_orientation='y_axes',
-                                     slice_index=shape(img.image)[1]/2)
+                                     slice_index=shape(img)[1]/2)
 
     #mlab.outline()
     mlab.show()

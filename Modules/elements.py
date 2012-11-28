@@ -67,6 +67,10 @@ class Material(object):
 
     def material_density(self):
         return self._density
+
+    def __repr__(self):
+        ratios = self.element_ratios()
+        return ' '.join([i+":"+str(ratios[i]) for i in ratios]) + ", density: " + str(self._density)
            
 materials = {"protein" : Material(1350,H=86,C=52,N=13,O=15,P=0,S=3),
              "water" : Material(1000,O=1,H=2),

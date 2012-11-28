@@ -42,7 +42,7 @@ def center_image_2d(img, radius):
     print min_x, min_y
     spimage.sp_image_translate(img,-(-min_x + pylab.shape(bt)[0]/2),
                                -(-min_y + pylab.shape(bt)[1]/2),
-                               0, SP_TRANSLATE_WRAP_AROUND)
+                               0, spimage.SP_TRANSLATE_WRAP_AROUND)
     shift = spimage.sp_image_shift(img)
     spimage.sp_image_free(img)
     #shift = img

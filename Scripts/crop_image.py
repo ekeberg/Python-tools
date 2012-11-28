@@ -19,7 +19,7 @@ def crop_image(in_file, out_file, side, center=None):
     print "shifted = ", shifted
 
     #cropped = spimage.rectangle_crop(img,lowX,lowY,highX,highY)
-    cropped = spimage.sp_image_alloc(side, side)
+    cropped = spimage.sp_image_alloc(side, side, 1)
     cropped.image[:,:] = image_manipulation.crop_and_pad(img.image, center, side)
     cropped.mask[:,:] = image_manipulation.crop_and_pad(img.mask, center, side)
 

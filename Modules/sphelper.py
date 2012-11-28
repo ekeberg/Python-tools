@@ -5,12 +5,13 @@ def import_spimage(filename, fields=['image']):
     """Import image part of an spimage file"""
 
     def _read_image(name):
-        image = file_handle['real'][...]
-        if file_handle['phased'][...]:
-            image += 1.j*file_handle['imag'][...]
+        if file_handle['phased'][...] == 1:
+            image = _pylab.squeeze(file_handle['real'][...] + 1.j*file_handle['imag'][...])
+        else:
+            image = _pylab.real(_pylab.squeeze(file_handle['real'][...]))
         return image
     def _read_array(name):
-        array = file_handle[name][...]
+        array = _pylab.squeeze(file_handle[name][...])
         return array
     def _read_single(name):
         single = file_handle[name][...][0]
@@ -58,3 +59,12 @@ def save_spimage(image, filename, mask=None):
         file_handle['version'] = [2]
 
         #file_handle.close()
+
+def read_tiff(filename):
+    import gdal
+    # with gdal.Open(filename) as image_handle:
+    #     image = image_handle.ReadAsArray()
+    # return image
+    image_handle = gdal.Open(filename)
+    image = image_handle.ReadAsArray()
+    return image

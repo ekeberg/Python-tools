@@ -11,13 +11,24 @@ def random_quaternion():
                         pylab.sqrt(random_base[0])*pylab.cos(2.*pylab.pi*random_base[2])])
     return quat
     
+def quaternion_from_dir_and_angle(angle, dir):
+    q = pylab.zeros(4)
+    #normalized_dir = pylab.array(dir)/norm(dir)
+    q[0] = pylab.cos(angle/2.)
+    q[1:] = pylab.array(dir)/pylab.norm(dir)*pylab.sqrt(1.-q[0]**2)
+    return q
+
+    
 
 def quaternion_to_euler_angle(quat):
     """Dummy docstring"""
     euler = pylab.zeros(3)
     euler[0] = pylab.arctan2(2.0*(quat[0]*quat[1] + quat[2]*quat[3]),
                              1.0 - 2.0*(quat[1]**2 + quat[2]**2))
-    euler[1] = pylab.arcsin(2.0*(quat[0]*quat[2] - quat[1]*quat[3]))
+    arcsin_argument = 2.0*(quat[0]*quat[2] - quat[1]*quat[3])
+    if arcsin_argument > 1.0: arcsin_argument = 1.0
+    if arcsin_argument < -1.0: arcsin_argument = -1.0
+    euler[1] = pylab.arcsin(arcsin_argument)
     euler[2] = pylab.arctan2(2.0*(quat[0]*quat[3] + quat[1]*quat[2]),
                              1.0 - 2.0*(quat[2]**2 + quat[3]**2))
     return euler

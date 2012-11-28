@@ -1,3 +1,4 @@
+
 def get_h5_in_dir(path):
     "Returns a list of all the h5 files in a directory"
     import os
@@ -44,6 +45,9 @@ def gaussian_blur_nonperiodic(a, sigma):
     blured_large_a = pylab.ifftn(image_ft)
     return blured_large_a[pad_size:-pad_size]
     #return blured_large_a
+
+def translate(image, dist):
+    pass
 
 def circular_mask(side, radius = None):
     import pylab
@@ -124,7 +128,17 @@ def correlation(image1, image2):
     return correlation
 
 def convolution(image1, image2):
+    import pylab
     image1_ft = pylab.fft2(image1)
     image2_ft = pylab.fft2(image2)
     convolution = abs(pylab.fftshift(pylab.ifft2(image1_ft*image2_ft)))
     return convolution
+
+def pearson_correlation(data_1, data_2):
+    import pylab
+    return (((data_1-pylab.average(data_1)) * (data_2-pylab.average(data_2))).sum() / 
+            pylab.sqrt(((data_1-pylab.average(data_1))**2).sum()) /
+            pylab.sqrt(((data_2-pylab.average(data_2))**2).sum()))
+            
+def sorted_indices(a):
+    return [i[0] for i in sorted(enumerate(a), key=lambda x: x[1])]
