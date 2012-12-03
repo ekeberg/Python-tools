@@ -69,3 +69,14 @@ def rotate_array(quat, x, y, z):
     out_array = pylab.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
 
+def read_quaternion_list(filename):
+    import h5py
+    with h5py.File(filename) as file_handle:
+        number_of_rotations = file_handle['number_of_rotations'][...]
+        quaternions = pylab.zeros((number_of_rotations, 4))
+        weights = pylab.zeros(number_of_rotations)
+        for i in range(number_of_rotations):
+            quaternion_and_weight = file_handle[str(i)][...]
+            quaternions[i] = quaternion_and_weight[:4]
+            weights[i] = quaternion_and_weight[4]
+    return quaternions, weights
