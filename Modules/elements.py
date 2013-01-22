@@ -137,6 +137,26 @@ def get_attenuation_length(photon_energy,material):
     #print 2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material[0]/average_density
     return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*1e-9*f2*material.material_density()/average_density)
 
+def get_index_of_refraction(photon_energy, material):
+    """Returns the refractive index of the material"""
+    average_density = 0.
+    total_atomic_ammounts = 0.
+    f1 = 0.; f2 = 0.
+    for element, value in material.element_ratios().iteritems():
+        average_density += value*atomic_mass[element]*_constants.u
+        total_atomic_ammounts += value
+        # sum up average scattering factor
+        f = get_scattering_factor(element,photon_energy)
+        f1 += value*_pylab.real(f)
+        f2 += value*_pylab.imag(f)
+    average_density /= total_atomic_ammounts
+    f1 /= total_atomic_ammounts
+    f2 /= total_atomic_ammounts
+
+    n0 = material.material_density()/average_density
+
+    return 1. - n0*_constants.re*_conversions.ev_to_m(photon_energy)**2/(2.*_pylab.pi)*(f1+1.j*f2)
+
 def size_to_nyquist_angle(size, wavelength):
     """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
     return wavelength/size

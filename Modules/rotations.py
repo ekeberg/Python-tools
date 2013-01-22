@@ -21,7 +21,7 @@ def quaternion_from_dir_and_angle(angle, dir):
     
 
 def quaternion_to_euler_angle(quat):
-    """Dummy docstring"""
+    """Generate euler angles from the quaternion. The last angle corresponds to in-plane rotation."""
     euler = pylab.zeros(3)
     euler[0] = pylab.arctan2(2.0*(quat[0]*quat[1] + quat[2]*quat[3]),
                              1.0 - 2.0*(quat[1]**2 + quat[2]**2))
@@ -80,3 +80,20 @@ def read_quaternion_list(filename):
             quaternions[i] = quaternion_and_weight[:4]
             weights[i] = quaternion_and_weight[4]
     return quaternions, weights
+
+def n_to_rots(n):
+    return 10*(n+5*n**3)
+
+def n_to_angle(n):
+    tau = (1.0 + pylab.sqrt(5.0))/2.0
+    return 4./n/tau**3
+
+def rots_to_n(rots):
+    n = 1
+    while True:
+        this_rots = n_to_rots(n)
+        if this_rots == rots:
+            return n
+        if this_rots > rots:
+            raise ValueError("%d rotations does not correspond to any n" % rots)
+        n += 1
