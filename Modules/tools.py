@@ -84,7 +84,27 @@ def bincoef(n, k):
     from scipy.special import binom
     return binom(n,k)
 
-def radial_average(image):
+def radial_average(image, mask=None):
+    """Calculates the radial average of an array of any shape, the center is assumed to be at the physical center."""
+    import pylab
+    if mask == None:
+        mask = pylab.ones(image.shape, dtype='bool8')
+    else:
+        mask = pylab.bool8(mask)
+    x = [pylab.arange(l) - l/2. + 0.5 for l in image.shape]
+    r = pylab.zeros((image.shape[-1]))
+    for i in range(len(image.shape)):
+        r = r + (x[-(1+i)][(slice(0,None),) + (pylab.newaxis,)*i])**2
+    r = pylab.int32(pylab.sqrt(r))
+    number_of_bins = r[mask].max() + 1
+    radial_sum = pylab.zeros(number_of_bins)
+    weight = pylab.zeros(number_of_bins)
+    for v, r in zip(image[mask], r[mask]):
+        radial_sum[r] += v
+        weight[r] += 1.
+    return radial_sum / weight
+
+def radial_average_simple(image, mask=None):
     """Calculates the radial average from the center to the edge (corners are not included)"""
     import pylab
     image_shape = pylab.shape(image)
