@@ -8,7 +8,9 @@ import sphelper
 import sys
 import numpy
 import time
-from enthought.mayavi import mlab
+#from enthought.mayavi import mlab
+#import mayavi
+from mayavi import mlab
 from optparse import OptionParser
 
 def plot_image_3d(image_file, plot_shifted, plot_log, plot_mask):

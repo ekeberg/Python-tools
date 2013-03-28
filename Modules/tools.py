@@ -176,3 +176,20 @@ def random_diffraction(image_size, object_size):
     image_fourier = pylab.fftshift(pylab.fft2(pylab.fftshift(image_real)))
     return image_fourier
     
+def insert_array_at_center(large_image, small_image):
+    s = []
+    for large_size, small_size in zip(large_image.shape, small_image.shape):
+        if small_size%2:
+            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2+1))
+        else:
+            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2))
+    large_image[s] = small_image
+
+def insert_array(large_image, small_image, center):
+    s = []
+    for this_center, small_size in zip(center, small_image.shape):
+        if small_size%2:
+            s.append(slice(this_center-small_size/2, this_center+small_size/2+1))
+        else:
+            s.append(slice(this_center-small_size/2, this_center+small_size/2))
+    large_image[s] = small_image
