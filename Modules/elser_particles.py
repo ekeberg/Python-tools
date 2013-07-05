@@ -1,6 +1,34 @@
 import pylab
 
-def elser_particle(resolution):
+def elser_particle(array_size, particle_size, feature_size):
+    """Return a binary contrast particle. 'particle_size' and 'feature_size' should both be given in pixels."""
+    if (particle_size > array_size-2): raise ValueError("Particle size must be <= array_size is (%d > %d-2)" % (particle_size, array_size))
+
+    x = pylab.arange(array_size) - array_size/2. + 0.5
+    y = pylab.arange(array_size) - array_size/2. + 0.5
+    z = pylab.arange(array_size) - array_size/2. + 0.5
+    r = pylab.sqrt(x**2 + y[:,pylab.newaxis]**2 + z[:,pylab.newaxis,pylab.newaxis]**2)
+    particle_mask = r > particle_size/2.
+    lp_mask = pylab.fftshift(r > array_size/(feature_size*4.))
+    lp_kernel = pylab.fftshift(pylab.exp(-r**2*float(feature_size)**2/float(array_size)**2))
+
+    particle = pylab.random((array_size, )*3)
+
+    for i in range(4):
+        # binary constrast
+        particle_average = pylab.median(particle[-particle_mask])
+        print particle_average
+        particle[particle > particle_average] = 1.
+        particle[particle <= particle_average] = 0.
+        particle[particle_mask] = 0.
+        # smoothen
+        particle_ft = pylab.fftn(particle)
+        particle_ft *= lp_kernel
+        particle[:,:] = abs(pylab.ifftn(particle_ft))
+        
+    return particle
+
+def elser_particle_old(resolution):
     x = pylab.arange(resolution+2) - (resolution+2)/2.0 + 0.5
     y = pylab.arange(resolution+2) - (resolution+2)/2.0 + 0.5
     z = pylab.arange(resolution+2) - (resolution+2)/2.0 + 0.5
