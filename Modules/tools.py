@@ -194,4 +194,5 @@ def enum(**enums):
 
 def log_range(min_value, max_value, steps):
     """A range that has the values logarithmically distributed"""
+    import pylab
     return pylab.exp(pylab.arange(pylab.log(min_value), pylab.log(max_value), (pylab.log(max_value) - pylab.log(min_value))/steps))
