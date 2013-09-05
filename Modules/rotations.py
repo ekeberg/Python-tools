@@ -45,6 +45,18 @@ def quaternion_to_matrix(quat):
                           2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
                           quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
 
+def quaternion_to_matrix_bw(quat):
+    """Dummy docstring"""
+    return pylab.matrix([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
+                          2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
+                          2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
+                         [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
+                          quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
+                          2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]],
+                         [2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],
+                          2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
+                          quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
+
 def quaternion_inverse(quat):
     q = pylab.zeros(4)
     q[0] = quat[0]
@@ -61,10 +73,16 @@ def quaternion_multiply(quat_1, quat_2):
 
 def rotate(quat, point):
     m = quaternion_to_matrix(quat)
-    return squeeze(array(m*transpose(matrix(point))))
+    return pylab.squeeze(pylab.array(m*pylab.transpose(pylab.matrix(point))))
 
 def rotate_array(quat, x, y, z):
     m = quaternion_to_matrix(quat)
+    out_matrix = m*pylab.matrix([x, y, z])
+    out_array = pylab.array(out_matrix)
+    return out_array[0], out_array[1], out_array[2]
+
+def rotate_array_bw(quat, x, y, z):
+    m = quaternion_to_matrix_bw(quat)
     out_matrix = m*pylab.matrix([x, y, z])
     out_array = pylab.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
