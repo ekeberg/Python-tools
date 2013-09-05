@@ -75,9 +75,9 @@ def rotate(quat, point):
     m = quaternion_to_matrix(quat)
     return pylab.squeeze(pylab.array(m*pylab.transpose(pylab.matrix(point))))
 
-def rotate_array(quat, x, y, z):
+def rotate_array(quat, z, y, x):
     m = quaternion_to_matrix(quat)
-    out_matrix = m*pylab.matrix([x, y, z])
+    out_matrix = m*pylab.matrix([z, y, x])
     out_array = pylab.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
 
@@ -115,3 +115,11 @@ def rots_to_n(rots):
         if this_rots > rots:
             raise ValueError("%d rotations does not correspond to any n" % rots)
         n += 1
+
+def quaternion_to_angle(quat):
+    """The angle by which this transformation rotates"""
+    return 2.*pylab.arccos(quat[0])
+
+def quaternion_to_axis(quat):
+    """The axis around which this rotation rotates"""
+    return quat[1:]/norm(quat[1:])
