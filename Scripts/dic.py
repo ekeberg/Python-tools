@@ -99,6 +99,7 @@ class AppForm(QtGui.QMainWindow):
             self._plt_image = self._axes.imshow(self._image_dic, cmap="gray", interpolation="bicubic")
         else:
             self._plt_image.set_data(self._image_dic)
+        self._plt_image.set_clim(vmin=-abs(self._image_dic).max(), vmax=abs(self._image_dic).max())
         self._canvas.draw()
 
     def _update_image(self,new_a = None):
