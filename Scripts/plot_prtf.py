@@ -59,7 +59,6 @@ def plot_prtf(filename,setup = 0):
                    r'$R_{\mathrm{crystall}} = %g nm \quad R_{\mathrm{optical}} = %g nm$' % (1.0/setup.convert(data[0,i]),0.5/setup.convert(data[0,i])),
                    va='top',ha='right',fontsize = 15)
 
-
 if __name__ == "__main__":
     parser = OptionParser(usage="%prog filename [options]")
     res = OptionGroup(parser,"Resolution options",
@@ -87,4 +86,5 @@ if __name__ == "__main__":
         exit(1)
     plot_prtf(args[0],setup)
     pylab.show()
+
 

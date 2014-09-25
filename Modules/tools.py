@@ -39,6 +39,16 @@ def circular_mask(side, radius = None):
     mask = radius2 < radius**2
     return mask
 
+def ellipsoidal_mask(side, large_radius, small_radius, direction):
+    """Not very well tested yet"""
+    import numpy
+    direction = direction / numpy.sqrt(direction[0]**2+direction[1]**2)
+    x_array = numpy.arange(-side/2.+0.5, side/2.+0.5)
+    radius2 = (((x_array[numpy.newaxis, :]*direction[1] + x_array[:, numpy.newaxis]*direction[0])/large_radius)**2 +
+               ((x_array[numpy.newaxis, :]*(-direction[0]) + x_array[:, numpy.newaxis]*direction[1])/small_radius)**2)
+    mask = radius2 < 1.
+    return mask
+
 def spherical_mask(side, radius = None):
     """Returns a 3D bool array with a spherical mask. If no radius is specified, half of the
     array side is used."""
@@ -169,6 +179,24 @@ def random_diffraction(image_size, object_size):
                image_size/2-lower_bound:image_size/2+higher_bound] = pylab.random((object_size, )*2)
     image_fourier = pylab.fftshift(pylab.fft2(pylab.fftshift(image_real)))
     return image_fourier
+    
+def insert_array_at_center(large_image, small_image):
+    s = []
+    for large_size, small_size in zip(large_image.shape, small_image.shape):
+        if small_size%2:
+            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2+1))
+        else:
+            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2))
+    large_image[s] = small_image
+
+def insert_array(large_image, small_image, center):
+    s = []
+    for this_center, small_size in zip(center, small_image.shape):
+        if small_size%2:
+            s.append(slice(this_center-small_size/2, this_center+small_size/2+1))
+        else:
+            s.append(slice(this_center-small_size/2, this_center+small_size/2))
+    large_image[s] = small_image
 
 def enum(**enums):
     """Gives enumerate functionality to python."""
@@ -176,4 +204,5 @@ def enum(**enums):
 
 def log_range(min_value, max_value, steps):
     """A range that has the values logarithmically distributed"""
+    import pylab
     return pylab.exp(pylab.arange(pylab.log(min_value), pylab.log(max_value), (pylab.log(max_value) - pylab.log(min_value))/steps))

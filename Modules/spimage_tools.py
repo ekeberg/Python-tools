@@ -1,3 +1,4 @@
+import numpy
 import spimage as _spimage
 
 def image_from_array(image, mask=None):
@@ -9,11 +10,11 @@ def image_from_array(image, mask=None):
         raise ValueError("Array must be 2 or 3 dimensional")
     img.image[:] = image
     if mask != None:
-        img.mask[:] = int32(mask)
+        img.mask[:] = numpy.int32(mask)
     else:
         img.mask[:] = 1
     img.shifted = 0
-    img.phased = int(bool(iscomplex(image).sum() > 0))
+    img.phased = int(bool(numpy.iscomplex(image).sum() > 0))
     return img
 
 def allocate_image(shape):
@@ -49,7 +50,7 @@ def smap(input):
 
     smap = _spimage.sp_smap_alloc(len(input))
     for i in input:
-        smap.sp_smap_insert(smap, i[0], i[1])
+        _spimage.sp_smap_insert(smap, i[0], i[1])
 
     return smap
 
@@ -88,9 +89,11 @@ def support_area(area, blur_radius):
     area_sp = smap(area)
     blur_radius_sp = smap(blur_radius)
     algorithm = _spimage.sp_support_array_init(_spimage.sp_support_area_alloc(blur_radius_sp, area_sp), 20)
+    return algorithm
 
 def support_threshold(threshold, blur_radius):
     threshold_sp = smap(threshold)
     blur_radius_sp = smap(blur_radius)
-    algorithm = _spimage.sp_support_array_init(_spimage.sp_support_threshold_alloc(blur_radius_sp, area_sp), 20)
+    algorithm = _spimage.sp_support_array_init(_spimage.sp_support_threshold_alloc(blur_radius_sp, threshold_sp), 20)
+    return algorithm
 

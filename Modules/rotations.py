@@ -45,11 +45,27 @@ def quaternion_to_matrix(quat):
                           2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
                           quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
 
+def quaternion_to_matrix_bw(quat):
+    """Dummy docstring"""
+    return numpy.matrix([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
+                          2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
+                          2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
+                         [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
+                          quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
+                          2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]],
+                         [2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],
+                          2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
+                          quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
+
 def quaternion_inverse(quat):
     q = numpy.zeros(4)
     q[0] = quat[0]
     q[1:] = -quat[1:]
     return q
+
+def quaternion_normalize(quat):
+    norm = numpy.linalg.norm(quat)
+    return quat/norm
 
 def quaternion_multiply(quat_1, quat_2):
     q = numpy.zeros(4)
@@ -61,7 +77,6 @@ def quaternion_multiply(quat_1, quat_2):
     q[1] = quat_1[0]*quat_2[1] + quat_1[1]*quat_2[0] + quat_1[2]*quat_2[3] - quat_1[3]*quat_2[2]
     q[2] = quat_1[0]*quat_2[2] - quat_1[1]*quat_2[3] + quat_1[2]*quat_2[0] + quat_1[3]*quat_2[1]
     q[3] = quat_1[0]*quat_2[3] + quat_1[1]*quat_2[2] - quat_1[2]*quat_2[1] + quat_1[3]*quat_2[0]
-
     return q
 
 def rotate(quat, point):
@@ -71,6 +86,12 @@ def rotate(quat, point):
 def rotate_array(quat, z, y, x):
     m = quaternion_to_matrix(quat)
     out_matrix = m*numpy.matrix([z, y, x])
+    out_array = numpy.array(out_matrix)
+    return out_array[0], out_array[1], out_array[2]
+
+def rotate_array_bw(quat, x, y, z):
+    m = quaternion_to_matrix_bw(quat)
+    out_matrix = m*numpy.matrix([x, y, z])
     out_array = numpy.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
 
