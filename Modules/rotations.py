@@ -1,4 +1,5 @@
 import pylab
+import numpy
 
 def random_quaternion():
     """Return a random rotation quaternion, as a length-4 array."""
@@ -59,16 +60,25 @@ def quaternion_to_matrix_bw(quat):
 
 def quaternion_inverse(quat):
     q = pylab.zeros(4)
+    quat = pylab.array(quat)
     q[0] = quat[0]
     q[1:] = -quat[1:]
     return q
 
+def quaternion_normalize(quat):
+    norm = numpy.linalg.norm(quat)
+    return quat/norm
+
 def quaternion_multiply(quat_1, quat_2):
     q = pylab.zeros(4)
+    # q[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
+    # q[1] = quat_1[1]*quat_2[0] + quat_1[0]*quat_2[1] + quat_1[3]*quat_2[2] - quat_1[2]*quat_2[3]
+    # q[2] = quat_1[2]*quat_2[0] + quat_1[0]*quat_2[2] - quat_1[3]*quat_2[1] + quat_1[1]*quat_2[3]
+    # q[3] = quat_1[3]*quat_2[0] + quat_1[2]*quat_2[1] - quat_1[1]*quat_2[2] + quat_1[0]*quat_2[3]
     q[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
-    q[1] = quat_1[1]*quat_2[0] + quat_1[0]*quat_2[1] + quat_1[3]*quat_2[2] - quat_1[2]*quat_2[3]
-    q[2] = quat_1[2]*quat_2[0] + quat_1[0]*quat_2[2] - quat_1[3]*quat_2[1] + quat_1[1]*quat_2[3]
-    q[3] = quat_1[3]*quat_2[0] + quat_1[2]*quat_2[1] - quat_1[1]*quat_2[2] + quat_1[0]*quat_2[3]
+    q[1] = quat_1[0]*quat_2[1] + quat_1[1]*quat_2[0] + quat_1[2]*quat_2[3] - quat_1[3]*quat_2[2]
+    q[2] = quat_1[0]*quat_2[2] - quat_1[1]*quat_2[3] + quat_1[2]*quat_2[0] + quat_1[3]*quat_2[1]
+    q[3] = quat_1[0]*quat_2[3] + quat_1[1]*quat_2[2] - quat_1[2]*quat_2[1] + quat_1[3]*quat_2[0]
     return q
 
 def rotate(quat, point):

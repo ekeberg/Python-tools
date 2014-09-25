@@ -48,7 +48,7 @@ def center_image_2d(img, radius):
     #shift = img
     #sp_image_write(shift,outfile,0)
     return shift
-    
+
 
 def center_image_3d(img, radius):
     """For an image with an object surounded by empty space, this function
