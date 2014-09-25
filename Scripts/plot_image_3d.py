@@ -30,7 +30,7 @@ def plot_image_3d(image, plot_shifted, plot_log, plot_surface):
         image = fftshift(image)
         
     if plot_log:
-        s = mlab.pipeline.scalar_field(log10(0.001*max(image.flatten())+img))
+        s = mlab.pipeline.scalar_field(log10(0.001*max(image.flatten())+image))
     else:
         s = mlab.pipeline.scalar_field(image)
 
