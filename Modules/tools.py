@@ -39,6 +39,16 @@ def circular_mask(side, radius = None):
     mask = radius2 < radius**2
     return mask
 
+def ellipsoidal_mask(side, large_radius, small_radius, direction):
+    """Not very well tested yet"""
+    import numpy
+    direction = direction / numpy.sqrt(direction[0]**2+direction[1]**2)
+    x_array = numpy.arange(-side/2.+0.5, side/2.+0.5)
+    radius2 = (((x_array[numpy.newaxis, :]*direction[1] + x_array[:, numpy.newaxis]*direction[0])/large_radius)**2 +
+               ((x_array[numpy.newaxis, :]*(-direction[0]) + x_array[:, numpy.newaxis]*direction[1])/small_radius)**2)
+    mask = radius2 < 1.
+    return mask
+
 def spherical_mask(side, radius = None):
     """Returns a 3D bool array with a spherical mask. If no radius is specified, half of the
     array side is used."""
