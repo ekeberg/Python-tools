@@ -17,7 +17,6 @@ def elser_particle(array_size, particle_size, feature_size):
     for i in range(4):
         # binary constrast
         particle_average = pylab.median(particle[-particle_mask])
-        print particle_average
         particle[particle > particle_average] = 1.
         particle[particle <= particle_average] = 0.
         particle[particle_mask] = 0.
