@@ -18,16 +18,23 @@ def slave(function):
 def master(jobs):
     comm = MPI.COMM_WORLD
     size = comm.Get_size()
+    if len(jobs) < size:
+        active_size = len(jobs)
+    else:
+        active_size = size
     status = MPI.Status()
     job_stack = [(i, v) for i, v in enumerate(jobs)]
     all_data = []
 
-    for i in range(1, size):
+    for i in range(1, active_size):
         try:
             next_job = job_stack.pop()
         except IndexError:
             break
         comm.send(obj=next_job, dest=i, tag=WORKTAG)
+
+    for i in range(active_size, size):
+        comm.send(obj=None, dest=i, tag=DIETAG)
 
     while 1:
         try:
@@ -38,13 +45,12 @@ def master(jobs):
         all_data.append(data)
         comm.send(obj=next_job, dest=status.Get_source(), tag=WORKTAG)
 
-    for i in range(1, size):
+    for i in range(1, active_size):
         data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
         all_data.append(data)
 
-    for i in range(1, size):
+    for i in range(1, active_size):
         comm.send(obj=None, dest=i, tag=DIETAG)
-
         
     sorted_data = sorted(all_data, key=lambda x: x[0])
     data_no_index = [data[1] for data in sorted_data]
@@ -59,4 +65,23 @@ def run_in_parallel(function, jobs):
         return result
     else:
         slave(function)
+    
+
+def is_master():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    if rank == 0:
+        return True
+    else:
+        return False
+
+def number_of_slaves():
+    comm = MPI.COMM_WORLD
+    size = comm.Get_size()
+    return size - 1
+
+def rank():
+    comm = MPI.COMM_WORLD
+    rank = comm.Get_rank()
+    return rank
     
