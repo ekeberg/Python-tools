@@ -1,41 +1,46 @@
-import numpy
+"""A set of tools to handle quaternions and other functions related to
+spatial rotation."""
+import numpy as _numpy
+import _info
 
 def random_quaternion():
     """Return a random rotation quaternion, as a length-4 array."""
     # The method of generating random rotations is taken from here:
     # http://planning.cs.uiuc.edu/node198.html
-    random_base = numpy.random.random(3)
-    quat = numpy.array([numpy.sqrt(1.-random_base[0])*numpy.sin(2.*numpy.pi*random_base[1]),
-                        numpy.sqrt(1.-random_base[0])*numpy.cos(2.*numpy.pi*random_base[1]),
-                        numpy.sqrt(random_base[0])*numpy.sin(2.*numpy.pi*random_base[2]),
-                        numpy.sqrt(random_base[0])*numpy.cos(2.*numpy.pi*random_base[2])])
+    random_base = _numpy.random.random(3)
+    quat = _numpy.array([_numpy.sqrt(1.-random_base[0])*_numpy.sin(2.*_numpy.pi*random_base[1]),
+                        _numpy.sqrt(1.-random_base[0])*_numpy.cos(2.*_numpy.pi*random_base[1]),
+                        _numpy.sqrt(random_base[0])*_numpy.sin(2.*_numpy.pi*random_base[2]),
+                        _numpy.sqrt(random_base[0])*_numpy.cos(2.*_numpy.pi*random_base[2])])
     return quat
-    
-def quaternion_from_dir_and_angle(angle, dir):
-    q = numpy.zeros(4)
-    #normalized_dir = numpy.array(dir)/norm(dir)
-    q[0] = numpy.cos(angle/2.)
-    q[1:] = numpy.array(dir)/numpy.linalg.norm(dir)*numpy.sqrt(1.-q[0]**2)
-    return q
 
-    
+def quaternion_from_dir_and_angle(angle, direction):
+    """The quaternion corresponding to a rotations of angle (rad) around the
+    axis defined by direction. The rotation follows the right-hand rule."""
+    quaternion = _numpy.zeros(4)
+    #normalized_dir = _numpy.array(dir)/norm(dir)
+    quaternion[0] = _numpy.cos(angle/2.)
+    quaternion[1:] = _numpy.array(direction)/_numpy.linalg.norm(direction)*_numpy.sqrt(1.-quaternion[0]**2)
+    return quaternion
 
 def quaternion_to_euler_angle(quat):
     """Generate euler angles from the quaternion. The last angle corresponds to in-plane rotation."""
-    euler = numpy.zeros(3)
-    euler[0] = numpy.arctan2(2.0*(quat[0]*quat[1] + quat[2]*quat[3]),
+    euler = _numpy.zeros(3)
+    euler[0] = _numpy.arctan2(2.0*(quat[0]*quat[1] + quat[2]*quat[3]),
                              1.0 - 2.0*(quat[1]**2 + quat[2]**2))
     arcsin_argument = 2.0*(quat[0]*quat[2] - quat[1]*quat[3])
-    if arcsin_argument > 1.0: arcsin_argument = 1.0
-    if arcsin_argument < -1.0: arcsin_argument = -1.0
-    euler[1] = numpy.arcsin(arcsin_argument)
-    euler[2] = numpy.arctan2(2.0*(quat[0]*quat[3] + quat[1]*quat[2]),
+    if arcsin_argument > 1.0:
+        arcsin_argument = 1.0
+    if arcsin_argument < -1.0:
+        arcsin_argument = -1.0
+    euler[1] = _numpy.arcsin(arcsin_argument)
+    euler[2] = _numpy.arctan2(2.0*(quat[0]*quat[3] + quat[1]*quat[2]),
                              1.0 - 2.0*(quat[2]**2 + quat[3]**2))
     return euler
 
 def quaternion_to_matrix(quat):
     """Dummy docstring"""
-    return numpy.matrix([[quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2,
+    return _numpy.matrix([[quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2,
                           2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
                           2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],],
                          [2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3],
@@ -47,7 +52,7 @@ def quaternion_to_matrix(quat):
 
 def quaternion_to_matrix_bw(quat):
     """Dummy docstring"""
-    return numpy.matrix([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
+    return _numpy.matrix([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
                           2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
                           2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
                          [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
@@ -57,77 +62,104 @@ def quaternion_to_matrix_bw(quat):
                           2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
                           quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
 
-def quaternion_inverse(quat):
-    q = numpy.zeros(4)
-    q[0] = quat[0]
-    q[1:] = -quat[1:]
-    return q
+def quaternion_inverse(quat_in):
+    """Return the inverse of the quaternion. Input is unchanged."""
+    quat_out = _numpy.zeros(4)
+    quat_out[0] = quat_in[0]
+    quat_out[1:] = -quat_in[1:]
+    return quat_out
 
 def quaternion_normalize(quat):
-    norm = numpy.linalg.norm(quat)
+    """Normalize the quaternion and return the same object. (input quaternion is changed)"""
+    norm = _numpy.linalg.norm(quat)
     return quat/norm
 
 def quaternion_multiply(quat_1, quat_2):
-    q = numpy.zeros(4)
-    # q[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
-    # q[1] = quat_1[1]*quat_2[0] + quat_1[0]*quat_2[1] + quat_1[3]*quat_2[2] - quat_1[2]*quat_2[3]
-    # q[2] = quat_1[2]*quat_2[0] + quat_1[0]*quat_2[2] - quat_1[3]*quat_2[1] + quat_1[1]*quat_2[3]
-    # q[3] = quat_1[3]*quat_2[0] + quat_1[2]*quat_2[1] - quat_1[1]*quat_2[2] + quat_1[0]*quat_2[3]
-    q[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
-    q[1] = quat_1[0]*quat_2[1] + quat_1[1]*quat_2[0] + quat_1[2]*quat_2[3] - quat_1[3]*quat_2[2]
-    q[2] = quat_1[0]*quat_2[2] - quat_1[1]*quat_2[3] + quat_1[2]*quat_2[0] + quat_1[3]*quat_2[1]
-    q[3] = quat_1[0]*quat_2[3] + quat_1[1]*quat_2[2] - quat_1[2]*quat_2[1] + quat_1[3]*quat_2[0]
-    return q
+    """Return the product of quat_1 and quat_2"""
+    quat_out = _numpy.zeros(4)
+    quat_out[0] = quat_1[0]*quat_2[0] - quat_1[1]*quat_2[1] - quat_1[2]*quat_2[2] - quat_1[3]*quat_2[3]
+    quat_out[1] = quat_1[0]*quat_2[1] + quat_1[1]*quat_2[0] + quat_1[2]*quat_2[3] - quat_1[3]*quat_2[2]
+    quat_out[2] = quat_1[0]*quat_2[2] - quat_1[1]*quat_2[3] + quat_1[2]*quat_2[0] + quat_1[3]*quat_2[1]
+    quat_out[3] = quat_1[0]*quat_2[3] + quat_1[1]*quat_2[2] - quat_1[2]*quat_2[1] + quat_1[3]*quat_2[0]
+    return quat_out
 
 def rotate(quat, point):
-    m = quaternion_to_matrix(quat)
-    return numpy.squeeze(numpy.array(m*numpy.transpose(numpy.matrix(point))))
+    """Rotate a point by the quaternion"""
+    rotation_matrix = quaternion_to_matrix(quat)
+    return _numpy.squeeze(_numpy.array(rotation_matrix*_numpy.transpose(_numpy.matrix(point))))
 
-def rotate_array(quat, z, y, x):
-    m = quaternion_to_matrix(quat)
-    out_matrix = m*numpy.matrix([z, y, x])
-    out_array = numpy.array(out_matrix)
+def rotate_array(quat, z_coordinates, y_coordinates, x_coordinates):
+    """Rotate coordinate vectors x, y and z by the rotation defined by the quaternion."""
+    rotation_matrix = quaternion_to_matrix(quat)
+    out_matrix = rotation_matrix*_numpy.matrix([z_coordinates, y_coordinates, x_coordinates])
+    out_array = _numpy.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
 
-def rotate_array_bw(quat, x, y, z):
-    m = quaternion_to_matrix_bw(quat)
-    out_matrix = m*numpy.matrix([x, y, z])
-    out_array = numpy.array(out_matrix)
+def rotate_array_bw(quat, x_coordinates, y_coordinates, z_coordinates):
+    """Like rotate_array but with the coordintes index backwords. Do not use."""
+    rotation_matrix = quaternion_to_matrix_bw(quat)
+    out_matrix = rotation_matrix*_numpy.matrix([x_coordinates, y_coordinates, z_coordinates])
+    out_array = _numpy.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
 
 def read_quaternion_list(filename):
+    """Read an hdf5 file with quaternions. Quaternions are stored separately in
+    fields named '1', '2', .... A field 'number_of_rotations' define the number of
+    such fields."""
     import h5py
     with h5py.File(filename) as file_handle:
         number_of_rotations = file_handle['number_of_rotations'][...]
-        quaternions = numpy.zeros((number_of_rotations, 4))
-        weights = numpy.zeros(number_of_rotations)
+        quaternions = _numpy.zeros((number_of_rotations, 4))
+        weights = _numpy.zeros(number_of_rotations)
         for i in range(number_of_rotations):
             quaternion_and_weight = file_handle[str(i)][...]
             quaternions[i] = quaternion_and_weight[:4]
             weights[i] = quaternion_and_weight[4]
     return quaternions, weights
 
-def n_to_rots(n):
-    return 10*(n+5*n**3)
+def n_to_rots(sampling_n):
+    """The number of rotations when the sampling parameter n is used"""
+    return 10*(sampling_n+5*sampling_n**3)
 
-def n_to_angle(n):
-    tau = (1.0 + numpy.sqrt(5.0))/2.0
-    return 4./n/tau**3
+def n_to_angle(sampling_n):
+    """The largest angle separating two adjacant orientations when the
+    sampling parameter n is used."""
+    tau = (1.0 + _numpy.sqrt(5.0))/2.0
+    return 4./sampling_n/tau**3
 
 def rots_to_n(rots):
-    n = 1
+    """The sampling parameter n corresponding to a certain number of rotations."""
+    sampling_n = 1
     while True:
-        this_rots = n_to_rots(n)
+        this_rots = n_to_rots(sampling_n)
         if this_rots == rots:
-            return n
+            return sampling_n
         if this_rots > rots:
             raise ValueError("%d rotations does not correspond to any n" % rots)
-        n += 1
+        sampling_n += 1
 
 def quaternion_to_angle(quat):
     """The angle by which this transformation rotates"""
-    return 2.*numpy.arccos(quat[0])
+    return 2.*_numpy.arccos(quat[0])
 
 def quaternion_to_axis(quat):
     """The axis around which this rotation rotates"""
-    return quat[1:]/norm(quat[1:])
+    return quat[1:]/_numpy.linalg.norm(quat[1:])
+
+def uniform_sampling(sampling_n, weights=False):
+    """Return the sampling described in the EMC paper. This function reads
+    precalculated files so might not work for n over 20."""
+    import os
+    import h5py
+    if sampling_n <= 0:
+        raise ValueError("sampling_n must be positive. Received {n}".format(n=sampling_n))
+    file_name = os.path.join(_info.install_directory,
+                             "Resources/rotations/rotations_{n}.h5".format(n=sampling_n))
+    with h5py.File(file_name, "r") as file_handle:
+        return_rotations = file_handle["rotations"][:, :4]
+        if weights:
+            return_weights = file_handle["rotations"][:, 4]
+            return return_rotations, return_weights
+        return return_rotations
+
+    
