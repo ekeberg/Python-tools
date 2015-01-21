@@ -1,22 +1,23 @@
-"""Module that contains all the scripts."""
-
-
-import sys as _sys
+"""Module that contains all the scripts of the Python-tools."""
 import os as _os
 import re as _re
 
-_sys.path.append(_os.path.expanduser("~/Python/Scripts"))
+_BLACKLIST = ['plot_image_3d']
 
-_l = _os.listdir(_os.path.expanduser("~/Python/Scripts"))
-if "scripts.py" in _l: _l.remove("scripts.py")
-#print l
-_scripts = [_f[:-3] for _f in _l if _re.search("\.py$",_f)]
+def get_script_list():
+    """Return a list of stirngs with the names of available scripts."""
+    file_list = _os.listdir(_os.path.expanduser("~/Work/Python/Scripts"))
+    if "scripts.py" in file_list:
+        file_list.remove("scripts.py")
+    scripts = [_os.path.splitext(file_name)[0] for file_name in file_list if _re.search("\.py$", file_name)]
+    return scripts
 
-_blacklist = ['plot_image_3d']
+_SCRIPTS = get_script_list()
+NOT_LOADED = []
 
-for _f in _scripts:
-    if not _f in _blacklist:
+for script in _SCRIPTS:
+    if not script in _BLACKLIST:
         try:
-            exec("import %s" % _f)
+            exec("import %s" % script)
         except:
-            print "Could not load %s" % _f
+            NOT_LOADED.append(script)
