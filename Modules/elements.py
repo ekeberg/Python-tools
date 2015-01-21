@@ -6,7 +6,7 @@ import constants as _constants
 import os as _os
 import _info
 
-_ELEMENTS_FILE = open(_os.path.join(_info.install_directory, "/Resources/elements.dat")
+_ELEMENTS_FILE = open(_os.path.join(_info.install_directory, "Resources/elements.dat"), "r")
 ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE)
 _ELEMENTS_FILE.close()
 ELEMENTS = ATOMIC_MASS.keys()
