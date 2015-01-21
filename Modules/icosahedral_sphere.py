@@ -1,88 +1,111 @@
-import pylab
-from mpl_toolkits import mplot3d
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+"""Module to create point coordinates that sample the surface of a sphere close to uniformly.
+Also contains functions to generate face and edge coordinates of an icosahedron."""
+import numpy
 import itertools
 
-_phi = (1+pylab.sqrt(5))/2.
+_PHI = (1+numpy.sqrt(5))/2.
+
+def n_to_points(sampling_n):
+    """How many sampling points corresponds to a specific n."""
+    if sampling_n <= 0:
+        raise ValueError("sampling_n must be positive.")
+    return 2+10*sampling_n**2
+
+def points_to_n(n_points):
+    sampling_n = (n_points-2) / 10.
+    if sampling_n != int(sampling_n):
+        print sampling_n
+        raise ValueError("{0} points does not correspond to any n".format(n_points))
+    return int(sampling_n)
 
 def icosahedron_vertices():
+    """Retern the coordinates of the 12 vertices of an icosahedron
+    with edge length 2."""
     coordinates = []
-    coordinates.append(pylab.array((0., +1, +_phi)))
-    coordinates.append(pylab.array((0., -1, +_phi)))
-    coordinates.append(pylab.array((0., +1, -_phi)))
-    coordinates.append(pylab.array((0., -1, -_phi)))
+    coordinates.append(numpy.array((0., +1, +_PHI)))
+    coordinates.append(numpy.array((0., -1, +_PHI)))
+    coordinates.append(numpy.array((0., +1, -_PHI)))
+    coordinates.append(numpy.array((0., -1, -_PHI)))
 
-    coordinates.append(pylab.array((+1, +_phi, 0.)))
-    coordinates.append(pylab.array((-1, +_phi, 0.)))
-    coordinates.append(pylab.array((+1, -_phi, 0.)))
-    coordinates.append(pylab.array((-1, -_phi, 0.)))
+    coordinates.append(numpy.array((+1, +_PHI, 0.)))
+    coordinates.append(numpy.array((-1, +_PHI, 0.)))
+    coordinates.append(numpy.array((+1, -_PHI, 0.)))
+    coordinates.append(numpy.array((-1, -_PHI, 0.)))
 
-    coordinates.append(pylab.array((+_phi, 0., +1)))
-    coordinates.append(pylab.array((+_phi, 0., -1)))
-    coordinates.append(pylab.array((-_phi, 0., +1)))
-    coordinates.append(pylab.array((-_phi, 0., -1)))
+    coordinates.append(numpy.array((+_PHI, 0., +1)))
+    coordinates.append(numpy.array((+_PHI, 0., -1)))
+    coordinates.append(numpy.array((-_PHI, 0., +1)))
+    coordinates.append(numpy.array((-_PHI, 0., -1)))
 
-    #coordinates = pylab.array(coordinates)
+    #coordinates = numpy.array(coordinates)
     return coordinates
 
 def icosahedron_edges():
+    """Return a list of all the 30 edges in an icosahedron. Each edge is a two-length tuple
+    with the coordinates of the start and end point."""
     coordinates = icosahedron_vertices()
     edges = []
     # for c1 in coordinates:
     #     for c2 in coordinates:
-    for c1, c2 in itertools.combinations(coordinates, 2):
-        if ((c1 == c2).sum() < 3) and (pylab.norm(c1 - c2) < 3.):
-            edges.append((c1, c2))
+    for vertex_1, vertex_2 in itertools.combinations(coordinates, 2):
+        if ((vertex_1 == vertex_2).sum() < 3) and (numpy.linalg.norm(vertex_1 - vertex_2) < 3.):
+            edges.append((vertex_1, vertex_2))
     return edges
 
 def icosahedron_faces():
+    """Return a list of all the 20 faces in an icosahedron. Each face is a three-length tuple
+    with the coordinates of the three vertices."""
     coordinates = icosahedron_vertices()
     face_cutoff = 1.5
     faces = []
-    for c1, c2, c3 in itertools.combinations(coordinates, 3):
-        if ((c1==c2).sum() < 3) and ((c1==c3).sum() < 3) and ((c2==c3).sum() < 3):
-            center = (c1+c2+c3)/3.
-            if pylab.norm(center-c1) < face_cutoff and pylab.norm(center-c2) < face_cutoff and pylab.norm(center-c3) < face_cutoff:
-                faces.append((c1, c2, c3))
+    for vertex_1, vertex_2, vertex_3 in itertools.combinations(coordinates, 3):
+        if  ((vertex_1 == vertex_2).sum() < 3 and
+             (vertex_1 == vertex_3).sum() < 3 and
+             (vertex_2 == vertex_3).sum() < 3):
+            center = (vertex_1+vertex_2+vertex_3)/3.
+            if  (numpy.linalg.norm(center-vertex_1) < face_cutoff and
+                 numpy.linalg.norm(center-vertex_2) < face_cutoff and
+                 numpy.linalg.norm(center-vertex_3) < face_cutoff):
+                faces.append((vertex_1, vertex_2, vertex_3))
     return faces
 
 def sphere_sampling(n):
+    """Return a sampling on the sphere based on an icosahedron with a fine
+    sampling of the faces. n determines the number of subdivisions of each
+    triangle."""
     coordinates = icosahedron_vertices()
     edges = icosahedron_edges()
     faces = icosahedron_faces()
 
     edge_points = []
 
-    for e in edges:
-        origin = e[0]
-        base = e[1]-e[0]
+    for edge in edges:
+        origin = edge[0]
+        base = edge[1]-edge[0]
         for i in range(1, n):
             edge_points.append(origin + i/float(n)*base)
 
     face_points = []
-    for f in faces:
-        origin = f[0]
-        base_1 = f[1]-f[0]
-        base_2 = f[2]-f[0]
+    for face in faces:
+        origin = face[0]
+        base_1 = face[1]-face[0]
+        base_2 = face[2]-face[0]
+
+        # Swap vertex order to make sure it is always counter clockwise
+        base_2o = numpy.cross(origin, base_1)
+        dot_product = numpy.dot(base_2o, base_2)
+        if dot_product < 0.:
+            tmp = base_1
+            base_1 = base_2
+            base_2 = tmp
+
         for i in range(1, n):
             for j in range(1, n):
                 if i+j < n:
                     point = origin + i/float(n)*base_1 + j/float(n)*base_2
                     face_points.append(point)
 
-    full_list = [pylab.array(c) for c in coordinates] + edge_points + face_points
-    normalized_list =[l/pylab.norm(l) for l in full_list]
+    full_list = [numpy.array(c) for c in coordinates] + edge_points + face_points
+    normalized_list = [l/numpy.linalg.norm(l) for l in full_list]
     return normalized_list
-
-# points = sphere_sampling(5)
-
-# class PointCompare(object):
-#     def __init__(self, point_list):
-#         self._point_list = point_list
-        
-#     def _get_closest(self, point):
-        
-#     def _compare(point0):
-#         return pylab.dist(point, point0)
-#     return min(list, key=point_compare)
 
