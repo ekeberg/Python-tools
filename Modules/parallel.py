@@ -1,13 +1,11 @@
-
-import sys
+"""Parallelise the execution of a single function with many inputs."""
 import multiprocessing
 import Queue
-from time import sleep
-#from guppy import hpy
 
 class Worker(multiprocessing.Process):
+    """Runs a single function for many different outputs."""
     def __init__(self, working_queue, return_dict, process, quiet=False):
-        multiprocessing.Process.__init__(self)
+        super(Worker, self).__init__()
         self.working_queue = working_queue
         self.return_dict = return_dict
         self.process = process
@@ -40,49 +38,42 @@ class Worker(multiprocessing.Process):
                     print "%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize())
                 except NotImplementedError:
                     print "%s process %d" % (self.name, tmp[0])
-                    pass
+            print tmp[0]
+            print self.process
+            print tmp[1]
             self.return_dict[tmp[0]] = self.process(*tmp[1])
-        if not self.quiet: print "%s done" % self.name
+        if not self.quiet:
+            print "%s done" % self.name
 
 
 def run_parallel(jobs, function, n_cpu=0, quiet=False):
-    """Execute the function for each input given in the array jobs and return the results in an array."""
-    if not n_cpu: n_cpu = multiprocessing.cpu_count()
+    """Execute the function for each input given in the array jobs and return the results in an array.
+    Jobs must be iterable and the jobs should be a tuple containing the function arguments."""
+    if not n_cpu:
+        n_cpu = multiprocessing.cpu_count()
     working_queue = multiprocessing.Queue()
     #return_queue = multiprocessing.Queue()
     my_manager = multiprocessing.Manager()
     return_dict = my_manager.dict()
     workers = []
-    for job,i in zip(jobs,range(len(jobs))):
-        working_queue.put((i,job))
+    for i, job in enumerate(jobs):
+        if isinstance(job, tuple):
+            working_queue.put((i, job))
+        else:
+            working_queue.put((i, (job, )))
 
-    # for i in range(n_cpu):
-    #     #Worker(working_queue, return_queue, function).start()
-    #     workers.append(Worker(working_queue, return_dict, function))
-    #     workers[-1].start()
-    #     #print workers[-1].is_alive()
     for i in range(n_cpu):
         workers.append(Worker(working_queue, return_dict, function, quiet))
-    for w in workers:
-        w.start()
-        
-    for w in workers:
-        w.join()
+    for worker in workers:
+        worker.start()
 
-    #     w.terminate()
-    #     print w.name, " ", w.is_alive()
-    # results = []
-    # while not return_queue.empty():
-    #     results.append(return_queue.get())
-    # return_queue.close()
-    # working_queue.close()
+    for worker in workers:
+        worker.join()
 
-    # results.sort()
-    # return [r[1] for r in results]
-    # return results
     values = return_dict.values()
     my_manager.shutdown()
     return values
 
-def f(x):
-    return x**2
+def function_square(value):
+    """Return the square of the input."""
+    return value**2
