@@ -1,4 +1,66 @@
 """A mix of tools that didn't fit anywhere else."""
+import numpy
+
+class Resampler(object):
+    """Can be used to resample arbitrarily positioned
+    points to another set of arbitrarily positioned points."""
+    def __init__(self, input_points, output_points):
+        self._set_input_points(intput_points)
+        self._set_output_points(output_points)
+        self._calculate_table()
+
+    def _set_input_points(self, grid):
+        """Doesn't update the table, useful in constructor"""
+        self._input_points = numpy.array(grid)
+        if (len(self._input_points.shape) != 2 or self._input_points.shape[1] != 3):
+            raise ValueError("Grid must be (n, 3) dimensional, {0} received.".format(str(self._input_points.shape)))
+        self._calculate_table()
+
+    def set_input_points(self, grid):
+        """Updates table, useful when n is already set"""
+        self._set_input_points(grid)
+        self._calculate_table()
+
+    def _set_output_points(self, grid):
+        """Doesn't update the table, useful in constructor"""
+        self._output_points = numpy.array(grid)
+        if (len(self._output_points.shape) != 2 or self._output_points.shape[1] != 3):
+            raise ValueError("Grid must be (n, 3) dimensional, {0} received.".format(str(self._output_points.shape)))
+        self._calculate_table()
+
+    def set_output_points(self, grid):
+        """Updates table, useful when n is already set"""
+        self._set_output_points(grid)
+        self._calculate_table()
+
+    def _calculate_table(self):
+        def closest_coordinate(coordinate, points):
+            """Calculate the point in points closest to the given coordinate."""
+            return (((points - coordinate)**2).sum(axis=1)).argmax()
+
+        number_of_input_points = len(self._input_points)
+        number_of_output_points = len(self._output_points)
+        self._table = numpy.zeros(number_of_input_points, dtype="float64")
+        self._weights = numpy.zeros(number_of_output_points, dtype="float64")
+
+        for i, input_point in enumerate(self._input_points):
+            self._table[i] = closest_coordinate(input_point, self._output_points)
+            self._weights[self._table[i]] += 1.
+        self._output_points_without_input = self._weights == 0
+
+    def remap(self, input_values):
+        output_values = numpy.empty(len(self._output_points), dtype="float64")
+        self.remap_in_place(input_values, output_values)
+        return output_values
+
+    def remap_in_place(self, input_values, output_values):
+        if len(input_values) != len(self._input_points):
+            raise ValuesError("Array size ({0}) different thatn precalculated ({1})".format(len(input_values), len(self._input_points)))
+        output_values[:] = 0.
+        for i, input_value in enumerate(input_values):
+            output_values[self._table[i]] = input_values[i]
+        output_values[-self._output_points_without_input] /= self._weights[-self._output_points_without_input]
+        output_values[self._output_points_without_input] = 0.
 
 def get_h5_in_dir(path):
     "Returns a list of all the h5 files in a directory"
@@ -28,7 +90,7 @@ def gaussian_blur_nonperiodic(array, sigma):
     return blured_large_array[pad_size:-pad_size]
     #return blured_large_array
 
-def circular_mask(side, radius = None):
+def circular_mask(side, radius=None):
     """Returns a 2D bool array with a circular mask. If no radius is specified half of the
     array side is used."""
     import pylab
@@ -49,7 +111,7 @@ def ellipsoidal_mask(side, large_radius, small_radius, direction):
     mask = radius2 < 1.
     return mask
 
-def spherical_mask(side, radius = None):
+def spherical_mask(side, radius=None):
     """Returns a 3D bool array with a spherical mask. If no radius is specified, half of the
     array side is used."""
     import pylab
@@ -116,13 +178,14 @@ def radial_average_simple(image, mask=None):
         radius = pylab.int32(pylab.sqrt(x_array**2 + x_array[:, pylab.newaxis]**2))
         in_range = radius < side/2.
 
-        radial_average = pylab.zeros(side/2)
+        radial_average_out = pylab.zeros(side/2)
         weight = pylab.zeros(side/2)
         for value, this_radius in zip(image[in_range*mask], radius[in_range*mask]):
-            radial_average[this_radius] += value
+            radial_average_out[this_radius] += value
             weight[this_radius] += 1
-        radial_average /= weight
-        return radial_average
+        radial_average_out /= weight
+        return radial_average_out
+
     elif len(image_shape) == 3:
         if image_shape[0] != image_shape[1] or image_shape[0] != image_shape[1]:
             raise ValueError("Image must be a cube")
@@ -132,13 +195,14 @@ def radial_average_simple(image, mask=None):
                                         x_array[:, pylab.newaxis, pylab.newaxis]**2))
         in_range = radius < side/2.
 
-        radial_average = pylab.zeros(side/2)
+        radial_average_out = pylab.zeros(side/2)
         weight = pylab.zeros(side/2)
         for value, this_radius in zip(image[in_range*mask], radius[in_range*mask]):
-            radial_average[this_radius] += value
+            radial_average_out[this_radius] += value
             weight[this_radius] += 1
-        radial_average /= weight
-        return radial_average
+        radial_average_out /= weight
+        return radial_average_out
+
     else:
         raise ValueError("Image must be a 2d or 3d array")
 
@@ -179,24 +243,34 @@ def random_diffraction(image_size, object_size):
                image_size/2-lower_bound:image_size/2+higher_bound] = pylab.random((object_size, )*2)
     image_fourier = pylab.fftshift(pylab.fft2(pylab.fftshift(image_real)))
     return image_fourier
-    
+
 def insert_array_at_center(large_image, small_image):
-    s = []
+    """The central part of large_array is replaced by small_array."""
+    this_slice = []
     for large_size, small_size in zip(large_image.shape, small_image.shape):
         if small_size%2:
-            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2+1))
+            this_slice.append(slice(large_size/2-small_size/2, large_size/2+small_size/2+1))
         else:
-            s.append(slice(large_size/2-small_size/2, large_size/2+small_size/2))
-    large_image[s] = small_image
+            this_slice.append(slice(large_size/2-small_size/2, large_size/2+small_size/2))
+    large_image[this_slice] = small_image
 
 def insert_array(large_image, small_image, center):
-    s = []
+    """Part of large_array centered around center is replaced by small_array."""
+    this_slice = []
     for this_center, small_size in zip(center, small_image.shape):
         if small_size%2:
-            s.append(slice(this_center-small_size/2, this_center+small_size/2+1))
+            this_slice.append(slice(this_center-small_size/2, this_center+small_size/2+1))
         else:
-            s.append(slice(this_center-small_size/2, this_center+small_size/2))
-    large_image[s] = small_image
+            this_slice.append(slice(this_center-small_size/2, this_center+small_size/2))
+    large_image[this_slice] = small_image
+
+def pad_with_zeros(small_image, size):
+    """Put the image in the center of a new array with the specified size"""
+    if len(size) != len(small_image.shape):
+        raise ValueError("Input image is {0} dimensional and size is {1} dimensional".format(len(small_image.shape), len(size)))
+    large_image = numpy.zeros(size, dtype=small_image.dtype)
+    insert_array_at_center(large_image, small_image)
+    return large_image
 
 def enum(**enums):
     """Gives enumerate functionality to python."""
