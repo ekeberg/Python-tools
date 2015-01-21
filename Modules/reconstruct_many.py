@@ -1,73 +1,77 @@
-#from pylab import *
-#import pylab
+"""Calls the repeat reconstruction script to do many reconstructions. This is obsolete for use
+in Uppsala since multiple reconstructions are preferably run on the GPU cluster."""
 import os
 import re
-import Queue
 
-class Reconstructer:
-    def __init__(self, confFile, intsName, baseDir, nRecs, confDict):
-        """Calls the repeat reconstruction script to do many reconstructions. Made to be used together with the MultipleReconstructions class. Takes the configuration file to use, the intensities file, a directory in which to put the result, the number of reconstructions to perform and a dictionary containing changes to make to the conf file (as "name" : "value")."""
-        self.intsName = intsName
-        self.baseDir = baseDir
-        self.nRecs = nRecs
-        self.confDict = confDict
-        self.recName = os.path.basename(self.intsName)[:-3]
-        self.recDir = '%s/%s' % (self.baseDir, self.recName)
-        if not os.path.isdir(self.recDir):
-            os.mkdir(self.recDir)
-        os.chdir(self.recDir)
-        self.confFile = self.editConf(confFile)
-    def editConf(self, confFile):
-        f = file(confFile, 'r')
-        lines = f.readlines()
-        f.close()
-        index = [i for i in range(len(lines)) if re.search('intensities_file',lines[i])][0]
+class Reconstructer(object):
+    """Calls the repeat reconstruction script to do many reconstructions. Made to be used
+    together with the MultipleReconstructions class. Takes the configuration file to use,
+    the intensities file, a directory in which to put the result, the number of reconstructions
+    to perform and a dictionary containing changes to make to the conf file (as "name" : "value")."""
+    def __init__(self, conf_file, ints_name, base_dir, n_recs, conf_dict):
+        self._ints_name = ints_name
+        self._base_dir = base_dir
+        self._n_recs = n_recs
+        self._conf_dict = conf_dict
+        self._rec_name = os.path.basename(self._ints_name)[:-3]
+        self._rec_dir = '%s/%s' % (self._base_dir, self._rec_name)
+        if not os.path.isdir(self._rec_dir):
+            os.mkdir(self._rec_dir)
+        os.chdir(self._rec_dir)
+        self._conf_file = self._edit_conf(conf_file)
+
+    def _edit_conf(self, conf_file):
+        """Update the configurations file based on the _conf_dict variables."""
+        with open(conf_file, "r") as file_handle:
+            lines = file_handle.readlines()
+        index = [i for i in range(len(lines)) if re.search('intensities_file', lines[i])][0]
         #index = lines.index('  intensities_file =;\n')
-        lines[index] = '  intensities_file = \"%s\";\n' % self.intsName
-        for k in self.confDict.keys():
-            index = [i for i in range(len(lines)) if re.search('%s =' % k,lines[i])][0]
-            reResult = re.search('^(.*)=', lines[index])
-            if reResult:
-                s = reResult.groups()[0]
-                lines[index] = '%s = %s;\n' % (s, self.confDict[k])
-        newFile = '%s/uwrapc.conf' % (self.recDir) 
-        f = file(newFile, 'wp')
-        f.writelines(lines)
-        f.close()
-        return newFile
+        lines[index] = '  intensities_file = \"%s\";\n' % self._ints_name
+        for key in self._conf_dict.keys():
+            index = [i for i in range(len(lines)) if re.search('%s =' % key, lines[i])][0]
+            re_result = re.search('^(.*)=', lines[index])
+            if re_result:
+                key_name = re_result.groups()[0] #this code looks unnecesarily complicated
+                lines[index] = '%s = %s;\n' % (key_name, self._conf_dict[key])
+        new_file = '%s/uwrapc.conf' % (self._rec_dir)
+        with open(new_file, "w") as file_handle:
+            file_handle.writelines(lines)
+        return new_file
+
     def start(self):
         """Starts the reconstruction"""
-        os.system('/usr/local/bin/repeat_reconstruction.pl %d' % self.nRecs)
+        os.system('/usr/local/bin/repeat_reconstruction.pl %d' % self._n_recs)
 
-class MultipleReconstructions:
+class MultipleReconstructions(object):
     """Performs multiple reconstructions of multiple files using the Reconstructer class."""
-    def __init__(self, confFile, intsDir, baseDir, nRecs, confDict):
-        self.confFile = confFile
-        self.intsDir = intsDir
-        self.baseDir = baseDir
-        self.nRecs = nRecs
-        self.confDict = confDict
-        self.files = self.getFileList()
-    def getFileList(self):
-        files = os.listdir(self.intsDir)
-        files = ['%s/%s' % (self.intsDir, f) for f in files if re.search('\.h5$', f)]
+    def __init__(self, conf_file, ints_dir, base_dir, n_recs, conf_dict):
+        self._conf_file = conf_file
+        self._ints_dir = ints_dir
+        self._base_dir = base_dir
+        self._n_recs = n_recs
+        self._conf_dict = conf_dict
+        self._files = self.get_file_list()
+
+    def get_file_list(self):
+        """Create a list of paths to all h5 files."""
+        files = os.listdir(self._ints_dir)
+        files = ['%s/%s' % (self._ints_dir, f) for f in files if re.search('\.h5$', f)]
         files.sort()
         return files
+
     def start(self):
-        for f in self.files:
-            print 'Reconstruct %s' % f
-            Reconstructer(self.confFile, f, self.baseDir, self.nRecs, confDict).start()
+        """Run all reconstructions."""
+        for file_name in self._files:
+            print 'Reconstruct %s' % file_name
+            Reconstructer(self._conf_file, file_name, self._base_dir, self._n_recs, self._conf_dict).start()
 
 if __name__ == "__main__":
-    confDict = {'max_iterations' : '5000',
-                'work_directory' : '\".\"',
-                'output_period' : '1000',
-                'log_output_period' : '500'}
+    TEST_CONF_DICT = {'max_iterations' : '5000',
+                      'work_directory' : '\".\"',
+                      'output_period' : '1000',
+                      'log_output_period' : '500'}
 
     MultipleReconstructions('/data/LCLS2011/r0138/all/uwrapc.conf',
                             '/home/ekeberg/Work/python/mimi_finder/preprocess/processed_for_reconstruction',
                             '/data/LCLS2011/r0138/all',
-                            30, confDict).start()
-
-
-    
+                            30, TEST_CONF_DICT).start()
