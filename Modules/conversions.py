@@ -1,20 +1,26 @@
+"""Conversions between commonly used units."""
 import constants as _constants
 
-def ev_to_m(ev):
-    return _constants.h_evs*_constants.c/ev
-    
-def m_to_ev(m):
-    return _constants.h_evs*_constants.c/m
-    
-def ev_to_nm(ev):
-    return ev_to_m(ev)*1.0e9
+def ev_to_m(electronvolt):
+    """Photon energy in electronvolt to wavelength in meter."""
+    return _constants.h_evs*_constants.c/electronvolt
 
-def nm_to_ev(nm):
-    return m_to_ev(nm*1.e-9)
+def m_to_ev(meter):
+    """Photon wavelength in meter to energy in electronvolt."""
+    return _constants.h_evs*_constants.c/meter
 
-def J_to_ev(J):
-    return J/_constants.e
+def ev_to_nm(electronvolt):
+    """Photon energy in electronvolt to wavelength in nanometer."""
+    return ev_to_m(electronvolt)*1.0e9
 
-def ev_to_J(ev):
-    return ev*_constants.e
+def nm_to_ev(nanometer):
+    """Photon wavelength in nanometer to energy en electronvolt."""
+    return m_to_ev(nanometer*1.e-9)
 
+def J_to_ev(joule):
+    """Joule to electronvolt."""
+    return joule/_constants.e
+
+def ev_to_J(electronvolt):
+    """Electronvolt to Joule."""
+    return electronvolt*_constants.e
