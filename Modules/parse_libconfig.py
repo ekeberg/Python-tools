@@ -3,16 +3,18 @@ basic configuration files"""
 import re
 
 class Parser(object):
+    """Read libconfig file and provide an interface to read simple options."""
     def __init__(self, filename):
         file_handle = open(filename, 'r')
         self._lines = file_handle.readlines()
         file_handle.close()
 
     def get_option(self, key):
-        for l in self._lines:
-            m = re.search("^%s(?:| )=(?:| )(\S.*);" % key, l)
-            if m:
-                value_string = m.groups()[0]
+        """Return the value of the option."""
+        for line in self._lines:
+            match_object = re.search("^%s(?:| )=(?:| )(\S.*);" % key, line)
+            if match_object:
+                value_string = match_object.groups()[0]
                 value_m = re.search('"(.*)"', value_string)
                 if value_m:
                     # we have a string
