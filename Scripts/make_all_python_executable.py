@@ -1,15 +1,12 @@
-
 import sys, os, re, pwd
 from optparse import OptionParser
 
 def make_all_python_executable():
     home = os.path.expanduser('~')
     #home = "/home/%s" % pwd.getpwuid(os.getuid())[0]
-    path = "%s/Python/Scripts" % home
+    #path = "%s/Python/Scripts" % home
+    path = os.path.split(os.path.realpath(__file__))[0]
 
-    #python_version = "/usr/bin/python2.6"
-    #python_version = "/usr/local/bin/python64"
-    #python_version = "/usr/local/bin/python"
     python_version = "/usr/bin/env python"
 
     #l = os.popen("find %s" % path).readlines()
