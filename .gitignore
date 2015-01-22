@@ -4,3 +4,5 @@ Scripts/global
 *.p
 *.data
 *.jpg
+build/*
+*DS_Store
