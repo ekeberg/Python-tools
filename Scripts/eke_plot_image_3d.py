@@ -1,16 +1,16 @@
-
+#!/bin/env python
 import matplotlib
 #matplotlib.use('WxAgg')
 #matplotlib.interactive(True)
 #from pylab import *
 import numpy
 #import spimage
-import sphelper
+from eke import sphelper
 import sys
 from optparse import OptionParser
 from QtVersions import QtCore, QtGui
 import vtk
-import vtk_tools
+from eke import vtk_tools
 from vtk.util import numpy_support
 from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 import time

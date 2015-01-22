@@ -1,8 +1,8 @@
-
+#!/bin/env python
 import sys
 import pylab
-import elements
-import conversions
+from eke import elements
+from eke import conversions
 from optparse import OptionParser
 
 if __name__ == "__main__":

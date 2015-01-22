@@ -1,6 +1,6 @@
-
+#!/bin/env python
 import sys,math
-from plot_2d import *
+from eke_plot_2d import *
 from optparse import OptionParser
 from optparse import OptionGroup
 

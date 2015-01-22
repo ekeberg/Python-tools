@@ -1,4 +1,4 @@
-
+#!/bin/env python
 import sys
 import pylab
 from optparse import OptionParser

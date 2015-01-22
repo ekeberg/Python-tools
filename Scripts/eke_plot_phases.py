@@ -1,4 +1,4 @@
-
+#!/bin/env python
 import sys, pylab, spimage
 from optparse import OptionParser
 

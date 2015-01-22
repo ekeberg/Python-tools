@@ -1,7 +1,8 @@
+#!/bin/env python
 """Script to crop an h5 image and pad with zeros around it"""
 import spimage
 import sys
-import image_manipulation
+from eke import image_manipulation
 
 def crop_image(in_file, out_file, side, center=None):
     """Function to crop an h5 image and pad with zeros around it"""

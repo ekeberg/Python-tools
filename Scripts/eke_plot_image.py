@@ -1,6 +1,7 @@
-
+#!/bin/env python
 #import spimage, pylab, sys, re
-import sphelper, pylab, sys, re
+from eke import sphelper
+import pylab, sys, re
 from optparse import OptionParser
 
 def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):

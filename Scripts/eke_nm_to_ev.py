@@ -1,11 +1,11 @@
-
+#!/bin/env python
 import sys
 import os
 from optparse import OptionParser
 
 sys.path.append('%s/Python/Modules' % os.path.expanduser('~'))
 
-import conversions
+from eke import conversions
 
 if __name__ == "__main__":
     parser = OptionParser(usage="%prog <wavelength in nm>")

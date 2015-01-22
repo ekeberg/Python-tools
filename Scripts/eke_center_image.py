@@ -1,3 +1,4 @@
+#!/bin/env python
 from pylab import *
 from spimage import *
 import sys
