@@ -1,5 +1,6 @@
 import os
-from distutils.core import setup
+#from distutils.core import setup
+from setuptools import setup
 
 
 # modules = ["QtVersions",
@@ -57,5 +58,9 @@ scripts_full_path = [os.path.join(scripts_dir, this_script)
 
 setup(name = "python-tools",
       version = "1.0",
+      author = "Tomas Ekeberg",
       packages=["eke"],
+      package_data={"eke": ["eke/atomsf.dat", "eke/elements.dat"]},
+      include_package_data=True,
       scripts=scripts_full_path)
+

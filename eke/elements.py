@@ -4,9 +4,8 @@ import pickle as _pickle
 import conversions as _conversions
 import constants as _constants
 import os as _os
-import _info
 
-_ELEMENTS_FILE = open(_os.path.join(_info.install_directory, "Resources/elements.dat"), "r")
+_ELEMENTS_FILE = open(_os.path.join(_os.path.split(__file__)[0], "elements.dat"), "r")
 ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE)
 _ELEMENTS_FILE.close()
 ELEMENTS = ATOMIC_MASS.keys()
@@ -180,7 +179,7 @@ def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
 
 def read_atomsf():
     """Read pickled element properties"""
-    file_name = '%s/Work/Python/Resources/atomsf.dat' % (_os.path.expanduser("~"))
+    file_name = _os.path.join(_os.path.split(__file__)[0], "atomsf.dat")
     with open(file_name, "r") as _atomsf_file:
         atomsf_data = _pickle.load(_atomsf_file)
     return atomsf_data
@@ -189,7 +188,7 @@ ATOMSF_DATA = read_atomsf()
 
 def write_atomsf(data_dict):
     """Pickle element properties (read by parse_atomsf)"""
-    file_name = '%s/Work/Python/Resources/atomsf.dat' % (_os.path.expanduser("~"))
+    file_name = _os.path.join(_os.path.split(__file__)[0], "atomsf.dat")
     with open(file_name, "w") as _atomsf_file:
         _pickle.dump(data_dict, _atomsf_file)
 
