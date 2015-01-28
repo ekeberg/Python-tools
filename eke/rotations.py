@@ -1,7 +1,6 @@
 """A set of tools to handle quaternions and other functions related to
 spatial rotation."""
 import numpy as _numpy
-import _info
 
 def random_quaternion():
     """Return a random rotation quaternion, as a length-4 array."""
@@ -145,21 +144,4 @@ def quaternion_to_angle(quat):
 def quaternion_to_axis(quat):
     """The axis around which this rotation rotates"""
     return quat[1:]/_numpy.linalg.norm(quat[1:])
-
-def uniform_sampling(sampling_n, weights=False):
-    """Return the sampling described in the EMC paper. This function reads
-    precalculated files so might not work for n over 20."""
-    import os
-    import h5py
-    if sampling_n <= 0:
-        raise ValueError("sampling_n must be positive. Received {n}".format(n=sampling_n))
-    file_name = os.path.join(_info.install_directory,
-                             "Resources/rotations/rotations_{n}.h5".format(n=sampling_n))
-    with h5py.File(file_name, "r") as file_handle:
-        return_rotations = file_handle["rotations"][:, :4]
-        if weights:
-            return_weights = file_handle["rotations"][:, 4]
-            return return_rotations, return_weights
-        return return_rotations
-
     
