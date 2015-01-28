@@ -6,3 +6,4 @@ Scripts/global
 *.jpg
 build/*
 *DS_Store
+python_tools.egg-info/
