@@ -280,3 +280,10 @@ def log_range(min_value, max_value, steps):
     """A range that has the values logarithmically distributed"""
     import pylab
     return pylab.exp(pylab.arange(pylab.log(min_value), pylab.log(max_value), (pylab.log(max_value) - pylab.log(min_value))/steps))
+
+def required_number_of_orientations(particle_size, resolution, prob):
+    r = particle_size / resolution
+    K = 4.*numpy.pi*(r-0.5)**2/2.
+    k = 2.*numpy.pi*(r-0.5)/2.
+    return numpy.log(1.-prob**(1./K)) / numpy.log(1.-k/K)
+
