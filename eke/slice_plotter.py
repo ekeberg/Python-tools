@@ -19,11 +19,12 @@ def downsample_pattern(image, factor):
 
 class Generate(object):
     """Generate slices of Fourier space. image_side is in pixels and
-    curvature is also given in pixels."""
-    def __init__(self, real_volume, image_side, curvature):
+    curvature is also given in pixels. Cutoff determines what part of
+    Fourier space that will be used. Should be in the range of (0. 0.5]."""
+    def __init__(self, real_volume, image_side, curvature, cutoff=0.5):
         self._real_volume = real_volume
         self._image_side = image_side
-        self._pixel_size_fourier = 1./image_side
+        self._pixel_size_fourier = 1./image_side*(2.*scaling)
         self._curvature = curvature*self._pixel_size_fourier
         self._x_base_2d = None
         self._y_base_2d = None

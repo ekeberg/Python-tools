@@ -287,3 +287,6 @@ def required_number_of_orientations(particle_size, resolution, prob):
     k = 2.*numpy.pi*(r-0.5)/2.
     return numpy.log(1.-prob**(1./K)) / numpy.log(1.-k/K)
 
+def central_slice(large_array_shape, small_array_shape):
+    """Intended usage large_array[central_slice(large_array.shape, small_array.shape)] = small_array"""
+    return [slice(l0/2-s0/2, l0/2+s0/2+s0%2) for l0, s0 in zip(large_array_shape, small_array_shape)]

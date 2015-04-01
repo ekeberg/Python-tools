@@ -1,7 +1,7 @@
 """Generate binary contrast particles with a tunable feature size."""
 import pylab
 
-def elser_particle(array_size, particle_size, feature_size):
+def elser_particle(array_size, particle_size, feature_size, return_blured=True):
     """Return a binary contrast particle. 'particle_size' and 'feature_size'
     should both be given in pixels."""
     if particle_size > array_size-2:
@@ -30,7 +30,20 @@ def elser_particle(array_size, particle_size, feature_size):
         particle_ft *= lp_kernel
         particle[:, :] = abs(pylab.ifftn(particle_ft))
 
+    if not return_blured:
+        particle_average = pylab.median(particle[-particle_mask])
+        particle[particle > particle_average] = 1.
+        particle[particle <= particle_average] = 0.
+
     return particle
+
+def oval_elser_particle(array_size, particle_size, rotation, feature_size, return_blured=True):
+    import rotations
+    x_coordinates = pylab.arange(array_size) - array_size/2. + 0.5
+    y_coordinates = pylab.arange(array_size) - array_size/2. + 0.5
+    z_coordinates = pylab.arange(array_size) - array_size/2. + 0.5
+    
+    
 
 def _elser_particle_old(resolution):
     """This is the original function from Veit Elser without the

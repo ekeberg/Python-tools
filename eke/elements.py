@@ -1,5 +1,5 @@
 """X-ray material properties. Calculate cross section, attenuation length and more."""
-import pylab as _pylab
+import numpy as _numpy
 import pickle as _pickle
 import conversions as _conversions
 import constants as _constants
@@ -82,8 +82,8 @@ def get_scattering_factor(element, photon_energy):
     """
     get the scattering factor for an element through linear interpolation. Photon energy is given in eV.
     """
-    f_1 = _pylab.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 1])
-    f_2 = _pylab.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 2])
+    f_1 = _numpy.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 1])
+    f_2 = _numpy.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 2])
     #return [f1,f2]
     return f_1+f_2*1.j
 
@@ -101,8 +101,8 @@ def get_scattering_power(photon_energy, material, complex_scattering_factor=Fals
         scattering_factor = get_scattering_factor(element, photon_energy)
 #        f_1 += value*scattering_factor[0]
 #        f_2 += value*scattering_factor[1]
-        f_1 += value*_pylab.real(scattering_factor)
-        f_2 += value*_pylab.imag(scattering_factor)
+        f_1 += value*_numpy.real(scattering_factor)
+        f_2 += value*_numpy.imag(scattering_factor)
 
     average_density /= total_atomic_ammounts
     f_1 /= total_atomic_ammounts
@@ -127,7 +127,7 @@ def get_attenuation_length(photon_energy, material):
         total_atomic_ammounts += value
         # sum up average scattering factor
         scattering_factor = get_scattering_factor(element, photon_energy)
-        f_2 += value*_pylab.imag(scattering_factor)
+        f_2 += value*_numpy.imag(scattering_factor)
     average_density /= total_atomic_ammounts
     f_2 /= total_atomic_ammounts
 
@@ -145,15 +145,25 @@ def get_index_of_refraction(photon_energy, material):
         total_atomic_ammounts += value
         # sum up average scattering factor
         scattering_factor = get_scattering_factor(element, photon_energy)
-        f_1 += value*_pylab.real(scattering_factor)
-        f_2 += value*_pylab.imag(scattering_factor)
+        f_1 += value*_numpy.real(scattering_factor)
+        f_2 += value*_numpy.imag(scattering_factor)
     average_density /= total_atomic_ammounts
     f_1 /= total_atomic_ammounts
     f_2 /= total_atomic_ammounts
 
     refractive_index = material.material_density()/average_density
 
-    return 1. - refractive_index*_constants.re*_conversions.ev_to_m(photon_energy)**2/(2.*_pylab.pi)*(f_1+1.j*f_2)
+    return 1. - refractive_index*_constants.re*_conversions.ev_to_m(photon_energy)**2/(2.*_numpy.pi)*(f_1+1.j*f_2)
+
+def get_phase_shift(photon_energy, material, distance):
+    """Returns the phase shift that that amount of material will cause."""
+    index_of_refraction = get_index_of_refraction(photon_energy, material)
+    phase_shift_per_period = (1.-_numpy.real(index_of_refraction)) * (2.*_numpy.pi)
+    number_of_wavelengths = distance / (_conversions.ev_to_m(photon_energy) *
+                                        _numpy.real(index_of_refraction))
+    total_phase_shift = number_of_wavelengths*phase_shift_per_period
+    return total_phase_shift
+    
 
 def size_to_nyquist_angle(size, wavelength):
     """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
@@ -171,11 +181,11 @@ def size_to_nyquist_angle(size, wavelength):
 
 def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
     """Evaluate the scattering factor. s should be given in 1/A"""
-    return ((atom["a"][0]*_pylab.exp(-atom["b"][0]*scattering_vector**2) +
-             atom["a"][1]*_pylab.exp(-atom["b"][1]*scattering_vector**2) +
-             atom["a"][2]*_pylab.exp(-atom["b"][2]*scattering_vector**2) +
-             atom["a"][3]*_pylab.exp(-atom["b"][3]*scattering_vector**2)) *
-            _pylab.exp(-b_factor*scattering_vector**2/4.) + atom["c"])
+    return ((atom["a"][0]*_numpy.exp(-atom["b"][0]*scattering_vector**2) +
+             atom["a"][1]*_numpy.exp(-atom["b"][1]*scattering_vector**2) +
+             atom["a"][2]*_numpy.exp(-atom["b"][2]*scattering_vector**2) +
+             atom["a"][3]*_numpy.exp(-atom["b"][3]*scattering_vector**2)) *
+            _numpy.exp(-b_factor*scattering_vector**2/4.) + atom["c"])
 
 def read_atomsf():
     """Read pickled element properties"""
@@ -205,18 +215,18 @@ def parse_atomsf(file_path='atomsf.lib'):
         #atom_cont = Atom5G(element)
         atom_cont = {}
 
-        variables = _pylab.float32(data_lines[i*5+1].split())
+        variables = _numpy.float32(data_lines[i*5+1].split())
         atom_cont["weight"] = variables[0]
         atom_cont["number_of_electrons"] = variables[1]
         atom_cont["c"] = variables[2]
 
-        variables = _pylab.float32(data_lines[i*5+2].split())
+        variables = _numpy.float32(data_lines[i*5+2].split())
         atom_cont["a"] = variables
 
-        variables = _pylab.float32(data_lines[i*5+3].split())
+        variables = _numpy.float32(data_lines[i*5+3].split())
         atom_cont["b"] = variables
 
-        variables = _pylab.float32(data_lines[i*5+4].split())
+        variables = _numpy.float32(data_lines[i*5+4].split())
         atom_cont["cu_f"] = complex(variables[0], variables[1])
         atom_cont["mo_f"] = complex(variables[2], variables[3])
 
@@ -224,145 +234,3 @@ def parse_atomsf(file_path='atomsf.lib'):
 
     return data_dict
 
-# def plot_stuff():
-#     distance = _pylab.arange(50, 200, 0.1)
-#     pixel_size = 0.015
-#     pixels_radially = 2048
-#     wavelength = 5.7
-#     gaps = _pylab.array([1.0, 2.0, 3.0, 4.0, 3.0*2.0])
-#     particle_size = 500.0
-#     missing_limit = 2.8
-#     binning = 4
-#     fig = _pylab.figure(1)
-#     fig.clear()
-
-#     missing_data_plot = fig.add_subplot(411)
-#     maximum_resolution_plot = fig.add_subplot(412)
-#     combined_plot = fig.add_subplot(413)
-#     sampling_plot = fig.add_subplot(414)
-
-#     for g in gaps:
-#         missing_data_plot.plot(distance, g/distance/size_to_nyquist_angle(particle_size, wavelength),
-#                                label="%g mm gap" % g)
-#     missing_data_plot.plot([distance[0], distance[-1]], [missing_limit, missing_limit], color='black')
-#     missing_data_plot.legend()
-#     missing_data_plot.set_ylabel("Missing nyquist pixels")
-
-#     maximum_resolution_plot.plot(distance, wavelength/2.0/(pixels_radially*pixel_size/distance))
-#     maximum_resolution_plot.set_ylabel("Maximum resolution [nm]")
-#     maximum_resolution_plot.set_xlabel("Detector distance [mm]")
-
-#     def resolution(distance):
-#         return wavelength/2.0/(pixels_radially*pixel_size/distance)
-#     for g in gaps:
-#         combined_plot.plot(resolution(distance), g/distance/size_to_nyquist_angle(particle_size, wavelength),
-#                            label="%g mm gap" % g)
-#     combined_plot.plot([resolution(distance)[0], resolution(distance)[-1]],
-#                        [missing_limit, missing_limit], color='black')
-#     combined_plot.legend()
-#     combined_plot.set_ylabel("Missing nyquist pixels")
-#     combined_plot.set_xlabel("Resolution at edge [nm]")
-
-#     sampling_plot.plot(distance, size_to_nyquist_angle(particle_size, wavelength)/(pixel_size*binning/distance))
-#     sampling_plot.set_ylabel("Sampling ratio")
-#     sampling_plot.set_xlabel("Detector distance [mm]")
-
-#     _pylab.show()
-
-# def calculate_pattern():
-#     photon_energy = 540
-
-#     virus_size = 275.0e-9
-#     virus_total_scattering_factor = (2.0*virus_size)**3*get_scattering_power(photon_energy, material_virus)
-#     virus_total_cross_section = _constants.re**2*virus_total_scattering_factor**2
-
-#     water_size = 1500.0e-9
-#     water_total_scattering_factor = (2.0*water_size)**3*get_scattering_power(photon_energy, material_water)
-#     water_total_cross_section = _constants.re**2*water_total_scattering_factor**2
-
-#     print "Virus cross section = ", virus_total_cross_section
-#     print "Water cross section = ", water_total_cross_section
-#     print "Ratio = ", virus_total_cross_section/water_total_cross_section
-
-#     # scattering from ball
-
-#     # wavelength = _conversions.ev_to_nm(photon_energy)
-#     # q_x = _pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
-#     # q_y = _pylab.arange(-0.075*512/740/wavelength,0.075*512/740/wavelength,0.075/740/wavelength)
-
-#     # q_x_grid, q_y_grid = _pylab.meshgrid(q_x,q_y)
-#     # q = _pylab.sqrt(q_x_grid**2+q_y_grid**2)
-#     # s = _pylab.float128(2.0*_pylab.pi*virus_size*q*0.01)
-#     # scattering = (_pylab.sin(s) - s*_pylab.cos(s))/3.0/s**3
-#     # #scattering = (_pylab.sin(s) - s)/3.0/s**3
-#     # _pylab.clf()
-#     # _pylab.imshow(_pylab.float64(scattering))
-
-#     fov = 16000.0e-9 #m
-#     fs_n_of_pixels = 1024
-#     fs_pixel_size = fov/fs_n_of_pixels
-#     # scattering_factor_virus = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
-#     # scattering_factor_virus_water = _pylab.zeros((fs_n_of_pixels,fs_n_of_pixels,fs_n_of_pixels))
-
-#     virus_scattering_factor = get_scattering_power(photon_energy, material_virus)*fs_pixel_size**3
-#     water_scattering_factor = get_scattering_power(photon_energy, material_water)*fs_pixel_size**3
-
-#     # for x,x_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
-#     #     #print x_i
-#     #     for y,y_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
-#     #         for z,z_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size,range(fs_n_of_pixels)):
-#     #             if x**2+y**2+z**2 < virus_size**2:
-#     #                 scattering_factor_virus[x_i,y_i,z_i] = virus_scattering_factor
-#     #                 scattering_factor_virus_water[x_i,y_i,z_i] = virus_scattering_factor
-#     #             elif x**2 + y**2 < water_size**2:
-#     #                 scattering_factor_virus_water[x_i,y_i,z_i] = water_scattering_factor
-#     #                 scattering_factor_virus[x_i,y_i,z_i] = 0.0
-#     #             else:
-#     #                 scattering_factor_virus_water[x_i,y_i,z_i] = 0.0
-
-
-#     # projected_SCATTERING_FACTORS_virus = _pylab.sum(scattering_factor_virus,axis=1)
-#     # projected_SCATTERING_FACTORS_virus_water = _pylab.sum(scattering_factor_virus_water,axis=1)
-
-#     detector_size = 1024
-#     oversampling = 1
-#     input_intensities = 1e13 #photons
-#     beam_width = 1500e-9
-
-#     _center = detector_size*oversampling/2
-
-#     scattering_factor_virus = _pylab.zeros((fs_n_of_pixels, fs_n_of_pixels))
-#     scattering_factor_virus_water = _pylab.zeros((fs_n_of_pixels, fs_n_of_pixels))
-
-#     tmp_water_size = water_size
-#     for y, y_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size, range(fs_n_of_pixels)):
-#         if y_i%50 == 0: print y_i
-#         tmp_water_size = tmp_water_size*(1.0+0.05*(-1.0+2.0*_pylab.rand()))
-#         for x, x_i in zip((_pylab.arange(fs_n_of_pixels)-fs_n_of_pixels/2+0.5)*fs_pixel_size, range(fs_n_of_pixels)):
-#             if x**2 + y**2 < virus_size**2:
-#                 thickness = 2.0*_pylab.sqrt(virus_size**2 - x**2 - y**2)/fs_pixel_size
-#                 scattering_factor_virus[x_i, y_i] = virus_scattering_factor*thickness
-#                 scattering_factor_virus_water[x_i, y_i] = virus_scattering_factor*thickness
-#                 #water_thickness = (2.0*_pylab.sqrt(water_size**2 - x**2)/fs_pixel_size - thickness)*(1.0+0.05*_pylab.rand())
-#                 water_thickness = (2.0*_pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size - thickness)
-#                 scattering_factor_virus_water[x_i, y_i] += water_scattering_factor*water_thickness
-#             elif x**2 < tmp_water_size**2:
-#                 #thickness = 2.0*_pylab.sqrt(water_size**2 - x**2)/fs_pixel_size*(1.0+0.05*_pylab.rand())
-#                 thickness = 2.0*_pylab.sqrt(tmp_water_size**2 - x**2)/fs_pixel_size
-#                 scattering_factor_virus_water[x_i, y_i] = water_scattering_factor*thickness
-#                 scattering_factor_virus[x_i, y_i] = 0.0
-#             else:
-#                 scattering_factor_virus_water[x_i, y_i] = 0.0
-#             r = _pylab.sqrt(x**2+y**2)
-#             scattering_factor_virus[x_i, y_i] *= _pylab.exp(-r**2/2.0/beam_width**2)
-#             scattering_factor_virus_water[x_i, y_i] *= _pylab.exp(-r**2/2.0/beam_width**2)
-
-#     amplitudes_virus = _pylab.fftshift(abs(_pylab.fftn(scattering_factor_virus,
-#                                                        [oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,
-#                                                                                          _center-detector_size/2:_center+detector_size/2]
-#     amplitudes_virus_water = _pylab.fftshift(abs(_pylab.fftn(scattering_factor_virus_water,
-#                                                              [oversampling*detector_size]*2)))[_center-detector_size/2:_center+detector_size/2,
-#                                                                                                _center-detector_size/2:_center+detector_size/2]
-
-#     intensities_virus = input_intensities*_constants.re**2*amplitudes_virus**2
-#     intensities_virus_water = input_intensities*_constants.re**2*amplitudes_virus_water**2
