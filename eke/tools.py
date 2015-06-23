@@ -206,6 +206,23 @@ def radial_average_simple(image, mask=None):
     else:
         raise ValueError("Image must be a 2d or 3d array")
 
+def downsample(image, factor):
+    """For now don't use a mask to make it speedier. For a mask
+    a C implementation might be a better option to preserve speed."""
+    import itertools
+    
+    output_size = numpy.array(image.shape) / factor
+    end_index = output_size*factor
+
+    reshape_parameters = []
+    for this_output_size in output_size:
+        reshape_parameters += [this_output_size, factor]
+    
+    image_view = image[[slice(0, index) for index in end_index]].reshape(*reshape_parameters)
+    output_image = image_view.sum(axis=tuple(numpy.arange(len(image.shape))*2+1))
+    
+    return output_image
+
 def correlation(image1, image2):
     """Mathematical correlation F-1(F(i1) F(i1)*) (not Pearson correlation)"""
     import pylab
