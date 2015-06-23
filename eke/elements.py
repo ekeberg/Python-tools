@@ -76,7 +76,8 @@ class Material(object):
 MATERIALS = {"protein" : Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
              "water" : Material(1000, O=1, H=2),
              "virus" : Material(1455, H=72.43, C=47.52, N=13.55, O=17.17, P=1.11, S=0.7),
-             "cell" : Material(1000, H=23, C=3, N=1, O=10, P=0, S=1)}
+             "cell" : Material(1000, H=23, C=3, N=1, O=10, P=0, S=1),
+             "silicon_nitride": Material(3440, Si=3, N=4)}
 
 def get_scattering_factor(element, photon_energy):
     """
@@ -133,6 +134,11 @@ def get_attenuation_length(photon_energy, material):
 
     return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*
                 1e-9*f_2*material.material_density()/average_density)
+
+def get_transmission(photon_energy, material, thickness):
+    """Return the transmission of the given material of the given thickness."""
+    attenuation_length = get_attenuation_length(photon_energy, material)
+    return _numpy.exp(-thickness / attenuation_length)
 
 def get_index_of_refraction(photon_energy, material):
     """Returns the refractive index of the material"""
