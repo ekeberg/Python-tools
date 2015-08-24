@@ -8,7 +8,7 @@ import numpy
 from eke import sphelper
 import sys
 from optparse import OptionParser
-from QtVersions import QtCore, QtGui
+from eke.QtVersions import QtCore, QtGui
 import vtk
 from eke import vtk_tools
 from vtk.util import numpy_support
