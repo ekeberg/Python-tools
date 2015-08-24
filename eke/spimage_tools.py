@@ -112,3 +112,76 @@ def support_threshold(threshold, blur_radius):
     algorithm = _spimage.sp_support_array_init(_spimage.sp_support_threshold_alloc(blur_radius_sp, threshold_sp), 20)
     return algorithm
 
+def center_image_2d(img, radius):
+    """For an image with an object surounded by empty space, this function
+    puts it in the center. A rough idea about the size of the object is
+    needed in the form of the variable radius."""
+    sigma = radius
+    x_coordinates = pylab.arange(pylab.shape(img.image)[0], dtype='float64') -\
+                    pylab.shape(img.image)[0]/2.0 + 0.5
+    y_coordinates = pylab.arange(pylab.shape(img.image)[1], dtype='float64') -\
+                    pylab.shape(img.image)[1]/2.0 + 0.5
+    kernel = pylab.exp(-(x_coordinates[:, pylab.newaxis]**2 +
+                         y_coordinates[pylab.newaxis, :]**2)/2.0/sigma**2)
+
+    img_ft = pylab.fft2(pylab.fftshift(img.image))
+    kernel_ft = pylab.fft2(pylab.fftshift(kernel))
+    kernel_ft *= pylab.conj(img_ft)
+    img_bt = pylab.ifft2(kernel_ft)
+
+    min_v = 0.
+    min_x = 0
+    min_y = 0
+    for x_index in range(pylab.shape(img_bt)[0]):
+        for y_index in range(pylab.shape(img_bt)[1]):
+            if abs(img_bt[y_index, x_index]) > min_v:
+                min_v = abs(img_bt[y_index, x_index])
+                min_x = x_index
+                min_y = y_index
+    print min_x, min_y
+    spimage.sp_image_translate(img, -(-min_x + pylab.shape(img_bt)[0]/2),
+                               -(-min_y + pylab.shape(img_bt)[1]/2),
+                               0, spimage.SP_TRANSLATE_WRAP_AROUND)
+    shift = spimage.sp_image_shift(img)
+    spimage.sp_image_free(img)
+    return shift
+
+def center_image_3d(img, radius):
+    """For an image with an object surounded by empty space, this function
+    puts it in the center. A rough idea about the size of the object is
+    needed in the form of the variable radius."""
+    sigma = radius
+    x_coordinates = pylab.arange(pylab.shape(img.image)[0], dtype='float64') -\
+                    pylab.shape(img.image)[0]/2.0 + 0.5
+    y_coordinates = pylab.arange(pylab.shape(img.image)[1], dtype='float64') -\
+                    pylab.shape(img.image)[1]/2.0 + 0.5
+    z_coordinates = pylab.arange(pylab.shape(img.image)[2], dtype='float64') -\
+                    pylab.shape(img.image)[2]/2.0 + 0.5
+    kernel = pylab.exp(-(x_coordinates[:, pylab.newaxis, pylab.newaxis]**2+
+                         y_coordinates[pylab.newaxis, :, pylab.newaxis]**2+
+                         z_coordinates[pylab.newaxis, pylab.newaxis, :]**2)/2.0/sigma**2)
+
+    img_ft = pylab.fft2(pylab.fftshift(img.image))
+    kernel_ft = pylab.fft2(pylab.fftshift(kernel))
+    kernel_ft *= pylab.conj(img_ft)
+    img_bt = pylab.ifft2(kernel_ft)
+
+    min_v = 0.
+    min_x = 0
+    min_y = 0
+    min_z = 0
+    for x_index in range(pylab.shape(img_bt)[0]):
+        for y_index in range(pylab.shape(img_bt)[1]):
+            for z_index in range(pylab.shape(img_bt)[2]):
+                if abs(img_bt[z_index, y_index, x_index]) > min_v:
+                    min_v = abs(img_bt[z_index, y_index, x_index])
+                    min_x = x_index
+                    min_y = y_index
+                    min_z = z_index
+    print min_x, min_y, min_z
+    spimage.sp_image_translate(img, -(-min_z + pylab.shape(img_bt)[0]/2),
+                               -(-min_y + pylab.shape(img_bt)[1]/2),
+                               -(-min_x + pylab.shape(img_bt)[2]/2), 1)
+    shift = img
+
+    return shift
