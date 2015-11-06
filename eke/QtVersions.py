@@ -35,7 +35,10 @@ elif variant == 'PyQt4':
         'QTime', 'QUrl', 'QVariant',
     ]
     for cl in api2_classes:
-        sip.setapi(cl, 2)
+        try:
+            sip.setapi(cl, 2)
+        except ValueError:
+            sip.setapi(cl, 1)
     from PyQt4 import QtGui, QtCore, QtOpenGL
     QtCore.Signal = QtCore.pyqtSignal
     QtCore.Slot = QtCore.pyqtSlot
