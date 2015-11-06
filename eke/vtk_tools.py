@@ -2,6 +2,8 @@
 import vtk
 import numpy
 
+VTK_VERSION = vtk.vtkVersion().GetVTKMajorVersion()
+
 def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", number_of_colors=1000):
     """Returrns a vtk lookup_table based on the specified matplotlib colorscale"""
     import matplotlib
@@ -118,7 +120,7 @@ class SphereMap(object):
             if ((coordinate_1[1] == coordinate_2[1]).sum() < 3) and (numpy.linalg.norm(coordinate_1[1] - coordinate_2[1]) < 3.):
                 edges.append((coordinate_1[1], coordinate_2[1]))
                 edge_indices.append((coordinate_1[0], coordinate_2[0]))
-
+                
         edge_table = {}
         for edge in edge_indices:
             edge_table[edge] = []
@@ -249,7 +251,10 @@ class SphereMap(object):
         self._vtk_poly_data.Modified()
 
         self._vtk_mapper = vtk.vtkPolyDataMapper()
-        self._vtk_mapper.SetInputData(self._vtk_poly_data)
+        if VTK_VERSION < 6:
+            self._vtk_mapper.SetInput(self._vtk_poly_data)
+        else:
+            self._vtk_mapper.SetInputData(self._vtk_poly_data)
         self._vtk_mapper.InterpolateScalarsBeforeMappingOn()
         self._vtk_mapper.UseLookupTableScalarRangeOn()
         self._vtk_actor = vtk.vtkActor()
@@ -353,7 +358,10 @@ class IsoSurface(object):
     def _setup_surface(self):
         """create the isosurface object and plotting objects."""
         self._algorithm = vtk.vtkMarchingCubes()
-        self._algorithm.SetInputData(self._volume)
+        if VTK_VERSION < 6:
+            self._algorithm.SetInput(self._volume)
+        else:
+            self._algorithm.SetInputData(self._volume)
         self._algorithm.ComputeNormalsOn()
         self._algorithm.SetValue(0, self._surface_level)
 
