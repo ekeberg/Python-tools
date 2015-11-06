@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 import matplotlib
 #matplotlib.use('WxAgg')
 #matplotlib.interactive(True)
@@ -95,15 +95,26 @@ class SurfaceViewer(VtkWindow):
         self._level_slider.setValue(self._SLIDER_MAXIMUM/2.)
         self._level_slider.setMaximum(self._SLIDER_MAXIMUM)
         self._level_slider.valueChanged.connect(self._slider_changed)
-        
+
+        self._level_table = self._adaptive_slider_values(self._volume, self._SLIDER_MAXIMUM)
+
         self._layout.addWidget(self._level_slider)
 
     def _slider_changed(self, level):
-        self._surface_level = (float(level) / float(self._SLIDER_MAXIMUM) * (self._value_range[1] - self._value_range[0]) +
-                               self._value_range[0])
+        # self._surface_level = (float(level) / float(self._SLIDER_MAXIMUM) * (self._value_range[1] - self._value_range[0]) +
+        #                        self._value_range[0])
+        self._surface_level = self._level_table[level]
         self._surface_algorithm.SetValue(0, self._surface_level)
         self._surface_algorithm.Modified()
         self._vtk_widget.Render()
+
+    @staticmethod
+    def _adaptive_slider_values(density, slider_maximum):
+        level_table = numpy.zeros(slider_maximum+1, dtype="float64")
+        density_flat = density.flatten()
+        for slider_level in range(slider_maximum+1):
+            level_table[slider_level] = numpy.percentile(density_flat, float(slider_level) / float(slider_maximum) * 100.)
+        return level_table
 
 class SliceViewer(VtkWindow):
     def __init__(self, volume, log=False):
