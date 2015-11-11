@@ -299,8 +299,11 @@ class SphereMap(object):
 
 class IsoSurface(object):
     """!!Ths function is not done!! Plot an isosurface."""
-    def __init__(self, volume):
-        self._surface_level = numpy.mean((volume.min(), volume.max()))
+    def __init__(self, volume, level=None):
+        if level is None:
+            self._surface_level = numpy.mean((volume.min(), volume.max()))
+        else:
+            self._surface_level = level
         self._actor = None
         self._volume_scalars = None
         self._image_shape = None
@@ -312,6 +315,10 @@ class IsoSurface(object):
 
         self._color = (0., 1., 0.)
         self._set_volume(volume)
+
+        self._generate_vtk_volume()
+        self._setup_surface()
+
 
     def _set_volume(self, volume):
         """Set a 3D numpy array of the density that should be plotted without
@@ -349,9 +356,10 @@ class IsoSurface(object):
         self._volume_scalars.SetNumberOfValues(numpy.product(self._image_shape))
         self._volume_scalars.SetNumberOfComponents(1)
         self._volume_scalars.SetName("FooName")
+        volume_array_flat = self._volume_array.flatten()
 
         for i in range(numpy.product(self._image_shape)):
-            self._volume_scalars.SetValue(i, self._volume_array)
+            self._volume_scalars.SetValue(i, volume_array_flat[i])
 
         self._volume.GetPointData().SetScalars(self._volume_scalars)
 
@@ -373,3 +381,20 @@ class IsoSurface(object):
         self._actor.SetMapper(self._mapper)
 
 
+def plot_isosurface(model, level=None):
+    surface_object = IsoSurface(model, level)
+    
+    renderer = vtk.vtkRenderer()
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+    interactor.SetInteractorStyle(vtk.vtkInteractorStyleRubberBandPick())
+
+    renderer.AddActor(surface_object.get_actor())
+    
+    renderer.SetBackground(0., 0., 0.)
+    render_window.SetSize(800, 800)
+    interactor.Initialize()
+    render_window.Render()
+    interactor.Start()
