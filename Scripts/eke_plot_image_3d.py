@@ -73,7 +73,10 @@ class SurfaceViewer(VtkWindow):
         #self._vtk_widget.Initialize()
         super(SurfaceViewer, self).initialize()
         self._surface_algorithm = vtk.vtkMarchingCubes()
-        self._surface_algorithm.SetInputData(self._image_data)
+        if vtk_tools.VTK_VERSION >= 6:
+            self._surface_algorithm.SetInputData(self._image_data)
+        else:
+            self._surface_algorithm.SetInput(self._image_data)
         self._surface_algorithm.ComputeNormalsOn()
         self._surface_algorithm.SetValue(0, self._surface_level)
 
@@ -131,7 +134,10 @@ class SliceViewer(VtkWindow):
 
         def setup_plane():
             plane = vtk.vtkImagePlaneWidget()
-            plane.SetInputData(self._image_data)
+            if vtk_tools.VTK_VERSION >= 6:
+                plane.SetInputData(self._image_data)
+            else:
+                plane.SetInput(self._image_data)
             plane.UserControlledLookupTableOn()
             plane.SetLookupTable(lut)
             plane.DisplayTextOn()

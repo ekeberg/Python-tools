@@ -2,6 +2,8 @@
 import vtk as _vtk
 import numpy as _numpy
 
+VTK_VERSION = vtk.vtkVersion().GetVTKMajorVersion()
+
 def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", number_of_colors=1000):
     """Returrns a vtk lookup_table based on the specified matplotlib colorscale"""
     import matplotlib
@@ -118,7 +120,7 @@ class SphereMap(object):
             if ((coordinate_1[1] == coordinate_2[1]).sum() < 3) and (_numpy.linalg.norm(coordinate_1[1] - coordinate_2[1]) < 3.):
                 edges.append((coordinate_1[1], coordinate_2[1]))
                 edge_indices.append((coordinate_1[0], coordinate_2[0]))
-
+                
         edge_table = {}
         for edge in edge_indices:
             edge_table[edge] = []
@@ -249,7 +251,10 @@ class SphereMap(object):
         self._vtk_poly_data.Modified()
 
         self._vtk_mapper = _vtk.vtkPolyDataMapper()
-        self._vtk_mapper.SetInputData(self._vtk_poly_data)
+        if VTK_VERSION < 6:
+            self._vtk_mapper.SetInput(self._vtk_poly_data)
+        else:
+            self._vtk_mapper.SetInputData(self._vtk_poly_data)
         self._vtk_mapper.InterpolateScalarsBeforeMappingOn()
         self._vtk_mapper.UseLookupTableScalarRangeOn()
         self._vtk_actor = _vtk.vtkActor()
@@ -294,8 +299,11 @@ class SphereMap(object):
 
 class IsoSurface(object):
     """!!Ths function is not done!! Plot an isosurface."""
-    def __init__(self, volume):
-        self._surface_level = _numpy.mean((volume.min(), volume.max()))
+    def __init__(self, volume, level=None):
+        if level is None:
+            self._surface_level = _numpy.mean((volume.min(), volume.max()))
+        else:
+            self._surface_level = level
         self._actor = None
         self._volume_scalars = None
         self._image_shape = None
@@ -307,6 +315,10 @@ class IsoSurface(object):
 
         self._color = (0., 1., 0.)
         self._set_volume(volume)
+
+        self._generate_vtk_volume()
+        self._setup_surface()
+
 
     def _set_volume(self, volume):
         """Set a 3D numpy array of the density that should be plotted without
@@ -344,16 +356,20 @@ class IsoSurface(object):
         self._volume_scalars.SetNumberOfValues(_numpy.product(self._image_shape))
         self._volume_scalars.SetNumberOfComponents(1)
         self._volume_scalars.SetName("FooName")
+        volume_array_flat = self._volume_array.flatten()
 
-        for i in range(_numpy.product(self._image_shape)):
-            self._volume_scalars.SetValue(i, self._volume_array)
+        for i in range(numpy.product(self._image_shape)):
+            self._volume_scalars.SetValue(i, volume_array_flat[i])
 
         self._volume.GetPointData().SetScalars(self._volume_scalars)
 
     def _setup_surface(self):
         """create the isosurface object and plotting objects."""
         self._algorithm = _vtk.vtkMarchingCubes()
-        self._algorithm.SetInputData(self._volume)
+        if VTK_VERSION < 6:
+            self._algorithm.SetInput(self._volume)
+        else:
+            self._algorithm.SetInputData(self._volume)
         self._algorithm.ComputeNormalsOn()
         self._algorithm.SetValue(0, self._surface_level)
 
@@ -365,3 +381,20 @@ class IsoSurface(object):
         self._actor.SetMapper(self._mapper)
 
 
+def plot_isosurface(model, level=None):
+    surface_object = IsoSurface(model, level)
+    
+    renderer = vtk.vtkRenderer()
+    render_window = vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    interactor = vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+    interactor.SetInteractorStyle(vtk.vtkInteractorStyleRubberBandPick())
+
+    renderer.AddActor(surface_object.get_actor())
+    
+    renderer.SetBackground(0., 0., 0.)
+    render_window.SetSize(800, 800)
+    interactor.Initialize()
+    render_window.Render()
+    interactor.Start()
