@@ -21,7 +21,7 @@ def read_image(image_file, mask):
     else:
         field = 'image'
     try:
-        img = abs(sphelper.import_spimage(image_file, [field]))
+        img = numpy.real(sphelper.import_spimage(image_file, [field]))
     except:
         raise IOError("%s is not a readable h5 image." % image_file)
     return img
@@ -103,6 +103,7 @@ class SurfaceViewer(VtkWindow):
     def _slider_changed(self, level):
         # self._surface_level = (float(level) / float(self._SLIDER_MAXIMUM) * (self._value_range[1] - self._value_range[0]) +
         #                        self._value_range[0])
+        # self._surface_level = float(level) / float(self._SLIDER_MAXIMUM)
         self._surface_level = self._level_table[level]
         self._surface_algorithm.SetValue(0, self._surface_level)
         self._surface_algorithm.Modified()
@@ -120,41 +121,43 @@ class SliceViewer(VtkWindow):
     def __init__(self, volume, log=False):
         super(SliceViewer, self).__init__(volume)
         self._log = log
-        
+
+        self._lut = vtk_tools.get_lookup_table(max(0., self._volume.min()), self._volume.max(), log=self._log,
+                                               colorscale=matplotlib.rcParams["image.cmap"])
+
+        self._picker = vtk.vtkCellPicker()
+        picker_tolerance = 0.005
+        self._picker.SetTolerance(picker_tolerance)
+
+        self._plane_1 = self._setup_plane()
+        self._plane_1.SetPlaneOrientationToXAxes()
+        self._plane_1.SetSliceIndex(self._volume.shape[0]/2)
+        self._plane_2 = self._setup_plane()
+        self._plane_2.SetPlaneOrientationToYAxes()
+        self._plane_2.SetSliceIndex(self._volume.shape[1]/2)
+    
+    def _setup_plane(self):
+        plane = vtk.vtkImagePlaneWidget()
+        if vtk_tools.VTK_VERSION >= 6:
+            plane.SetInputData(self._image_data)
+        else:
+            plane.SetInput(self._image_data)
+        plane.UserControlledLookupTableOn()
+        plane.SetLookupTable(self._lut)
+        plane.DisplayTextOn()
+        plane.SetPicker(self._picker)
+        plane.SetLeftButtonAction(1)
+        plane.SetMiddleButtonAction(2)
+        plane.SetRightButtonAction(0)
+        plane.SetInteractor(self._vtk_widget)
+        return plane
+
     def initialize(self):
         super(SliceViewer, self).initialize()
         self._vtk_widget.Initialize()
-
-        picker = vtk.vtkCellPicker()
-        picker_tolerance = 0.005
-        picker.SetTolerance(picker_tolerance)
         
-        lut = vtk_tools.get_lookup_table(self._volume.min(), self._volume.max(), log=self._log,
-                                         colorscale=matplotlib.rcParams["image.cmap"])
-
-        def setup_plane():
-            plane = vtk.vtkImagePlaneWidget()
-            if vtk_tools.VTK_VERSION >= 6:
-                plane.SetInputData(self._image_data)
-            else:
-                plane.SetInput(self._image_data)
-            plane.UserControlledLookupTableOn()
-            plane.SetLookupTable(lut)
-            plane.DisplayTextOn()
-            plane.SetPicker(picker)
-            plane.SetLeftButtonAction(1)
-            plane.SetMiddleButtonAction(2)
-            plane.SetRightButtonAction(0)
-            plane.SetInteractor(self._vtk_widget)
-            plane.SetEnabled(1)
-            return plane
-
-        plane_1 = setup_plane()
-        plane_1.SetPlaneOrientationToXAxes()
-        plane_1.SetSliceIndex(self._volume.shape[0]/2)
-        plane_2 = setup_plane()
-        plane_2.SetPlaneOrientationToYAxes()
-        plane_2.SetSliceIndex(self._volume.shape[1]/2)
+        self._plane_1.SetEnabled(1)
+        self._plane_2.SetEnabled(1)
         
         camera = self._renderer.GetActiveCamera()
         camera.SetFocalPoint(numpy.array(self._volume.shape)/2.)
@@ -176,7 +179,7 @@ if __name__ == "__main__":
         image = numpy.fft.fftshift(image)
     
     #plot_image_3d(image, options.shift, options.log, options.surface)
-    app = QtGui.QApplication(["plot_image_3d"])
+    app = QtGui.QApplication([args[0]])
     if options.surface:
         program = SurfaceViewer(image)
     else:
