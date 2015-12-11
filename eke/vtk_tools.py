@@ -2,7 +2,7 @@
 import vtk as _vtk
 import numpy as _numpy
 
-VTK_VERSION = vtk.vtkVersion().GetVTKMajorVersion()
+VTK_VERSION = _vtk.vtkVersion().GetVTKMajorVersion()
 
 def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", number_of_colors=1000):
     """Returrns a vtk lookup_table based on the specified matplotlib colorscale"""
@@ -20,7 +20,7 @@ def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", 
         lut.SetTableValue(i, color[0], color[1], color[2], 1.)
     return lut
 
-def vtk_from_array(array_in, dtype=None):
+def array_to_float_array(array_in, dtype=None):
     """Get vtkFloatArray/vtkDoubleArray from the input array."""
     if dtype == None:
         dtype = array_in.dtype
@@ -31,8 +31,16 @@ def vtk_from_array(array_in, dtype=None):
     else:
         raise ValueError("Wrong format of input array, must be float32 or float64")
     float_array.SetNumberOfComponents(1)
-    float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype))
+    float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype), _numpy.product(array_in.shape), 1)
     return float_array
+
+def array_to_image_data(array_in, dtype=None):
+    float_array = array_to_float_array(array_in, dtype)
+    image_data = _vtk.vtkImageData()
+    image_data.SetDimensions(*array_in.shape)
+    image_data.GetPointData().SetScalars(float_array)
+    return image_data
+
 
 def window_to_png(render_window, file_name, magnification=1):
     window_to_image_filter = _vtk.vtkWindowToImageFilter()
@@ -358,7 +366,7 @@ class IsoSurface(object):
         self._volume_scalars.SetName("FooName")
         volume_array_flat = self._volume_array.flatten()
 
-        for i in range(numpy.product(self._image_shape)):
+        for i in range(_numpy.product(self._image_shape)):
             self._volume_scalars.SetValue(i, volume_array_flat[i])
 
         self._volume.GetPointData().SetScalars(self._volume_scalars)
@@ -384,12 +392,12 @@ class IsoSurface(object):
 def plot_isosurface(model, level=None):
     surface_object = IsoSurface(model, level)
     
-    renderer = vtk.vtkRenderer()
-    render_window = vtk.vtkRenderWindow()
+    renderer = _vtk.vtkRenderer()
+    render_window = _vtk.vtkRenderWindow()
     render_window.AddRenderer(renderer)
-    interactor = vtk.vtkRenderWindowInteractor()
+    interactor = _vtk.vtkRenderWindowInteractor()
     interactor.SetRenderWindow(render_window)
-    interactor.SetInteractorStyle(vtk.vtkInteractorStyleRubberBandPick())
+    interactor.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
 
     renderer.AddActor(surface_object.get_actor())
     
@@ -398,3 +406,52 @@ def plot_isosurface(model, level=None):
     interactor.Initialize()
     render_window.Render()
     interactor.Start()
+
+def plot_planes(array_in, log=False, cmap=None):
+    renderer = _vtk.vtkRenderer()
+    render_window = _vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    interactor = _vtk.vtkRenderWindowInteractor()
+    interactor.SetRenderWindow(render_window)
+    interactor.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
+
+    if cmap == None:
+        import matplotlib as _matplotlib
+        cmap = _matplotlib.rcParams["image.cmap"]
+    lut = get_lookup_table(max(0., array_in.min()), array_in.max(), log=log, colorscale=cmap)
+    picker = _vtk.vtkCellPicker()
+    picker.SetTolerance(0.005)
+    
+    image_data = array_to_image_data(array_in)
+    
+    def setup_plane():
+        plane = _vtk.vtkImagePlaneWidget()
+        if VTK_VERSION >= 6:
+            plane.SetInputData(image_data)
+        else:
+            plane.SetInput(image_data)
+        plane.UserControlledLookupTableOn()
+        plane.SetLookupTable(lut)
+        plane.DisplayTextOn()
+        plane.SetPicker(picker)
+        plane.SetLeftButtonAction(1)
+        plane.SetMiddleButtonAction(2)
+        plane.SetRightButtonAction(0)
+        plane.SetInteractor(interactor)
+        return plane
+    
+    plane_1 = setup_plane()
+    plane_1.SetPlaneOrientationToXAxes()
+    plane_1.SetSliceIndex(array_in.shape[0]/2)
+    plane_1.SetEnabled(1)
+    plane_2 = setup_plane()
+    plane_2.SetPlaneOrientationToYAxes()
+    plane_2.SetSliceIndex(array_in.shape[1]/2)
+    plane_2.SetEnabled(1)
+    
+    renderer.SetBackground(0., 0., 0.)
+    render_window.SetSize(800, 800)
+    interactor.Initialize()
+    render_window.Render()
+    interactor.Start()
+    
