@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 """Script to crop an h5 image and pad with zeros around it"""
 import spimage
 import sys

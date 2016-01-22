@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 import sys, os, spimage
 #from PyQt4.QtCore import *
 #from PyQt4.QtGui import *
