@@ -1,5 +1,5 @@
 """Collection of tools to make it easier to work with the spimage python interface."""
-import numpy
+import numpy as _numpy
 import spimage as _spimage
 
 def image_from_array(image, mask=None):
@@ -12,11 +12,11 @@ def image_from_array(image, mask=None):
         raise ValueError("Array must be 2 or 3 dimensional")
     img.image[:] = image
     if mask != None:
-        img.mask[:] = numpy.int32(mask)
+        img.mask[:] = _numpy.int32(mask)
     else:
         img.mask[:] = 1
     img.shifted = 0
-    img.phased = int(bool(numpy.iscomplex(image).sum() > 0))
+    img.phased = int(bool(_numpy.iscomplex(image).sum() > 0))
     return img
 
 def allocate_image(shape):

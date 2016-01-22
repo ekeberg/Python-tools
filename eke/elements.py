@@ -1,9 +1,9 @@
 """X-ray material properties. Calculate cross section, attenuation length and more."""
 import numpy as _numpy
 import pickle as _pickle
-import conversions as _conversions
-import constants as _constants
 import os as _os
+from . import conversions as _conversions
+from . import constants as _constants
 
 _ELEMENTS_FILE = open(_os.path.join(_os.path.split(__file__)[0], "elements.dat"), "r")
 ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE)

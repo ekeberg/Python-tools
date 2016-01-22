@@ -1,19 +1,18 @@
 """Plot slices of fourier space for illustratory purposes."""
-import numpy
-import vtk
-import rotations
-import nfft
-import vtk_tools
-
+import numpy as _numpy
+import vtk as _vtk
+import nfft as _nfft
+from . import vtk_tools
+from . import rotations
 
 def downsample_pattern(image, factor):
     """Image shape must be exact multiples of downsample factor"""
     from scipy import ndimage
     size_y, size_x = image.shape
-    y_2d, x_2d = numpy.ogrid[:size_y, :size_x]
+    y_2d, x_2d = _numpy.ogrid[:size_y, :size_x]
     regions = size_x/factor * (y_2d/factor) + x_2d/factor
     result = ndimage.mean(image, labels=regions,
-                          index=numpy.arange(regions.max()+1))
+                          index=_numpy.arange(regions.max()+1))
     result.shape = (size_y/factor, size_x/factor)
 
 
@@ -35,17 +34,17 @@ class Generate(object):
         """Base coordinates are in x-y plane and are scaled so that the
         range in x and y is from (-0.5,0.5)"""
         x_base_coordinates = (self._pixel_size_fourier *
-                              numpy.linspace(-self._image_side/2+0.5,
+                              _numpy.linspace(-self._image_side/2+0.5,
                                              self._image_side/2-0.5,
                                              self._image_side))
         y_base_coordinates = (self._pixel_size_fourier *
-                              numpy.linspace(-self._image_side/2+0.5,
+                              _numpy.linspace(-self._image_side/2+0.5,
                                              self._image_side/2-0.5,
                                              self._image_side))
-        self._y_base_2d, self._x_base_2d = numpy.meshgrid(y_base_coordinates,
+        self._y_base_2d, self._x_base_2d = _numpy.meshgrid(y_base_coordinates,
                                                           x_base_coordinates)
         self._z_base_2d = (self._curvature -
-                           numpy.sqrt(self._curvature**2 - self._x_base_2d**2 -
+                           _numpy.sqrt(self._curvature**2 - self._x_base_2d**2 -
                                       self._y_base_2d**2))
 
     def _rotated_coordinates(self, rot):
@@ -59,7 +58,7 @@ class Generate(object):
         y_rotated = y_rotated.reshape((self._image_side, )*2)
         x_rotated = x_rotated.reshape((self._image_side, )*2)
 
-        coordinates = numpy.transpose(numpy.array((z_rotated.flatten(),
+        coordinates = _numpy.transpose(_numpy.array((z_rotated.flatten(),
                                                    y_rotated.flatten(),
                                                    x_rotated.flatten())))
         return coordinates
@@ -74,7 +73,7 @@ class Generate(object):
             rot = rotations.random_quaternion()
         coordinates = self._rotated_coordinates(rot)
 
-        pattern_flat = nfft.nfft(self._real_volume, coordinates)
+        pattern_flat = _nfft.nfft(self._real_volume, coordinates)
 
         pattern = pattern_flat.reshape((self._image_side, )*2)
         if output_type == "complex":
@@ -98,17 +97,17 @@ class SliceGenerator(object):
     def __init__(self, side, curvature):
         self._side = side
         self._curvature = curvature
-        x_array_single = numpy.arange(self._side) - self._side/2. + 0.5
-        y_array_single = numpy.arange(self._side) - self._side/2. + 0.5
-        y_array, x_array = numpy.meshgrid(y_array_single, x_array_single)
-        z_array = (self._curvature - numpy.sqrt(self._curvature**2 -
+        x_array_single = _numpy.arange(self._side) - self._side/2. + 0.5
+        y_array_single = _numpy.arange(self._side) - self._side/2. + 0.5
+        y_array, x_array = _numpy.meshgrid(y_array_single, x_array_single)
+        z_array = (self._curvature - _numpy.sqrt(self._curvature**2 -
                                                 x_array**2 - y_array**2))
 
-        self._image_values = vtk.vtkFloatArray()
+        self._image_values = _vtk.vtkFloatArray()
         self._image_values.SetNumberOfComponents(1)
         self._image_values.SetName("Intensity")
 
-        self._points = vtk.vtkPoints()
+        self._points = _vtk.vtkPoints()
         for i in range(self._side):
             for j in range(self._side):
                 self._points.InsertNextPoint(x_array[i, j],
@@ -116,10 +115,10 @@ class SliceGenerator(object):
                                              z_array[i, j])
                 self._image_values.InsertNextTuple1(0.)
 
-        self._polygons = vtk.vtkCellArray()
+        self._polygons = _vtk.vtkCellArray()
 
         self._square_slice()
-        self._template_poly_data = vtk.vtkPolyData()
+        self._template_poly_data = _vtk.vtkPolyData()
         self._template_poly_data.SetPoints(self._points)
         self._template_poly_data.GetPointData().SetScalars(self._image_values)
         self._template_poly_data.SetPolys(self._polygons)
@@ -131,14 +130,14 @@ class SliceGenerator(object):
         for i in range(self._side-1):
             for j in range(self._side-1):
                 corners = [(i, j), (i+1, j), (i+1, j+1), (i, j+1)]
-                polygon = vtk.vtkPolygon()
+                polygon = _vtk.vtkPolygon()
                 polygon.GetPointIds().SetNumberOfIds(4)
                 for index, corner in enumerate(corners):
                     polygon.GetPointIds().SetId(index,
                                                 corner[0]*self._side+corner[1])
                 self._polygons.InsertNextCell(polygon)
 
-        self._template_poly_data = vtk.vtkPolyData()
+        self._template_poly_data = _vtk.vtkPolyData()
         self._template_poly_data.SetPoints(self._points)
         self._template_poly_data.GetPointData().SetScalars(self._image_values)
         self._template_poly_data.SetPolys(self._polygons)
@@ -148,13 +147,13 @@ class SliceGenerator(object):
         slice with intensities given by the image variable and
         with the specified rotation. Rotation is a quaternion."""
         rotation_degrees = rotation.copy()
-        rotation_degrees[0] = 2.*numpy.arccos(rotation[0])*180./numpy.pi
-        transformation = vtk.vtkTransform()
+        rotation_degrees[0] = 2.*_numpy.arccos(rotation[0])*180./_numpy.pi
+        transformation = _vtk.vtkTransform()
         transformation.RotateWXYZ(-rotation_degrees[0], rotation_degrees[3],
                                   rotation_degrees[2], rotation_degrees[1])
-        input_poly_data = vtk.vtkPolyData()
+        input_poly_data = _vtk.vtkPolyData()
         input_poly_data.DeepCopy(self._template_poly_data)
-        transform_filter = vtk.vtkTransformFilter()
+        transform_filter = _vtk.vtkTransformFilter()
         transform_filter.SetInputData(input_poly_data)
         transform_filter.SetTransform(transformation)
         transform_filter.Update()
@@ -196,13 +195,13 @@ class Plot(object):
             self._lut.Build()
             self._lut.Modified()
 
-        mapper = vtk.vtkPolyDataMapper()
+        mapper = _vtk.vtkPolyDataMapper()
         mapper.SetInputData(poly_data)
         mapper.UseLookupTableScalarRangeOn()
         mapper.SetLookupTable(self._lut)
         mapper.Modified()
         mapper.Update()
-        actor = vtk.vtkActor()
+        actor = _vtk.vtkActor()
         actor.SetMapper(mapper)
         self._renderer.AddViewProp(actor)
 

@@ -1,8 +1,8 @@
 """Parallelise the execution of a single function with many inputs."""
-import multiprocessing
-import Queue
+import multiprocessing as _multiprocessing
+import Queue as _Queue
 
-class Worker(multiprocessing.Process):
+class Worker(_multiprocessing.Process):
     """Runs a single function for many different outputs."""
     def __init__(self, working_queue, return_dict, process, quiet=False):
         super(Worker, self).__init__()
@@ -20,7 +20,7 @@ class Worker(multiprocessing.Process):
         #     try:
         #         i,data = self.working_queue.get_nowait()
         #         print self.name, " got data ", i
-        #     except Queue.Empty:
+        #     except _Queue.Empty:
         #         print self.name, " didn't get data"
         #         break
         #     self.return_dict[i] = self.process(*data)
@@ -29,7 +29,7 @@ class Worker(multiprocessing.Process):
         while True:
             try:
                 tmp = self.working_queue.get(timeout=0.1) #timeout of 0.1 is choosen adhoc.
-            except Queue.Empty:
+            except _Queue.Empty:
                 break
             if tmp == None:
                 break
@@ -50,10 +50,10 @@ def run_parallel(jobs, function, n_cpu=0, quiet=False):
     """Execute the function for each input given in the array jobs and return the results in an array.
     Jobs must be iterable and the jobs should be a tuple containing the function arguments."""
     if not n_cpu:
-        n_cpu = multiprocessing.cpu_count()
-    working_queue = multiprocessing.Queue()
-    #return_queue = multiprocessing.Queue()
-    my_manager = multiprocessing.Manager()
+        n_cpu = _multiprocessing.cpu_count()
+    working_queue = _multiprocessing.Queue()
+    #return_queue = _multiprocessing.Queue()
+    my_manager = _multiprocessing.Manager()
     return_dict = my_manager.dict()
     workers = []
     for i, job in enumerate(jobs):

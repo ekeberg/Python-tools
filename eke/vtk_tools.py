@@ -4,6 +4,8 @@ import numpy as _numpy
 
 VTK_VERSION = _vtk.vtkVersion().GetVTKMajorVersion()
 
+
+
 def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", number_of_colors=1000):
     """Returrns a vtk lookup_table based on the specified matplotlib colorscale"""
     import matplotlib
@@ -18,10 +20,12 @@ def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", 
     for i in range(number_of_colors):
         color = matplotlib.cm.cmap_d[colorscale](float(i) / float(number_of_colors))
         lut.SetTableValue(i, color[0], color[1], color[2], 1.)
+    lut.SetUseBelowRangeColor(True)
+    lut.SetUseAboveRangeColor(True)
     return lut
 
 def array_to_float_array(array_in, dtype=None):
-    """Get vtkFloatArray/vtkDoubleArray from the input array."""
+    """Get vtkFloatArray/vtkDoubleArray from the input numpy array."""
     if dtype == None:
         dtype = array_in.dtype
     if dtype == "float32":
@@ -30,19 +34,57 @@ def array_to_float_array(array_in, dtype=None):
         float_array = _vtk.vtkDoubleArray()
     else:
         raise ValueError("Wrong format of input array, must be float32 or float64")
-    float_array.SetNumberOfComponents(1)
+    if len(array_in.shape) == 2:
+        float_array.SetNumberOfComponents(array_in.shape[1])
+    elif len(array_in.shape) == 1:
+        float_array.SetNumberOfComponents(1)
+    else:
+        raise ValueError("Wrong shape of array must be 1D or 2D.")
     float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype), _numpy.product(array_in.shape), 1)
     return float_array
 
+def array_to_vtk(array_in, dtype=None):
+    """Get vtkFloatArray/vtkDoubleArray from the input numpy array."""
+    if dtype == None:
+        dtype = _numpy.dtype(array_in.dtype)
+    else:
+        dtype = _numpy.dtype(dtype)
+    if dtype == _numpy.float32:
+        float_array = _vtk.vtkFloatArray()
+    elif dtype == _numpy.float64:
+        float_array = _vtk.vtkDoubleArray()
+    elif dtype == _numpy.uint8:
+        float_array = _vtk.vtkUnsignedCharArray()
+    elif dtype == _numpy.int8:
+        float_array = _vtk.vtkCharArray()
+    else:
+        raise ValueError("Wrong format of input array, must be float32 or float64")
+    if len(array_in.shape) != 1 and len(array_in.shape) != 2:
+        raise ValueError("Wrong shape: array must be 1D or 2D.")
+    #float_array.SetNumberOfComponents(_numpy.product(array_in.shape))
+    # if len(array_in.shape) == 2:
+    #     float_array.SetNumberOfComponents(array_in.shape[1])
+    # elif len(array_in.shape) == 1:
+    #     float_array.SetNumberOfComponents(1)
+    float_array.SetNumberOfComponents(1)
+    float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype), _numpy.product(array_in.shape), 1)
+    # if len(array_in.shape) == 2:
+    #     print "set tuple to {0}".format(array_in.shape[1])
+    #     #float_array.SetNumberOfTuples(array_in.shape[1])
+    #     float_array.Resize(array_in.shape[1])
+    #     float_array.Squeeze()
+    return float_array
+
 def array_to_image_data(array_in, dtype=None):
+    """Get vtkImageData from the input numpy array."""
     float_array = array_to_float_array(array_in, dtype)
     image_data = _vtk.vtkImageData()
     image_data.SetDimensions(*array_in.shape)
     image_data.GetPointData().SetScalars(float_array)
     return image_data
 
-
 def window_to_png(render_window, file_name, magnification=1):
+    """Get a screen capture from the provided vtkRenderWindow."""
     window_to_image_filter = _vtk.vtkWindowToImageFilter()
     window_to_image_filter.SetInput(render_window)
     window_to_image_filter.SetMagnification(magnification)
@@ -53,7 +95,6 @@ def window_to_png(render_window, file_name, magnification=1):
     writer.SetFileName(file_name)
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())
     writer.Write()
-
 
 class SphereMap(object):
     """Plot on a spherical shell."""
@@ -117,7 +158,7 @@ class SphereMap(object):
     def _generate_points_and_polys(self):
         """Calculate the coordinate positions with the current n and group them into polygons."""
         import itertools
-        import icosahedral_sphere
+        from eke import icosahedral_sphere
 
         coordinates = icosahedral_sphere.icosahedron_vertices()
         full_coordinate_list = [c for c in coordinates]
@@ -128,7 +169,7 @@ class SphereMap(object):
             if ((coordinate_1[1] == coordinate_2[1]).sum() < 3) and (_numpy.linalg.norm(coordinate_1[1] - coordinate_2[1]) < 3.):
                 edges.append((coordinate_1[1], coordinate_2[1]))
                 edge_indices.append((coordinate_1[0], coordinate_2[0]))
-                
+
         edge_table = {}
         for edge in edge_indices:
             edge_table[edge] = []
@@ -304,94 +345,116 @@ class SphereMap(object):
         self._vtk_poly_data.GetPointData().SetScalars(self._vtk_scalars)
         self._vtk_poly_data.Modified()
 
-
 class IsoSurface(object):
-    """!!Ths function is not done!! Plot an isosurface."""
+    """Generate and plot isosurfacs."""
     def __init__(self, volume, level=None):
-        if level is None:
-            self._surface_level = _numpy.mean((volume.min(), volume.max()))
-        else:
-            self._surface_level = level
+        self._surface_algorithm = None
+        self._renderer = None
         self._actor = None
-        self._volume_scalars = None
-        self._image_shape = None
-        self._volume_max = None
-        self._volume_array = None
-        self._algorithm = None
         self._mapper = None
-        self._volume = None
+        self._volume_array = None
 
-        self._color = (0., 1., 0.)
-        self._set_volume(volume)
+        self._float_array = _vtk.vtkFloatArray()
+        self._image_data = _vtk.vtkImageData()
+        self._image_data.GetPointData().SetScalars(self._float_array)
+        self._setup_data(volume)
 
-        self._generate_vtk_volume()
-        self._setup_surface()
+        self._surface_algorithm = _vtk.vtkMarchingCubes()
+        self._surface_algorithm.SetInputData(self._image_data)
+        self._surface_algorithm.ComputeNormalsOn()
 
-
-    def _set_volume(self, volume):
-        """Set a 3D numpy array of the density that should be plotted without
-        updating any of the vtk objects."""
-        self._image_shape = volume.shape
-        self._volume_array = volume
-
-    def set_volume(self, volume):
-        """Set a 3D numpy array of the density that should be plotted."""
-        self._set_volume(volume)
-        #what else
-
-    def get_actor(self):
-        """Return the vtk actor responsible for the isosurface."""
-        return self._actor
-
-    def get_data(self):
-        """Return the volume array for easy replacement elsewhere."""
-        pass
-
-    def set_color(self, color):
-        """Change the color of the surface. Takes indexable of length 3."""
-        if len(color) != 3:
-            raise ValueError("Color must have length 3. (Was {0})".format(len(color)))
-        self._color = color
-
-    def _generate_vtk_volume(self):
-        """Generate the vtkImageData object and connect it to a numpy array."""
-        self._volume_max = 1.
-
-        self._volume = _vtk.vtkImageData()
-        self._volume.SetDimensions(*self._image_shape)
-
-        self._volume_scalars = _vtk.vtkFloatArray()
-        self._volume_scalars.SetNumberOfValues(_numpy.product(self._image_shape))
-        self._volume_scalars.SetNumberOfComponents(1)
-        self._volume_scalars.SetName("FooName")
-        volume_array_flat = self._volume_array.flatten()
-
-        for i in range(_numpy.product(self._image_shape)):
-            self._volume_scalars.SetValue(i, volume_array_flat[i])
-
-        self._volume.GetPointData().SetScalars(self._volume_scalars)
-
-    def _setup_surface(self):
-        """create the isosurface object and plotting objects."""
-        self._algorithm = _vtk.vtkMarchingCubes()
-        if VTK_VERSION < 6:
-            self._algorithm.SetInput(self._volume)
-        else:
-            self._algorithm.SetInputData(self._volume)
-        self._algorithm.ComputeNormalsOn()
-        self._algorithm.SetValue(0, self._surface_level)
+        if level is not None:
+            try:
+                self.set_multiple_levels(iter(level))
+            except TypeError:
+                self.set_level(0, level)
 
         self._mapper = _vtk.vtkPolyDataMapper()
-        self._mapper.SetInputConnection(self._algorithm.GetOutputPort())
-        self._mapper.ScalarVisibilityOff()
+        self._mapper.SetInputConnection(self._surface_algorithm.GetOutputPort())
+        self._mapper.ScalarVisibilityOn() # new
         self._actor = _vtk.vtkActor()
-        self._actor.GetProperty().SetColor(*self._color)
         self._actor.SetMapper(self._mapper)
 
+    def _setup_data(self, volume):
+        """Setup the relation between the numpy volume, the vtkFloatArray and vtkImageData."""
+        self._volume_array = _numpy.zeros(volume.shape, dtype="float32", order="C")
+        self._volume_array[:] = volume
+        self._float_array.SetNumberOfValues(_numpy.product(volume.shape))
+        self._float_array.SetNumberOfComponents(1)
+        self._float_array.SetVoidArray(self._volume_array, _numpy.product(volume.shape), 1)
+        self._image_data.SetDimensions(*self._volume_array.shape)
 
-def plot_isosurface(model, level=None):
-    surface_object = IsoSurface(model, level)
-    
+    def set_renderer(self, renderer):
+        """Set the vtkRenderer to render the isosurfaces. Adding a new renderer will remove the last one."""
+        if self._actor is None:
+            raise RuntimeError("Actor does not exist.")
+        if self._renderer is not None:
+            self._renderer.RemoveActor(self._actor)
+        self._renderer = renderer
+        self._renderer.AddActor(self._actor)
+
+    def set_multiple_levels(self, levels):
+        """Remova any current surface levels and add the ones from the provided list."""
+        self._surface_algorithm.SetNumberOfContours(0)
+        for index, this_level in enumerate(levels):
+            self._surface_algorithm.SetValue(index, this_level)
+        self._render()
+
+    def get_levels(self):
+        """Return a list of the current surface levels."""
+        return [self._surface_algorithm.GetValue(index) for index in range(self._surface_algorithm.GetNumberOfContours())]
+
+    def add_level(self, level):
+        """Add a single surface level."""
+        self._surface_algorithm.SetValue(self._surface_algorithm.GetNumberOfContours(), level)
+        self._render()
+
+    def remove_level(self, index):
+        """Remove a singel surface level at the provided index."""
+        for index in range(index, self._surface_algorithm.GetNumberOfContours()-1):
+            self._surface_algorithm.SetValue(index, self._surface_algorithm.GetValue(index+1))
+        self._surface_algorithm.SetNumberOfContours(self._surface_algorithm.GetNumberOfContours()-1)
+        self._render()
+
+    def set_level(self, index, level):
+        """Change the value of an existing surface level."""
+        self._surface_algorithm.SetValue(index, level)
+        self._render()
+
+    def set_cmap(self, cmap):
+        """Set the colormap. Supports all matplotlib colormaps."""
+        self._mapper.ScalarVisibilityOn()
+        self._mapper.SetLookupTable(get_lookup_table(self._volume_array.min(), self._volume_array.max(), colorscale=cmap))
+        self._render()
+
+    def set_color(self, color):
+        """Plot all surfaces in the provided color. Accepts an rbg iterable."""
+        self._mapper.ScalarVisibilityOff()
+        self._actor.GetProperty().SetColor(color[0], color[1], color[2])
+        self._render()
+
+    def set_opacity(self, opacity):
+        """Set the opacity of all surfaces. (seting it individually for each surface is not supported)"""
+        self._actor.GetProperty().SetOpacity(opacity)
+        self._render()
+
+    def _render(self):
+        """Render if a renderer is set, otherwise do nothing."""
+        if self._renderer is not None:
+            self._renderer.GetRenderWindow().Render()
+
+    def set_data(self, volume):
+        """Change the data displayed. The new array must have the same shape as the current one."""
+        if volume.shape != self._volume_array.shape:
+            raise ValueError("New volume must be the same shape as the old one")
+        self._volume_array[:] = volume
+        self._float_array.Modified()
+        self._render()
+
+def plot_isosurface(volume, level=None):
+    """Plot isosurfaces of the provided module. Levels can be iterable or singel value."""
+    surface_object = IsoSurface(volume, level)
+
     renderer = _vtk.vtkRenderer()
     render_window = _vtk.vtkRenderWindow()
     render_window.AddRenderer(renderer)
@@ -399,15 +462,17 @@ def plot_isosurface(model, level=None):
     interactor.SetRenderWindow(render_window)
     interactor.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
 
-    renderer.AddActor(surface_object.get_actor())
-    
+    #renderer.AddActor(surface_object.get_actor())
+    surface_object.set_renderer(renderer)
+
     renderer.SetBackground(0., 0., 0.)
     render_window.SetSize(800, 800)
     interactor.Initialize()
     render_window.Render()
-    interactor.Start()
+    #interactor.Start()
 
 def plot_planes(array_in, log=False, cmap=None):
+    """Plot two interactive planes cutting the provided volume."""
     renderer = _vtk.vtkRenderer()
     render_window = _vtk.vtkRenderWindow()
     render_window.AddRenderer(renderer)
@@ -421,10 +486,11 @@ def plot_planes(array_in, log=False, cmap=None):
     lut = get_lookup_table(max(0., array_in.min()), array_in.max(), log=log, colorscale=cmap)
     picker = _vtk.vtkCellPicker()
     picker.SetTolerance(0.005)
-    
+
     image_data = array_to_image_data(array_in)
-    
+
     def setup_plane():
+        """Create and setup a singel plane."""
         plane = _vtk.vtkImagePlaneWidget()
         if VTK_VERSION >= 6:
             plane.SetInputData(image_data)
@@ -439,7 +505,7 @@ def plot_planes(array_in, log=False, cmap=None):
         plane.SetRightButtonAction(0)
         plane.SetInteractor(interactor)
         return plane
-    
+
     plane_1 = setup_plane()
     plane_1.SetPlaneOrientationToXAxes()
     plane_1.SetSliceIndex(array_in.shape[0]/2)
@@ -448,10 +514,205 @@ def plot_planes(array_in, log=False, cmap=None):
     plane_2.SetPlaneOrientationToYAxes()
     plane_2.SetSliceIndex(array_in.shape[1]/2)
     plane_2.SetEnabled(1)
-    
+
     renderer.SetBackground(0., 0., 0.)
     render_window.SetSize(800, 800)
     interactor.Initialize()
     render_window.Render()
     interactor.Start()
-    
+
+class SynchronizedInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick):
+    def __init__(self):
+        #super(SynchronizedInteractorStyle, self).__init__()
+        self._moving = False
+        self._panning = False
+        self._shift_pressed = False        
+        self._renderers = []
+
+        self.AddObserver("MouseMoveEvent", self._mouse_move_event)
+        self.AddObserver("LeftButtonPressEvent", self._left_button_press_event)
+        self.AddObserver("LeftButtonReleaseEvent", self._left_button_release_event)
+        self.AddObserver("MiddleButtonPressEvent", self._middle_button_press_event)
+        self.AddObserver("MiddleButtonReleaseEvent", self._middle_button_release_event)
+        self.AddObserver("RightButtonPressEvent", self._right_button_press_event)
+        self.AddObserver("RightButtonReleaseEvent", self._right_button_release_event)
+        self.AddObserver("MouseWheelForwardEvent", self._mouse_wheel_forward_event)
+        self.AddObserver("MouseWheelBackwardEvent", self._mouse_wheel_backward_event)
+        self.AddObserver("KeyPressEvent", self._key_press_event)
+        self.AddObserver("KeyReleaseEvent", self._key_release_event)
+        # self.AddObserver("KeyDownEvent", self._key_down_event)
+        # self.AddObserver("KeyUpEvent", self._key_up_event)
+
+    def _render_all(self):
+        for renderer in self._renderers:
+            renderer.GetRenderWindow().Render()
+
+    def _left_button_press_event(self, obj, event):
+        # if self.GetShiftKey():
+        #     self._panning = True
+        # else:
+        #     self._moving = True
+        self._moving = True
+        self.OnLeftButtonDown()
+
+    def _left_button_release_event(self, obj, event):
+        self._moving = False
+        self._panning = False
+        self.OnLeftButtonDown()
+
+    def _middle_button_press_event(self, obj, event):
+        self._moving = True
+        self.OnMiddleButtonDown()
+
+    def _middle_button_release_event(self, obj, event):
+        self._moving = False
+        self.OnMiddleButtonDown()
+
+    def _right_button_press_event(self, obj, event):
+        self._moving = True
+        self.OnRightButtonDown()
+
+    def _right_button_release_event(self, obj, event):
+        self._moving = False
+        self.OnRightButtonDown()
+
+    def _mouse_wheel_forward_event(self, obj, event):
+        self.OnMouseWheelForward()
+        self._render_all()
+
+    def _mouse_wheel_backward_event(self, obj, event):
+        self.OnMouseWheelBackward()
+        self._render_all()
+
+    def _mouse_move_event(self, obj, event):
+        if self._moving:
+            if self._shift_pressed:
+                self.Pan()
+            else:
+                self.Rotate()
+            self._render_all()
+
+    def _key_press_event(self, obj, event):
+        if self.GetInteractor().GetShiftKey():
+            self._shift_pressed = True
+
+    def _key_release_event(self, obj, event):
+        if not self.GetInteractor().GetShiftKey():
+            self._shift_pressed = False
+
+    def call(self, function):
+        def new_function(obj, event):
+            self._render_all()
+            function()
+        return new_function
+
+    def add_renderer(self, renderer):
+        self._renderers.append(renderer)
+
+def synchronize_renderers(renderer_list):
+    for renderer in renderer_list:
+        render_window = renderer.GetRenderWindow()
+        interactor = render_window.GetInteractor()        
+        my_interactor_style = SynchronizedInteractorStyle()
+        interactor.SetInteractorStyle(my_interactor_style)
+        my_interactor_style.add_renderer(renderer)
+        for other_renderer in renderer_list:
+            if other_renderer is not renderer:
+                my_interactor_style.add_renderer(other_renderer)
+    camera = renderer_list[0].GetActiveCamera()
+    for renderer in renderer_list:
+        renderer.SetActiveCamera(camera)
+
+def setup_window(size=(400, 400), background=(1., 1., 1.)):
+    renderer = _vtk.vtkRenderer()
+    #renderer.SetUseDepthPeeling(True)
+    render_window = _vtk.vtkRenderWindow()
+    render_window.AddRenderer(renderer)
+    interactor = _vtk.vtkRenderWindowInteractor()
+    interactor.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
+    interactor.SetRenderWindow(render_window)
+
+    renderer.SetBackground(background[0], background[1], background[2])
+    render_window.SetSize(size[0], size[1])
+
+    interactor.Initialize()
+    render_window.Render()
+    return renderer, render_window, interactor
+
+def scatterplot_3d(data, color=None, point_size=None, cmap="jet", point_shape=None):
+    if len(data.shape) != 2 or data.shape[1] != 3:
+        raise ValueError("data must have shape (n, 3) where n is the number of points.")
+    if point_shape is None:
+        if len(data) <= 1000:
+            point_shape = "spheres"
+        else:
+            point_shape = "squares"
+    data = _numpy.float32(data)
+    data_vtk = array_to_float_array(data)
+    point_data = _vtk.vtkPoints()
+    point_data.SetData(data_vtk)
+    points_poly_data = _vtk.vtkPolyData()
+    points_poly_data.SetPoints(point_data)
+
+    if not color is None:
+        lut = get_lookup_table(color.min(), color.max())
+        color_scalars = array_to_vtk(_numpy.float32(color.copy()))
+        color_scalars.SetLookupTable(lut)
+        points_poly_data.GetPointData().SetScalars(color_scalars)
+
+    if point_shape == "spheres":
+        if point_size is None:
+            point_size = _numpy.array(data).std() / len(data)**(1./3.) / 3.
+        glyph_filter = _vtk.vtkGlyph3D()
+        glyph_filter.SetInputData(points_poly_data)
+        sphere_source = _vtk.vtkSphereSource()
+        sphere_source.SetRadius(point_size)
+        glyph_filter.SetSourceConnection(sphere_source.GetOutputPort())
+        glyph_filter.SetScaleModeToDataScalingOff()
+        if not color is None:
+            glyph_filter.SetColorModeToColorByScalar()
+        else:
+            glyph_filter.SetColorMode(0)
+        glyph_filter.Update()
+    elif point_shape == "squares":
+        if point_size is None:
+            point_size = 3
+        glyph_filter = _vtk.vtkVertexGlyphFilter()
+        glyph_filter.SetInputData(points_poly_data)
+        glyph_filter.Update()
+    else:
+        raise ValueError("{0} is not a valid entry for points".format(points))
+
+    poly_data = _vtk.vtkPolyData()
+    poly_data.ShallowCopy(glyph_filter.GetOutput())
+
+    renderer, render_window, interactor = setup_window()
+
+    mapper = _vtk.vtkPolyDataMapper()
+    mapper.SetInputData(poly_data)
+    if not color is None:
+        mapper.SetLookupTable(lut)
+        mapper.SetUseLookupTableScalarRange(True)
+
+    points_actor = _vtk.vtkActor()
+    points_actor.SetMapper(mapper)
+    points_actor.GetProperty().SetPointSize(point_size)
+    points_actor.GetProperty().SetColor(0., 0., 0.)
+
+    axes_actor = _vtk.vtkCubeAxesActor()
+    axes_actor.SetBounds(points_actor.GetBounds())
+    axes_actor.SetCamera(renderer.GetActiveCamera())
+    axes_actor.SetFlyModeToStaticTriad()
+    #axes_actor.GetProperty().SetColor(0., 0., 0.)
+    axes_actor.GetXAxesLinesProperty().SetColor(0., 0., 0.)
+    axes_actor.GetYAxesLinesProperty().SetColor(0., 0., 0.)
+    axes_actor.GetZAxesLinesProperty().SetColor(0., 0., 0.)
+    for i in range(3):
+        axes_actor.GetLabelTextProperty(i).SetColor(0., 0., 0.)
+        axes_actor.GetTitleTextProperty(i).SetColor(0., 0., 0.)
+
+    renderer.AddActor(points_actor)
+    renderer.AddActor(axes_actor)
+
+    render_window.Render()
+    interactor.Start()
