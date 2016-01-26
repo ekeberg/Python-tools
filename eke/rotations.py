@@ -69,7 +69,16 @@ def quaternion_inverse(quat_in):
 def quaternion_normalize(quat):
     """Normalize the quaternion and return the same object. (input quaternion is changed)"""
     norm = _numpy.linalg.norm(quat)
+    quaternion_fix_sign(quat)
     return quat/norm
+
+def quaternion_fix_sign(quat):
+    def fix_index(quat, index):
+        if quat[index] < 0:
+            quat[index] = abs(quat[index])
+        elif quat[index] == 0 and index < 3:
+            fix_index(quat, index+1)
+    fix_index(quat, 0)
 
 def quaternion_multiply(quat_1, quat_2):
     """Return the product of quat_1 and quat_2"""
@@ -91,6 +100,12 @@ def rotate_array(quat, z_coordinates, y_coordinates, x_coordinates):
     out_matrix = rotation_matrix*_numpy.matrix([z_coordinates, y_coordinates, x_coordinates])
     out_array = _numpy.array(out_matrix)
     return out_array[0], out_array[1], out_array[2]
+
+def rotate_array(quat, coordinates):
+    rotation_matrix = quaternion_to_matrix(quat)
+    out_matrix = rotation_matrix*_numpy.matrix(coordinates).transpose()
+    out_array = _numpy.array(out_matrix).transpose()
+    return out_array
 
 def rotate_array_bw(quat, x_coordinates, y_coordinates, z_coordinates):
     """Like rotate_array but with the coordintes index backwords. Do not use."""

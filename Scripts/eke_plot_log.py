@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 import sys
 import pylab
 from optparse import OptionParser
@@ -27,8 +27,10 @@ def plot_log(log_file, plot_types):
 
     pylab.legend()
 
+
+
 if __name__ == "__main__":
-    import tools
+    from eke import tools
 
     parser = OptionParser(usage="%prog [-p plot1 -p plot2 ...] <logfile.log>")
     parser.add_option("-p", action="append", type="choice", dest="plots", help="Specify a plot to plot.",

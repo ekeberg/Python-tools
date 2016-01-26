@@ -1,5 +1,6 @@
 """Conversions between commonly used units."""
-import constants as _constants
+#import constants as _constants
+from . import constants as _constants
 
 def ev_to_m(electronvolt):
     """Photon energy in electronvolt to wavelength in meter."""

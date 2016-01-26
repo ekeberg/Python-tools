@@ -1,14 +1,13 @@
-from mpi4py import MPI
-import collections
+from mpi4py import MPI as _MPI
 
 WORKTAG = 0
 DIETAG = 1
 
 def slave(function):
-    comm = MPI.COMM_WORLD
-    status = MPI.Status()
+    comm = _MPI.COMM_WORLD
+    status = _MPI.Status()
     while 1:
-        data = comm.recv(obj=None, source=0, tag=MPI.ANY_TAG, status=status)
+        data = comm.recv(obj=None, source=0, tag=_MPI.ANY_TAG, status=status)
         if status.Get_tag():
             break
         result = function(data[1])
@@ -16,13 +15,13 @@ def slave(function):
 
 
 def master(jobs):
-    comm = MPI.COMM_WORLD
+    comm = _MPI.COMM_WORLD
     size = comm.Get_size()
     if len(jobs) < size:
         active_size = len(jobs)
     else:
         active_size = size
-    status = MPI.Status()
+    status = _MPI.Status()
     job_stack = [(i, v) for i, v in enumerate(jobs)]
     all_data = []
 
@@ -41,12 +40,12 @@ def master(jobs):
             next_job = job_stack.pop()
         except IndexError:
             break
-        data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG, status=status)
+        data = comm.recv(obj=None, source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG, status=status)
         all_data.append(data)
         comm.send(obj=next_job, dest=status.Get_source(), tag=WORKTAG)
 
     for i in range(1, active_size):
-        data = comm.recv(obj=None, source=MPI.ANY_SOURCE, tag=MPI.ANY_TAG)
+        data = comm.recv(obj=None, source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG)
         all_data.append(data)
 
     for i in range(1, active_size):
@@ -57,7 +56,7 @@ def master(jobs):
     return data_no_index
 
 def run_in_parallel(function, jobs):
-    comm = MPI.COMM_WORLD
+    comm = _MPI.COMM_WORLD
     rank = comm.Get_rank()
     
     if rank == 0:
@@ -68,7 +67,7 @@ def run_in_parallel(function, jobs):
     
 
 def is_master():
-    comm = MPI.COMM_WORLD
+    comm = _MPI.COMM_WORLD
     rank = comm.Get_rank()
     if rank == 0:
         return True
@@ -76,12 +75,12 @@ def is_master():
         return False
 
 def number_of_slaves():
-    comm = MPI.COMM_WORLD
+    comm = _MPI.COMM_WORLD
     size = comm.Get_size()
     return size - 1
 
 def rank():
-    comm = MPI.COMM_WORLD
+    comm = _MPI.COMM_WORLD
     rank = comm.Get_rank()
     return rank
     

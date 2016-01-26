@@ -1,21 +1,22 @@
-import numpy
+import numpy as _numpy
+import scipy as _scipy
 import scipy.stats
-import matplotlib
+import matplotlib as _matplotlib
 import matplotlib.pyplot
 import matplotlib.widgets
 import matplotlib.colors
-import itertools
-import abc
+import itertools as _itertools
+import abc as _abc
 
 
 def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
     """Plot a scatterplot with colorcode for the density."""
     if ax == None:
-        ax = matplotlib.pyplot.gca()
-    xy = numpy.vstack([x, y])
-    #z = scipy.stats.gaussian_kde(xy, 0.03)(xy)
-    sigma = numpy.mean((x.max() - x.min(), y.max() - y.min())) * s / 10000
-    z = scipy.stats.gaussian_kde(xy, sigma)(xy)
+        ax = _matplotlib.pyplot.gca()
+    xy = _numpy.vstack([x, y])
+    #z = _scipy.stats.gaussian_kde(xy, 0.03)(xy)
+    sigma = _numpy.mean((x.max() - x.min(), y.max() - y.min())) * s / 10000
+    z = _scipy.stats.gaussian_kde(xy, sigma)(xy)
     idx = z.argsort()
     x_sorted = x[idx]
     y_sorted = y[idx]
@@ -25,30 +26,30 @@ def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
 
 
 class BaseBrowser(object):
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = _abc.ABCMeta
     def __init__(self, data, layout=(1, 1)):
         self._data = data
         self._layout = layout
 
         self._number_of_plots = len(data)
-        self._plots_per_page = numpy.product(layout)
+        self._plots_per_page = _numpy.product(layout)
         self._number_of_pages = (self._number_of_plots-1) / self._plots_per_page + 1
         self._current_page = 0
 
-        with matplotlib.rc_context({"toolbar": "None"}):
-            self._fig = matplotlib.pyplot.figure("Browser")
+        with _matplotlib.rc_context({"toolbar": "None"}):
+            self._fig = _matplotlib.pyplot.figure("Browser")
             self._fig.clear()
-            #matplotlib.pyplot.show()
+            #_matplotlib.pyplot.show()
         self._fig.set_facecolor("white")
         self._fig.subplots_adjust(left=0., bottom=0.1, right=1., top=0.95, wspace=0., hspace=0.05)
 
-        self._axes = [self._fig.add_subplot(layout[0], layout[1], 1+i0*layout[1]+i1) for i0, i1 in itertools.product(xrange(layout[0]), xrange(layout[1]))]
+        self._axes = [self._fig.add_subplot(layout[0], layout[1], 1+i0*layout[1]+i1) for i0, i1 in _itertools.product(xrange(layout[0]), xrange(layout[1]))]
 
         ax_prev = self._fig.add_axes([0.1, 0.01, 0.3, 0.09])
         ax_next = self._fig.add_axes([0.6, 0.01, 0.3, 0.09])
 
-        self._button_prev = matplotlib.widgets.Button(ax_prev, "Previous")
-        self._button_next = matplotlib.widgets.Button(ax_next, "Next")
+        self._button_prev = _matplotlib.widgets.Button(ax_prev, "Previous")
+        self._button_next = _matplotlib.widgets.Button(ax_next, "Next")
         self._button_prev.on_clicked(self._prev)
         self._button_next.on_clicked(self._next)
 
@@ -79,20 +80,20 @@ class BaseBrowser(object):
             current_high=min((self._current_page+1)*self._plots_per_page-1, self._number_of_plots),
             max_index=self._number_of_plots))
 
-    @abc.abstractmethod
+    @_abc.abstractmethod
     def _first_plot(self):
         pass
 
-    @abc.abstractmethod
+    @_abc.abstractmethod
     def _plot(self):
         pass
 
 class ImageBrowser(BaseBrowser):
     def __init__(self, data, layout, log=False):
         if log:
-            self._norm = matplotlib.colors.LogNorm()
+            self._norm = _matplotlib.colors.LogNorm()
         else:
-            self._norm = matplotlib.colors.NoNorm()
+            self._norm = _matplotlib.colors.NoNorm()
         super(ImageBrowser, self).__init__(data, layout)
 
     def _first_plot(self):
@@ -105,7 +106,7 @@ class ImageBrowser(BaseBrowser):
     def _plot(self):
         for local_index in xrange(self._plots_per_page):
             if self._local_to_global_index(local_index) >= self._number_of_plots:
-                self._plot_array[local_index].set_data(numpy.zeros(self._data[0].shape))
+                self._plot_array[local_index].set_data(_numpy.zeros(self._data[0].shape))
             else:
                 self._plot_array[local_index].set_data(self._data[self._local_to_global_index(local_index)])
                 self._fig.canvas.draw()
@@ -122,14 +123,14 @@ class PlotBrowser(BaseBrowser):
 
     def _plot(self):
         for local_index in xrange(self._plots_per_page):
-            self._plot_array[local_index][0].set_data(numpy.arange(len(self._data[0])), self._data[self._local_to_global_index(local_index)])
+            self._plot_array[local_index][0].set_data(_numpy.arange(len(self._data[0])), self._data[self._local_to_global_index(local_index)])
             self._fig.canvas.draw()
 
 class BaseScatterplotPick(object):
-    __metaclass__ = abc.ABCMeta
+    __metaclass__ = _abc.ABCMeta
     def __init__(self, x, y, data):
         self._data = data
-        self._fig = matplotlib.pyplot.figure("ScatterPick")
+        self._fig = _matplotlib.pyplot.figure("ScatterPick")
         self._fig.clear()
         self.scatter_ax = self._fig.add_subplot(121)
         self.data_ax = self._fig.add_subplot(122)
@@ -146,11 +147,11 @@ class BaseScatterplotPick(object):
         index = event.ind[0]
         self._plot(index)
 
-    @abc.abstractmethod
+    @_abc.abstractmethod
     def _first_plot(self):
         pass
 
-    @abc.abstractmethod
+    @_abc.abstractmethod
     def _plot(self, index):
         pass
 
@@ -158,9 +159,9 @@ class BaseScatterplotPick(object):
 class ImageScatterplotPick(BaseScatterplotPick):
     def __init__(self, x, y, data, log=False):
         if log:
-            self._norm = matplotlib.colors.LogNorm(clip=True)
+            self._norm = _matplotlib.colors.LogNorm(clip=True)
         else:
-            self._norm = matplotlib.colors.NoNorm()
+            self._norm = _matplotlib.colors.NoNorm()
 
         super(ImageScatterplotPick, self).__init__(x, y, data)
 

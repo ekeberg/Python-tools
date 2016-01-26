@@ -1,7 +1,7 @@
 """Small GUI tools for use in smaller python scripts. I think the implementation
 of the Manipulator looks weirt, but it works. Needs non integer manipulation."""
-from QtVersions import QtCore, QtGui
-import sys
+from .QtVersions import QtCore, QtGui
+import sys as _sys
 
 class Manipulator(QtGui.QMainWindow):
     """Run a function with varying numerical input using a slider to change the value.
@@ -90,7 +90,7 @@ def manipulate(function, value_range, value_name=None):
     """Manipulate a single variable."""
     if not value_name:
         value_name = ['Variable']
-    app = QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication(_sys.argv)
     manipulator = Manipulator(function, [value_range], [value_name])
     manipulator.show()
     #manipulator.start()
@@ -98,7 +98,7 @@ def manipulate(function, value_range, value_name=None):
 
 def manipulate_multi(function, value_ranges, value_names=None):
     """Manipulate multiple variables at the same time."""
-    app = QtGui.QApplication(sys.argv)
+    app = QtGui.QApplication(_sys.argv)
     if not value_names:
         value_names = [str(i) for i in range(len(value_ranges))]
     manipulator = Manipulator(function, value_ranges, value_names)

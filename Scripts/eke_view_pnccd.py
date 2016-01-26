@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 import sys, h5py, pylab
 from optparse import OptionParser
 

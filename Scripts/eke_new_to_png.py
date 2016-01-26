@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 """
 This program converts all .h5 files in the current
 directory to .png using the HAWK program

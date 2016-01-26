@@ -1,8 +1,8 @@
 import numpy as _numpy
 import nfft as _nfft
-import rotations as _rotations
-import constants as _constants
-import conversions as _conversions
+from . import rotations as _rotations
+from . import constants as _constants
+from . import conversions as _conversions
 
 
 def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size):

@@ -1,7 +1,7 @@
 """Calls the repeat reconstruction script to do many reconstructions. This is obsolete for use
 in Uppsala since multiple reconstructions are preferably run on the GPU cluster."""
-import os
-import re
+import os as _os
+import re as _re
 
 class Reconstructer(object):
     """Calls the repeat reconstruction script to do many reconstructions. Made to be used
@@ -13,23 +13,23 @@ class Reconstructer(object):
         self._base_dir = base_dir
         self._n_recs = n_recs
         self._conf_dict = conf_dict
-        self._rec_name = os.path.basename(self._ints_name)[:-3]
+        self._rec_name = _os.path.basename(self._ints_name)[:-3]
         self._rec_dir = '%s/%s' % (self._base_dir, self._rec_name)
-        if not os.path.isdir(self._rec_dir):
-            os.mkdir(self._rec_dir)
-        os.chdir(self._rec_dir)
+        if not _os.path.isdir(self._rec_dir):
+            _os.mkdir(self._rec_dir)
+        _os.chdir(self._rec_dir)
         self._conf_file = self._edit_conf(conf_file)
 
     def _edit_conf(self, conf_file):
         """Update the configurations file based on the _conf_dict variables."""
         with open(conf_file, "r") as file_handle:
             lines = file_handle.readlines()
-        index = [i for i in range(len(lines)) if re.search('intensities_file', lines[i])][0]
+        index = [i for i in range(len(lines)) if _re.search('intensities_file', lines[i])][0]
         #index = lines.index('  intensities_file =;\n')
         lines[index] = '  intensities_file = \"%s\";\n' % self._ints_name
         for key in self._conf_dict.keys():
-            index = [i for i in range(len(lines)) if re.search('%s =' % key, lines[i])][0]
-            re_result = re.search('^(.*)=', lines[index])
+            index = [i for i in range(len(lines)) if _re.search('%s =' % key, lines[i])][0]
+            re_result = _re.search('^(.*)=', lines[index])
             if re_result:
                 key_name = re_result.groups()[0] #this code looks unnecesarily complicated
                 lines[index] = '%s = %s;\n' % (key_name, self._conf_dict[key])
@@ -40,7 +40,7 @@ class Reconstructer(object):
 
     def start(self):
         """Starts the reconstruction"""
-        os.system('/usr/local/bin/repeat_reconstruction.pl %d' % self._n_recs)
+        _os.system('/usr/local/bin/repeat_reconstruction.pl %d' % self._n_recs)
 
 class MultipleReconstructions(object):
     """Performs multiple reconstructions of multiple files using the Reconstructer class."""
@@ -54,8 +54,8 @@ class MultipleReconstructions(object):
 
     def get_file_list(self):
         """Create a list of paths to all h5 files."""
-        files = os.listdir(self._ints_dir)
-        files = ['%s/%s' % (self._ints_dir, f) for f in files if re.search('\.h5$', f)]
+        files = _os.listdir(self._ints_dir)
+        files = ['%s/%s' % (self._ints_dir, f) for f in files if _re.search('\.h5$', f)]
         files.sort()
         return files
 

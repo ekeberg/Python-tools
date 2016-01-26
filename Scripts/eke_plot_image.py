@@ -1,4 +1,4 @@
-#!/bin/env python
+#!/usr/bin/env python
 #import spimage, pylab, sys, re
 from eke import sphelper
 import pylab, sys, re
