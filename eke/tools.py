@@ -147,7 +147,7 @@ def radial_average(image, mask=None):
     """Calculates the radial average of an array of any shape,
     the center is assumed to be at the physical center."""
     import pylab
-    if mask == None:
+    if mask is None:
         mask = pylab.ones(image.shape, dtype='bool8')
     else:
         mask = pylab.bool8(mask)
