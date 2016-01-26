@@ -2,16 +2,14 @@
 spatial rotation."""
 import numpy as _numpy
 
-def random_quaternion():
-    """Return a random rotation quaternion, as a length-4 array."""
-    # The method of generating random rotations is taken from here:
-    # http://planning.cs.uiuc.edu/node198.html
-    random_base = _numpy.random.random(3)
-    quat = _numpy.array([_numpy.sqrt(1.-random_base[0])*_numpy.sin(2.*_numpy.pi*random_base[1]),
-                        _numpy.sqrt(1.-random_base[0])*_numpy.cos(2.*_numpy.pi*random_base[1]),
-                        _numpy.sqrt(random_base[0])*_numpy.sin(2.*_numpy.pi*random_base[2]),
-                        _numpy.sqrt(random_base[0])*_numpy.cos(2.*_numpy.pi*random_base[2])])
-    return quat
+def random_quaternion(number_of_quaternions=1):
+    random_base = _numpy.random.random((number_of_quaternions, 3))
+    quats = _numpy.empty((number_of_quaternions, 4))
+    quats[:, 0] = _numpy.sqrt(1.-random_base[:, 0]) * _numpy.sin(2.*_numpy.pi*random_base[:, 1])
+    quats[:, 1] = _numpy.sqrt(1.-random_base[:, 0]) * _numpy.cos(2.*_numpy.pi*random_base[:, 1])
+    quats[:, 2] = _numpy.sqrt(random_base[:, 0]) * _numpy.sin(2.*_numpy.pi*random_base[:, 2])
+    quats[:, 3] = _numpy.sqrt(random_base[:, 0]) * _numpy.cos(2.*_numpy.pi*random_base[:, 2])
+    return quats.squeeze()
 
 def quaternion_from_dir_and_angle(angle, direction):
     """The quaternion corresponding to a rotations of angle (rad) around the
