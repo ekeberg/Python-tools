@@ -99,6 +99,14 @@ def circular_mask(side, radius=None):
     mask = radius2 < radius**2
     return mask
 
+def square_mask(side, mask_side):
+    """Returns a 2D bool array with a circular mask. If no radius is specified half of the
+    array side is used."""
+    mask = _numpy.zeros((side, )*2, dtype="bool8")
+    slicing_1d = slice(side/2-mask_side/2, side/2+(mask_side+1)/2)
+    mask[slicing_1d, slicing_1d] = True
+    return mask
+
 def ellipsoidal_mask(side, large_radius, small_radius, direction):
     """Not very well tested yet"""
     direction = direction / _numpy.sqrt(direction[0]**2+direction[1]**2)
@@ -287,7 +295,8 @@ def enum(**enums):
 
 def log_range(min_value, max_value, steps):
     """A range that has the values logarithmically distributed"""
-    return _numpy.exp(_numpy.arange(_numpy.log(min_value), _numpy.log(max_value), (_numpy.log(max_value) - _numpy.log(min_value))/steps))
+    #return _numpy.exp(_numpy.arange(_numpy.log(min_value), _numpy.log(max_value), (_numpy.log(max_value) - _numpy.log(min_value))/steps))
+    return _numpy.exp(_numpy.linspace(_numpy.log(min_value), _numpy.log(max_value), steps))
 
 def required_number_of_orientations(particle_size, resolution, prob):
     r = particle_size / resolution
