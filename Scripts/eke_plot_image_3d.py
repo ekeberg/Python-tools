@@ -21,7 +21,7 @@ def read_image(image_file, mask):
     else:
         field = 'image'
     try:
-        img = numpy.real(sphelper.import_spimage(image_file, [field]))
+        img = sphelper.import_spimage(image_file, [field])
     except:
         raise IOError("%s is not a readable h5 image." % image_file)
     return img
@@ -174,10 +174,15 @@ if __name__ == "__main__":
     
     if len(args) == 0: raise InputError("No input image")
 
+    #from IPython.core.debugger import Tracer
+    #Tracer()()
+
     image = read_image(args[0], options.mask)
     if options.shift:
         image = numpy.fft.fftshift(image)
-    
+    if abs(image.imag).max() > 0:
+        image = abs(image)
+
     #plot_image_3d(image, options.shift, options.log, options.surface)
     app = QtGui.QApplication([args[0]])
     if options.surface:
