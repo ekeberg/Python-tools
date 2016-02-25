@@ -150,8 +150,9 @@ def bincoef(n, k):
 def radial_average(image, mask=None):
     """Calculates the radial average of an array of any shape,
     the center is assumed to be at the physical center."""
-    if mask == None:
-        mask = _numpy.ones(image.shape, dtype='bool8')
+    import pylab
+    if mask is None:
+        mask = pylab.ones(image.shape, dtype='bool8')
     else:
         mask = _numpy.bool8(mask)
     axis_values = [_numpy.arange(l) - l/2. + 0.5 for l in image.shape]
