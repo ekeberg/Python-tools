@@ -67,11 +67,16 @@ class SurfaceViewer(VtkWindow):
         #self._vtk_widget.Initialize()
 
         self._value_range = (self._volume.min(), self._volume.max())
-        self._surface_level = numpy.mean(self._value_range)
+
+        self._SLIDER_MAXIMUM = 1000
+        self._INITIAL_SLIDER_POSITION = self._SLIDER_MAXIMUM/2
+        self._level_table = self._adaptive_slider_values(self._volume, self._SLIDER_MAXIMUM)
+        self._surface_level = self._level_table[self._INITIAL_SLIDER_POSITION]
 
     def initialize(self):
         #self._vtk_widget.Initialize()
         super(SurfaceViewer, self).initialize()
+        
         self._surface_algorithm = vtk.vtkMarchingCubes()
         if vtk_tools.VTK_VERSION >= 6:
             self._surface_algorithm.SetInputData(self._image_data)
@@ -91,19 +96,17 @@ class SurfaceViewer(VtkWindow):
         self._vtk_widget.Render()
         
         self._level_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
-        self._SLIDER_MAXIMUM = 100
-        self._level_slider.setValue(self._SLIDER_MAXIMUM/2.)
         self._level_slider.setMaximum(self._SLIDER_MAXIMUM)
         self._level_slider.valueChanged.connect(self._slider_changed)
-
-        self._level_table = self._adaptive_slider_values(self._volume, self._SLIDER_MAXIMUM)
-
+        self._level_slider.setValue(self._INITIAL_SLIDER_POSITION)
+        
         self._layout.addWidget(self._level_slider)
+        self._vtk_widget.Render()
 
     def _slider_changed(self, level):
         # self._surface_level = (float(level) / float(self._SLIDER_MAXIMUM) * (self._value_range[1] - self._value_range[0]) +
         #                        self._value_range[0])
-        # self._surface_level = float(level) / float(self._SLIDER_MAXIMUM)
+        #self._surface_level = float(level) / float(self._SLIDER_MAXIMUM)
         self._surface_level = self._level_table[level]
         self._surface_algorithm.SetValue(0, self._surface_level)
         self._surface_algorithm.Modified()
@@ -112,9 +115,10 @@ class SurfaceViewer(VtkWindow):
     @staticmethod
     def _adaptive_slider_values(density, slider_maximum):
         level_table = numpy.zeros(slider_maximum+1, dtype="float64")
-        density_flat = density.flatten()
+        unique_values = numpy.unique(numpy.sort(density.flat))
         for slider_level in range(slider_maximum+1):
-            level_table[slider_level] = numpy.percentile(density_flat, float(slider_level) / float(slider_maximum) * 100.)
+            level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
+        print level_table
         return level_table
 
 class SliceViewer(VtkWindow):
@@ -191,5 +195,6 @@ if __name__ == "__main__":
         program = SliceViewer(image, options.log)
     program.show()
     program.initialize()
+
     sys.exit(app.exec_())
     
