@@ -11,7 +11,7 @@ def image_from_array(image, mask=None):
     else:
         raise ValueError("Array must be 2 or 3 dimensional")
     img.image[:] = image
-    if mask != None:
+    if mask is not None:
         img.mask[:] = _numpy.int32(mask)
     else:
         img.mask[:] = 1
@@ -31,7 +31,7 @@ def allocate_image(shape):
 
 def get_basic_phaser(amplitudes, support, mask=None):
     """This function is not finished"""
-    if mask == None:
+    if mask is None:
         amplitudes_sp = image_from_array(amplitudes)
     else:
         amplitudes_sp = image_from_array(amplitudes, mask)
