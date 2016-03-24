@@ -118,7 +118,6 @@ class SurfaceViewer(VtkWindow):
         unique_values = numpy.unique(numpy.sort(density.flat))
         for slider_level in range(slider_maximum+1):
             level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
-        print level_table
         return level_table
 
 class SliceViewer(VtkWindow):
