@@ -35,15 +35,21 @@ class Progress(object):
         self._time = new_time
         self._expected_time_left = self._last_iteration_time * (self._number_of_iterations -
                                                                 self._tasks_completed)
-        if new_time > (self._last_output_time + self._max_output_period):
+    def print_message(self, always_output=False):
+        if always_output or new_time > (self._last_output_time + self._max_output_period):
             bar_length = 50
             done_length = int(float(self._tasks_completed) / float(self._number_of_iterations) * bar_length)
             not_done_length = bar_length - done_length
             _sys.stdout.write("\r[{done}{not_done}] {time_left} seconds left".format(done="#"*done_length, not_done="-"*not_done_length,
-                                                                                    time_left=int(self._expected_time_left)))
+                                                                                     time_left=int(self._expected_time_left)))
             _sys.stdout.flush()
             self._last_output_time = new_time
             self._last_output_index = self._tasks_completed
+
+    @property
+    def time_left(self):
+        return self._expected_time_left
+
 
 class StopWatch(object):
     """Uses wall time."""
