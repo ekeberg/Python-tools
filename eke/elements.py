@@ -170,11 +170,6 @@ def get_phase_shift(photon_energy, material, distance):
     total_phase_shift = number_of_wavelengths*phase_shift_per_period
     return total_phase_shift
     
-
-def size_to_nyquist_angle(size, wavelength):
-    """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
-    return wavelength/size
-
 # class Atom5G(object):
 #     """This class is used as a container for the CCP4 scattering factors.
 #     They are 2D scattering factors using the 5 gaussian model at the Cu K-alpha

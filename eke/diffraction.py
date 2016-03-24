@@ -4,6 +4,9 @@ from . import rotations as _rotations
 from . import constants as _constants
 from . import conversions as _conversions
 
+def shannon_angle(size, wavelength):
+    """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
+    return wavelength/size
 
 def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size):
     pixels_to_im = pixel_size/detector_distance/wavelength
