@@ -37,7 +37,6 @@ class Resampler(object):
         def closest_coordinate(coordinate, points):
             """Calculate the point in points closest to the given coordinate."""
             return (((points - coordinate)**2).sum(axis=1)).argmax()
-
         number_of_input_points = len(self._input_points)
         number_of_output_points = len(self._output_points)
         self._table = _numpy.zeros(number_of_input_points, dtype="float64")
@@ -80,7 +79,7 @@ def gaussian_blur_nonperiodic(array, sigma):
     large_array[:pad_size] = array[0]
     large_array[(small_size+pad_size):] = array[-1]
 
-    x_array = _numpy.arange(-large_size/2, large_size/2)
+    x_array = _numpy.arange(-large_size//2, large_size//2)
     kernel = (large_size/_numpy.sqrt(2.*_numpy.pi)/sigma*
               _numpy.fft.fftshift(_numpy.exp(-2.*sigma**2*_numpy.pi**2*(x_array/large_size)**2)))
     image_ft = _numpy.fft.fftn(large_array)
@@ -103,7 +102,7 @@ def square_mask(side, mask_side):
     """Returns a 2D bool array with a circular mask. If no radius is specified half of the
     array side is used."""
     mask = _numpy.zeros((side, )*2, dtype="bool8")
-    slicing_1d = slice(side/2-mask_side/2, side/2+(mask_side+1)/2)
+    slicing_1d = slice(side//2-mask_side//2, side//2+(mask_side+1)//2)
     mask[slicing_1d, slicing_1d] = True
     return mask
 
@@ -111,8 +110,8 @@ def ellipsoidal_mask(side, large_radius, small_radius, direction):
     """Not very well tested yet"""
     direction = direction / _numpy.sqrt(direction[0]**2+direction[1]**2)
     x_array = _numpy.arange(-side/2.+0.5, side/2.+0.5)
-    radius2 = (((x_array[_numpy.newaxis, :]*direction[1] + x_array[:, _numpy.newaxis]*direction[0])/large_radius)**2 +
-               ((x_array[_numpy.newaxis, :]*(-direction[0]) + x_array[:, _numpy.newaxis]*direction[1])/small_radius)**2)
+    radius2 = (((x_array[_numpy.newaxis, :]*direction[1] + x_array[:, _numpy.newaxis]*direction[0])/float(large_radius))**2 +
+               ((x_array[_numpy.newaxis, :]*(-direction[0]) + x_array[:, _numpy.newaxis]*direction[1])/float(small_radius))**2)
     mask = radius2 < 1.
     return mask
 
@@ -147,12 +146,20 @@ def bincoef(n, k):
     from scipy.special import binom
     return binom(n, k)
 
+def radial_distance(shape):
+    """Assumes the middle of the image is the center."""
+    axis_values = [_numpy.arange(this_size) - this_size/2. + 0.5 for this_size in shape]
+    radius = _numpy.zeros((shape[-1]))
+    for i in range(len(shape)):
+        radius = radius + (axis_values[-(1+i)][(slice(0, None), ) + (_numpy.newaxis, )*i])**2
+    radius = _numpy.sqrt(radius)
+    return radius
+
 def radial_average(image, mask=None):
     """Calculates the radial average of an array of any shape,
     the center is assumed to be at the physical center."""
-    import pylab
     if mask is None:
-        mask = pylab.ones(image.shape, dtype='bool8')
+        mask = _numpy.ones(image.shape, dtype='bool8')
     else:
         mask = _numpy.bool8(mask)
     axis_values = [_numpy.arange(l) - l/2. + 0.5 for l in image.shape]
@@ -183,8 +190,8 @@ def radial_average_simple(image, mask=None):
         radius = _numpy.int32(_numpy.sqrt(x_array**2 + x_array[:, _numpy.newaxis]**2))
         in_range = radius < side/2.
 
-        radial_average_out = _numpy.zeros(side/2)
-        weight = _numpy.zeros(side/2)
+        radial_average_out = _numpy.zeros(side//2)
+        weight = _numpy.zeros(side//2)
         for value, this_radius in zip(image[in_range*mask], radius[in_range*mask]):
             radial_average_out[this_radius] += value
             weight[this_radius] += 1
@@ -197,11 +204,11 @@ def radial_average_simple(image, mask=None):
         side = image_shape[0]
         x_array = _numpy.arange(-side/2.+0.5, side/2.+0.5)
         radius = _numpy.int32(_numpy.sqrt(x_array**2 + x_array[:, _numpy.newaxis]**2 +
-                                        x_array[:, _numpy.newaxis, _numpy.newaxis]**2))
+                                          x_array[:, _numpy.newaxis, _numpy.newaxis]**2))
         in_range = radius < side/2.
 
-        radial_average_out = _numpy.zeros(side/2)
-        weight = _numpy.zeros(side/2)
+        radial_average_out = _numpy.zeros(side//2)
+        weight = _numpy.zeros(side//2)
         for value, this_radius in zip(image[in_range*mask], radius[in_range*mask]):
             radial_average_out[this_radius] += value
             weight[this_radius] += 1
@@ -257,8 +264,8 @@ def random_diffraction(image_size, object_size):
     image_real = _numpy.zeros((image_size, )*2)
     lower_bound = _numpy.floor(object_size/2.)
     higher_bound = _numpy.ceil(object_size/2.)
-    image_real[image_size/2-lower_bound:image_size/2+higher_bound,
-               image_size/2-lower_bound:image_size/2+higher_bound] = _numpy.random.random((object_size, )*2)
+    image_real[image_size//2-lower_bound:image_size//2+higher_bound,
+               image_size//2-lower_bound:image_size//2+higher_bound] = _numpy.random.random((object_size, )*2)
     image_fourier = _numpy.fft.fftshift(_numpy.fft.fft2(_numpy.fft.fftshift(image_real)))
     return image_fourier
 
@@ -267,9 +274,9 @@ def insert_array_at_center(large_image, small_image):
     this_slice = []
     for large_size, small_size in zip(large_image.shape, small_image.shape):
         if small_size%2:
-            this_slice.append(slice(large_size/2-small_size/2, large_size/2+small_size/2+1))
+            this_slice.append(slice(large_size//2-small_size//2, large_size//2+small_size//2+1))
         else:
-            this_slice.append(slice(large_size/2-small_size/2, large_size/2+small_size/2))
+            this_slice.append(slice(large_size//2-small_size//2, large_size//2+small_size//2))
     large_image[this_slice] = small_image
 
 def insert_array(large_image, small_image, center):
@@ -277,9 +284,9 @@ def insert_array(large_image, small_image, center):
     this_slice = []
     for this_center, small_size in zip(center, small_image.shape):
         if small_size%2:
-            this_slice.append(slice(this_center-small_size/2, this_center+small_size/2+1))
+            this_slice.append(slice(this_center-small_size//2, this_center+small_size//2+1))
         else:
-            this_slice.append(slice(this_center-small_size/2, this_center+small_size/2))
+            this_slice.append(slice(this_center-small_size//2, this_center+small_size//2))
     large_image[this_slice] = small_image
 
 def pad_with_zeros(small_image, size):
@@ -300,7 +307,7 @@ def log_range(min_value, max_value, steps):
     return _numpy.exp(_numpy.linspace(_numpy.log(min_value), _numpy.log(max_value), steps))
 
 def required_number_of_orientations(particle_size, resolution, prob):
-    r = particle_size / resolution
+    r = float(particle_size) / float(resolution)
     K = 4.*_numpy.pi*(r-0.5)**2/2.
     k = 2.*_numpy.pi*(r-0.5)/2.
     return _numpy.log(1.-prob**(1./K)) / _numpy.log(1.-k/K)
@@ -308,3 +315,4 @@ def required_number_of_orientations(particle_size, resolution, prob):
 def central_slice(large_array_shape, small_array_shape):
     """Intended usage large_array[central_slice(large_array.shape, small_array.shape)] = small_array"""
     return [slice(l0/2-s0/2, l0/2+s0/2+s0%2) for l0, s0 in zip(large_array_shape, small_array_shape)]
+
