@@ -41,7 +41,7 @@ class Resampler(object):
         number_of_output_points = len(self._output_points)
         self._table = _numpy.zeros(number_of_input_points, dtype="float64")
         self._weights = _numpy.zeros(number_of_output_points, dtype="float64")
-
+        
         for i, input_point in enumerate(self._input_points):
             self._table[i] = closest_coordinate(input_point, self._output_points)
             self._weights[self._table[i]] += 1.
@@ -91,6 +91,7 @@ def gaussian_blur_nonperiodic(array, sigma):
 def circular_mask(side, radius=None):
     """Returns a 2D bool array with a circular mask. If no radius is specified half of the
     array side is used."""
+    side = int(side)
     if not radius:
         radius = side/2.
     x_array = _numpy.arange(-side/2.+0.5, side/2.+0.5)
@@ -124,6 +125,23 @@ def spherical_mask(side, radius=None):
     radius2 = (x_array[_numpy.newaxis, _numpy.newaxis, :]**2 +
                x_array[_numpy.newaxis, :, _numpy.newaxis]**2 +
                x_array[:, _numpy.newaxis, _numpy.newaxis]**2)
+    mask = radius2 < radius**2
+    return mask
+
+def round_mask(shape, radius=None):
+    """Returns an array of the given shape with a centered round mask.
+    If no radius is given the radius is set to touch the closest edge."""
+    if not radius:
+        radius = min(shape)/2.
+    arrays_1d = [_numpy.arange(-this_shape/2.+0.5, this_shape/2.+0.5) for this_shape in shape]
+
+    number_of_dimensions = len(shape)
+
+    radius2 = _numpy.zeros(shape, dtype=_numpy.float64)
+    for this_dimension, this_array_1d in enumerate(arrays_1d):
+        this_slice = [_numpy.newaxis]*number_of_dimensions
+        this_slice[this_dimension] = slice(None, None)
+        radius2 += this_array_1d[this_slice]**2
     mask = radius2 < radius**2
     return mask
 
@@ -289,11 +307,11 @@ def insert_array(large_image, small_image, center):
             this_slice.append(slice(this_center-small_size//2, this_center+small_size//2))
     large_image[this_slice] = small_image
 
-def pad_with_zeros(small_image, size):
+def pad_with_zeros(small_image, shape):
     """Put the image in the center of a new array with the specified size"""
-    if len(size) != len(small_image.shape):
-        raise ValueError("Input image is {0} dimensional and size is {1} dimensional".format(len(small_image.shape), len(size)))
-    large_image = _numpy.zeros(size, dtype=small_image.dtype)
+    if len(shape) != len(small_image.shape):
+        raise ValueError("Input image is {0} dimensional and size is {1} dimensional".format(len(small_image.shape), len(shape)))
+    large_image = _numpy.zeros(shape, dtype=small_image.dtype)
     insert_array_at_center(large_image, small_image)
     return large_image
 
@@ -315,4 +333,11 @@ def required_number_of_orientations(particle_size, resolution, prob):
 def central_slice(large_array_shape, small_array_shape):
     """Intended usage large_array[central_slice(large_array.shape, small_array.shape)] = small_array"""
     return [slice(l0/2-s0/2, l0/2+s0/2+s0%2) for l0, s0 in zip(large_array_shape, small_array_shape)]
+
+def shift(image, distance):
+    if len(distance) != len(image.shape):
+        raise ValueError("Shape mismatch. Distance must be same length as image.shape")
+    for this_axis, this_distance in enumerate(distance):
+        image = _numpy.roll(image, this_distance, axis=this_axis)
+    return image
 
