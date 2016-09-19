@@ -2,9 +2,10 @@
 import vtk as _vtk
 import numpy as _numpy
 
+from .QtVersions import QtGui, QtCore
+from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+
 VTK_VERSION = _vtk.vtkVersion().GetVTKMajorVersion()
-
-
 
 def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", number_of_colors=1000):
     """Returrns a vtk lookup_table based on the specified matplotlib colorscale"""
@@ -40,7 +41,10 @@ def array_to_float_array(array_in, dtype=None):
         float_array.SetNumberOfComponents(1)
     else:
         raise ValueError("Wrong shape of array must be 1D or 2D.")
-    float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype), _numpy.product(array_in.shape), 1)
+    array_contiguous = _numpy.ascontiguousarray(array_in, dtype)
+    float_array.SetVoidArray(array_contiguous, 
+                             _numpy.product(array_contiguous.shape), 1)
+    float_array._contiguous_array = array_contiguous  # Hack to keep the array of being garbage collected
     return float_array
 
 def array_to_vtk(array_in, dtype=None):
@@ -67,7 +71,9 @@ def array_to_vtk(array_in, dtype=None):
     # elif len(array_in.shape) == 1:
     #     float_array.SetNumberOfComponents(1)
     float_array.SetNumberOfComponents(1)
-    float_array.SetVoidArray(_numpy.ascontiguousarray(array_in, dtype), _numpy.product(array_in.shape), 1)
+    array_contiguous = _numpy.ascontiguousarray(array_in, dtype)
+    float_array.SetVoidArray(array_contiguous, _numpy.product(array_in.shape), 1)
+    float_array._contiguous_array = array_contiguous  # Hack to keep the array of being garbage collected
     # if len(array_in.shape) == 2:
     #     print "set tuple to {0}".format(array_in.shape[1])
     #     #float_array.SetNumberOfTuples(array_in.shape[1])
@@ -77,7 +83,8 @@ def array_to_vtk(array_in, dtype=None):
 
 def array_to_image_data(array_in, dtype=None):
     """Get vtkImageData from the input numpy array."""
-    float_array = array_to_float_array(array_in, dtype)
+    array_flat = array_in.flatten()
+    float_array = array_to_float_array(array_flat, dtype)
     image_data = _vtk.vtkImageData()
     image_data.SetDimensions(*array_in.shape)
     image_data.GetPointData().SetScalars(float_array)
@@ -96,6 +103,17 @@ def window_to_png(render_window, file_name, magnification=1):
     writer.SetInputConnection(window_to_image_filter.GetOutputPort())
     writer.Write()
 
+def poly_data_to_actor(poly_data, lut):
+    """Minimal function to create an actor from a poly data. This hides the mapper
+    step which is sometimes useful but doesn't need to be explicitly tampered with."""
+    mapper = vtk.vtkPolyDataMapper()
+    mapper.SetInputData(poly_data)
+    mapper.SetLookupTable(lut)
+    mapper.SetUseLookupTableScalarRange(True)
+    actor = vtk.vtkActor()
+    actor.SetMapper(mapper)
+    return actor
+    
 class SphereMap(object):
     """Plot on a spherical shell."""
     def __init__(self, n):
@@ -469,10 +487,70 @@ def plot_isosurface(volume, level=None):
     render_window.SetSize(800, 800)
     interactor.Initialize()
     render_window.Render()
-    #interactor.Start()
+    interactor.Start()
 
+class InteractiveIsosurface(QtGui.QMainWindow):
+    def __init__(self, volume):
+        super(InteractiveIsosurface, self).__init__()
+        self._default_size = (600, 600)
+        self.resize(*self._default_size)
+
+        #self._volume = numpy.ascontiguousarray(volume, dtype="float32")
+        self._surface_object = IsoSurface(volume)
+
+        self._central_widget = QtGui.QWidget(self)
+        self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
+        self._vtk_widget.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
+    
+        self._renderer = _vtk.vtkRenderer()
+        self._renderer.SetBackground(0., 0., 0.)
+
+        self._surface_object.set_renderer(self._renderer)
+
+        self._THRESHOLD_SLIDER_MAXIMUM = 1000
+        self._THRESHOLD_SLIDER_INIT = self._THRESHOLD_SLIDER_MAXIMUM/2
+        self._threshold_table = self._adaptive_slider_values(volume, self._THRESHOLD_SLIDER_MAXIMUM, volume.min(), volume.max())
+        self._threshold_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self._threshold_slider.setMaximum(self._THRESHOLD_SLIDER_MAXIMUM)
+
+        self._layout = QtGui.QVBoxLayout()
+        self._layout.addWidget(self._vtk_widget)
+        self._layout.addWidget(self._threshold_slider)
+
+        self._central_widget.setLayout(self._layout)
+        self.setCentralWidget(self._central_widget)
+
+    def initialize(self):
+        self._vtk_widget.Initialize()
+        self._vtk_widget.GetRenderWindow().AddRenderer(self._renderer)
+        self._threshold_slider.valueChanged.connect(self._threshold_slider_changed)
+        self._threshold_slider.setValue(self._THRESHOLD_SLIDER_INIT)
+
+    def _threshold_slider_changed(self, value):
+        surface_level = self._threshold_table[value]
+        self._surface_object.set_level(0, surface_level)
+
+    @staticmethod
+    def _adaptive_slider_values(volume, slider_maximum, vmin, vmax):
+        level_table = _numpy.zeros(slider_maximum+1, dtype="float64")
+        unique_values = _numpy.unique(_numpy.sort(volume.flat))
+        unique_values = unique_values[(unique_values >= vmin) * (unique_values <= vmax)]
+        for slider_level in range(slider_maximum+1):
+            level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
+        return level_table
+    
+def plot_isosurface_interactive(volume):
+    app = QtGui.QApplication(["Interactive IsoSurface"])
+    interactive_isosurface = InteractiveIsosurface(volume)
+    interactive_isosurface.show()
+    interactive_isosurface.initialize()
+    interactive_isosurface.activateWindow()
+    interactive_isosurface.raise_()
+    app.exec_()
+    
 def plot_planes(array_in, log=False, cmap=None):
     """Plot two interactive planes cutting the provided volume."""
+    array_in = _numpy.float64(array_in)
     renderer = _vtk.vtkRenderer()
     render_window = _vtk.vtkRenderWindow()
     render_window.AddRenderer(renderer)
@@ -508,11 +586,11 @@ def plot_planes(array_in, log=False, cmap=None):
 
     plane_1 = setup_plane()
     plane_1.SetPlaneOrientationToXAxes()
-    plane_1.SetSliceIndex(array_in.shape[0]/2)
+    plane_1.SetSliceIndex(array_in.shape[0]//2)
     plane_1.SetEnabled(1)
     plane_2 = setup_plane()
     plane_2.SetPlaneOrientationToYAxes()
-    plane_2.SetSliceIndex(array_in.shape[1]/2)
+    plane_2.SetSliceIndex(array_in.shape[1]//2)
     plane_2.SetEnabled(1)
 
     renderer.SetBackground(0., 0., 0.)
@@ -653,13 +731,13 @@ def scatterplot_3d(data, color=None, point_size=None, cmap="jet", point_shape=No
     point_data.SetData(data_vtk)
     points_poly_data = _vtk.vtkPolyData()
     points_poly_data.SetPoints(point_data)
-
+    
     if not color is None:
         lut = get_lookup_table(color.min(), color.max())
         color_scalars = array_to_vtk(_numpy.float32(color.copy()))
         color_scalars.SetLookupTable(lut)
         points_poly_data.GetPointData().SetScalars(color_scalars)
-
+        
     if point_shape == "spheres":
         if point_size is None:
             point_size = _numpy.array(data).std() / len(data)**(1./3.) / 3.
@@ -716,3 +794,5 @@ def scatterplot_3d(data, color=None, point_size=None, cmap="jet", point_shape=No
 
     render_window.Render()
     interactor.Start()
+
+
