@@ -1,6 +1,8 @@
 """Functions and classes that are useful when working with VTK. Uses vtk 6."""
 import vtk as _vtk
 import numpy as _numpy
+import scipy as _scipy
+import scipy.interpolate
 
 from .QtVersions import QtGui, QtCore
 from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
@@ -375,7 +377,7 @@ class IsoSurface(object):
         self._float_array = _vtk.vtkFloatArray()
         self._image_data = _vtk.vtkImageData()
         self._image_data.GetPointData().SetScalars(self._float_array)
-        self._setup_data(volume)
+        self._setup_data(_numpy.float32(volume))
 
         self._surface_algorithm = _vtk.vtkMarchingCubes()
         self._surface_algorithm.SetInputData(self._image_data)
@@ -532,11 +534,10 @@ class InteractiveIsosurface(QtGui.QMainWindow):
 
     @staticmethod
     def _adaptive_slider_values(volume, slider_maximum, vmin, vmax):
-        level_table = _numpy.zeros(slider_maximum+1, dtype="float64")
         unique_values = _numpy.unique(_numpy.sort(volume.flat))
         unique_values = unique_values[(unique_values >= vmin) * (unique_values <= vmax)]
-        for slider_level in range(slider_maximum+1):
-            level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
+        interpolator = _scipy.interpolate.interp1d(_numpy.arange(len(unique_values)), unique_values)
+        level_table = interpolator(_numpy.linspace(0., len(unique_values)-1, slider_maximum+1))
         return level_table
     
 def plot_isosurface_interactive(volume):

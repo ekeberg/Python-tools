@@ -1,13 +1,10 @@
 #!/usr/bin/env python
 import matplotlib
-#matplotlib.use('WxAgg')
-#matplotlib.interactive(True)
-#from pylab import *
 import numpy
-#import spimage
+import scipy.interpolate
 from eke import sphelper
 import sys
-from optparse import OptionParser
+import argparse
 from eke.QtVersions import QtCore, QtGui
 import vtk
 from eke import vtk_tools
@@ -62,15 +59,19 @@ class VtkWindow(QtGui.QMainWindow):
 
 
 class SurfaceViewer(VtkWindow):
-    def __init__(self, volume):
+    def __init__(self, volume, vmin=None, vmax=None):
         super(SurfaceViewer, self).__init__(volume)
         #self._vtk_widget.Initialize()
 
         self._value_range = (self._volume.min(), self._volume.max())
 
         self._SLIDER_MAXIMUM = 1000
-        self._INITIAL_SLIDER_POSITION = self._SLIDER_MAXIMUM/2
-        self._level_table = self._adaptive_slider_values(self._volume, self._SLIDER_MAXIMUM)
+        self._INITIAL_SLIDER_POSITION = self._SLIDER_MAXIMUM//2
+        if vmin is None:
+            vmin=self._volume.min()
+        if vmax is None:
+            vmax=self._volume.max()
+        self._level_table = self._adaptive_slider_values(self._volume, self._SLIDER_MAXIMUM, vmin, vmax)
         self._surface_level = self._level_table[self._INITIAL_SLIDER_POSITION]
 
     def initialize(self):
@@ -113,19 +114,28 @@ class SurfaceViewer(VtkWindow):
         self._vtk_widget.Render()
 
     @staticmethod
-    def _adaptive_slider_values(density, slider_maximum):
-        level_table = numpy.zeros(slider_maximum+1, dtype="float64")
+    def _adaptive_slider_values(density, slider_maximum, vmin, vmax):
+        # level_table = numpy.zeros(slider_maximum+1, dtype="float64")
         unique_values = numpy.unique(numpy.sort(density.flat))
-        for slider_level in range(slider_maximum+1):
-            level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
+        unique_values = unique_values[(unique_values >= vmin) * (unique_values <= vmax)]
+
+        interpolator = scipy.interpolate.interp1d(numpy.arange(len(unique_values)), unique_values)
+        level_table = interpolator(numpy.linspace(0., len(unique_values)-1, slider_maximum+1))
+        
+        # for slider_level in range(slider_maximum+1):
+        #     level_table[slider_level] = unique_values[int(float(slider_level) / float(slider_maximum+1) * float(len(unique_values)))]
         return level_table
 
 class SliceViewer(VtkWindow):
-    def __init__(self, volume, log=False):
+    def __init__(self, volume, log=False, vmin=None, vmax=None):
         super(SliceViewer, self).__init__(volume)
         self._log = log
 
-        self._lut = vtk_tools.get_lookup_table(max(0., self._volume.min()), self._volume.max(), log=self._log,
+        if vmin is None:
+            vmin = max(0., self._volume.min())
+        if vmax is None:
+            vmax = self._volume.max()
+        self._lut = vtk_tools.get_lookup_table(vmin, vmax, log=self._log,
                                                colorscale=matplotlib.rcParams["image.cmap"])
 
         self._picker = vtk.vtkCellPicker()
@@ -133,11 +143,11 @@ class SliceViewer(VtkWindow):
         self._picker.SetTolerance(picker_tolerance)
 
         self._plane_1 = self._setup_plane()
-        self._plane_1.SetPlaneOrientationToXAxes()
-        self._plane_1.SetSliceIndex(self._volume.shape[0]/2)
+        self._plane_1.SetPlaneOrientationToYAxes()
+        self._plane_1.SetSliceIndex(self._volume.shape[0]//2)
         self._plane_2 = self._setup_plane()
-        self._plane_2.SetPlaneOrientationToYAxes()
-        self._plane_2.SetSliceIndex(self._volume.shape[1]/2)
+        self._plane_2.SetPlaneOrientationToZAxes()
+        self._plane_2.SetSliceIndex(self._volume.shape[1]//2)
     
     def _setup_plane(self):
         plane = vtk.vtkImagePlaneWidget()
@@ -168,32 +178,38 @@ class SliceViewer(VtkWindow):
         
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog <3d_file.h5>")
-    parser.add_option("-s", action="store_true", dest="shift", help="Shift image.")
-    parser.add_option("-l", action="store_true", dest="log", help="Plot in log scale.")
-    parser.add_option("-m", action="store_true", dest="mask", help="Plot mask.")
-    parser.add_option("-S", action="store_true", dest="surface", help="Plot surface")
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser(usage="%prog <3d_file.h5>")
+    parser.add_argument("filename")
+    parser.add_argument("-s", "--shift", action="store_true", help="Shift image.")
+    parser.add_argument("-l", "--log", action="store_true", help="Plot in log scale.")
+    parser.add_argument("-m", "--mask", action="store_true", help="Plot mask.")
+    parser.add_argument("-S", "--surface", action="store_true", help="Plot surface")
+    parser.add_argument("--min", type=float, help="Lower limit of plot values")
+    parser.add_argument("--max", type=float, help="Upper limit of plot values")
+    args = parser.parse_args()
     
-    if len(args) == 0: raise InputError("No input image")
+    if args.filename is None: raise InputError("No input image")
 
-    #from IPython.core.debugger import Tracer
-    #Tracer()()
-
-    image = read_image(args[0], options.mask)
-    if options.shift:
+    image = read_image(args.filename, args.mask)
+    if args.shift:
         image = numpy.fft.fftshift(image)
     if abs(image.imag).max() > 0:
         image = abs(image)
 
-    #plot_image_3d(image, options.shift, options.log, options.surface)
-    app = QtGui.QApplication([args[0]])
-    if options.surface:
+    # if args.min is not None:
+    #     image[image < args.min] = args.min
+    # if args.max is not None:
+    #     image[image > args.max] = args.max
+
+    app = QtGui.QApplication([args.filename])
+    if args.surface:
         program = SurfaceViewer(image)
     else:
-        program = SliceViewer(image, options.log)
+        program = SliceViewer(image, args.log, vmin=args.min, vmax=args.max)
     program.show()
     program.initialize()
+    program.activateWindow()
+    program.raise_()
 
     sys.exit(app.exec_())
     
