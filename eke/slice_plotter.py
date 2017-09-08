@@ -4,59 +4,40 @@ import vtk as _vtk
 import nfft as _nfft
 from . import vtk_tools
 from . import rotations
+from . import diffraction
 
 def downsample_pattern(image, factor):
     """Image shape must be exact multiples of downsample factor"""
+    raise NotImplementedError()
     from scipy import ndimage
     size_y, size_x = image.shape
     y_2d, x_2d = _numpy.ogrid[:size_y, :size_x]
-    regions = size_x/factor * (y_2d/factor) + x_2d/factor
+    regions = size_x//factor * (y_2d//factor) + x_2d/factor
     result = ndimage.mean(image, labels=regions,
                           index=_numpy.arange(regions.max()+1))
-    result.shape = (size_y/factor, size_x/factor)
+    result.shape = (size_y//factor, size_x/factor)
 
 
 class Generate(object):
     """Generate slices of Fourier space. image_side is in pixels and
     curvature is also given in pixels. Cutoff determines what part of
     Fourier space that will be used. Should be in the range of (0. 0.5]."""
-    def __init__(self, real_volume, image_side, curvature, cutoff=0.5):
+    def __init__(self, real_volume, real_pixel_size, image_side, wavelength, detector_distance, detector_pixel_size, cutoff=0.5):
         self._real_volume = real_volume
         self._image_side = image_side
-        self._pixel_size_fourier = 1./image_side*(2.*scaling)
-        self._curvature = curvature*self._pixel_size_fourier
-        self._x_base_2d = None
-        self._y_base_2d = None
-        self._z_base_2d = None
-        self._calculate_base_coordinates()
-
-    def _calculate_base_coordinates(self):
-        """Base coordinates are in x-y plane and are scaled so that the
-        range in x and y is from (-0.5,0.5)"""
-        x_base_coordinates = (self._pixel_size_fourier *
-                              _numpy.linspace(-self._image_side/2+0.5,
-                                             self._image_side/2-0.5,
-                                             self._image_side))
-        y_base_coordinates = (self._pixel_size_fourier *
-                              _numpy.linspace(-self._image_side/2+0.5,
-                                             self._image_side/2-0.5,
-                                             self._image_side))
-        self._y_base_2d, self._x_base_2d = _numpy.meshgrid(y_base_coordinates,
-                                                          x_base_coordinates)
-        self._z_base_2d = (self._curvature -
-                           _numpy.sqrt(self._curvature**2 - self._x_base_2d**2 -
-                                      self._y_base_2d**2))
+        self._real_pixel_size = float(real_pixel_size)
+        self._wavelength = float(wavelength)
+        self._detector_distance = float(detector_distance)
+        self._detector_pixel_size = float(detector_pixel_size)
+        self._coordinates = diffraction.ewald_coordinates((self._image_side, )*2, self._wavelength,
+                                                          self._detector_distance, self._detector_pixel_size)
 
     def _rotated_coordinates(self, rot):
         """Return base coordinates rotated by rot. Rot is a quaternion."""
-        (z_rotated,
-         y_rotated,
-         x_rotated) = rotations.rotate_array(rot, self._z_base_2d.flatten(),
-                                             self._y_base_2d.flatten(),
-                                             self._x_base_2d.flatten())
-        z_rotated = z_rotated.reshape((self._image_side, )*2)
-        y_rotated = y_rotated.reshape((self._image_side, )*2)
-        x_rotated = x_rotated.reshape((self._image_side, )*2)
+        rotated_coordinates = rotations.rotate_array(rot, self._coordinates)
+        z_rotated = rotated_coordinates[:, 0].reshape((self._image_side, )*2)
+        y_rotated = rotated_coordinates[:, 1].reshape((self._image_side, )*2)
+        x_rotated = rotated_coordinates[:, 2].reshape((self._image_side, )*2)
 
         coordinates = _numpy.transpose(_numpy.array((z_rotated.flatten(),
                                                    y_rotated.flatten(),
@@ -73,7 +54,7 @@ class Generate(object):
             rot = rotations.random_quaternion()
         coordinates = self._rotated_coordinates(rot)
 
-        pattern_flat = _nfft.nfft(self._real_volume, coordinates)
+        pattern_flat = _nfft.nfft(self._real_volume, self._real_pixel_size, coordinates)
 
         pattern = pattern_flat.reshape((self._image_side, )*2)
         if output_type == "complex":
@@ -94,15 +75,17 @@ class Generate(object):
 class SliceGenerator(object):
     """Generate multiple vtkPolyData objects corresponding to a curved
     slice throug Fourier space."""
-    def __init__(self, side, curvature):
+    def __init__(self, side, wavelength, detector_distance, detector_pixel_size):
         self._side = side
-        self._curvature = curvature
-        x_array_single = _numpy.arange(self._side) - self._side/2. + 0.5
-        y_array_single = _numpy.arange(self._side) - self._side/2. + 0.5
-        y_array, x_array = _numpy.meshgrid(y_array_single, x_array_single)
-        z_array = (self._curvature - _numpy.sqrt(self._curvature**2 -
-                                                x_array**2 - y_array**2))
+        # self._curvature = curvature
+        self._wavelength = float(wavelength)
+        self._detector_distance = float(detector_distance)
+        self._detector_pixel_size = float(detector_pixel_size)
 
+        self._coordinates = diffraction.ewald_coordinates((self._side, )*2, self._wavelength, self._detector_distance,
+                                                          self._detector_pixel_size).reshape((self._side, self._side, 3))
+        self._coordinates *= 1./abs(self._coordinates).max()
+        
         self._image_values = _vtk.vtkFloatArray()
         self._image_values.SetNumberOfComponents(1)
         self._image_values.SetName("Intensity")
@@ -110,9 +93,9 @@ class SliceGenerator(object):
         self._points = _vtk.vtkPoints()
         for i in range(self._side):
             for j in range(self._side):
-                self._points.InsertNextPoint(x_array[i, j],
-                                             y_array[i, j],
-                                             z_array[i, j])
+                self._points.InsertNextPoint(self._coordinates[i, j, 0],
+                                             self._coordinates[i, j, 1],
+                                             self._coordinates[i, j, 2])
                 self._image_values.InsertNextTuple1(0.)
 
         self._polygons = _vtk.vtkCellArray()
@@ -149,8 +132,8 @@ class SliceGenerator(object):
         rotation_degrees = rotation.copy()
         rotation_degrees[0] = 2.*_numpy.arccos(rotation[0])*180./_numpy.pi
         transformation = _vtk.vtkTransform()
-        transformation.RotateWXYZ(-rotation_degrees[0], rotation_degrees[3],
-                                  rotation_degrees[2], rotation_degrees[1])
+        transformation.RotateWXYZ(rotation_degrees[0], rotation_degrees[1],
+                                  rotation_degrees[2], rotation_degrees[3])
         input_poly_data = _vtk.vtkPolyData()
         input_poly_data.DeepCopy(self._template_poly_data)
         transform_filter = _vtk.vtkTransformFilter()
@@ -170,9 +153,9 @@ class SliceGenerator(object):
 class Plot(object):
     """Create vtk actors of curved slices and add them to the
     given vtkRenderer."""
-    def __init__(self, renderer, image_side, curvature, cmap="jet"):
+    def __init__(self, renderer, image_side, wavelength, detector_distance, detector_pixel_size, cmap="jet"):
         self._renderer = renderer
-        self._generator = SliceGenerator(image_side, curvature)
+        self._generator = SliceGenerator(image_side, wavelength, detector_distance, detector_pixel_size)
         self._lut = vtk_tools.get_lookup_table(1., 1., log=True,
                                                colorscale=cmap)
         self._custom_lut_range = {"min": False, "max": False}
