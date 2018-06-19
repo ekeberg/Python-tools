@@ -2,17 +2,19 @@
 import sys
 import os
 
-default_variant = 'PyQt4'
+default_variant = 'PyQt5'
 
 env_api = os.environ.get('QT_API', 'pyqt')
 if '--pyside' in sys.argv:
     variant = 'PySide'
 elif '--pyqt4' in sys.argv:
     variant = 'PyQt4'
+elif '--pyqt5' in sys.argv:
+    variant = 'PyQt5'
 elif env_api == 'pyside':
     variant = 'PySide'
 elif env_api == 'pyqt':
-    variant = 'PyQt4'
+    variant = 'PyQt5'
 else:
     variant = default_variant
 
@@ -47,7 +49,26 @@ elif variant == 'PyQt4':
     def QtLoadUI(uifile):
         from PyQt4 import uic
         return uic.loadUi(uifile)
+elif variant == 'PyQt5':
+    import sip
+    api2_classes = [
+        'QData', 'QDateTime', 'QString', 'QTextStream',
+        'QTime', 'QUrl', 'QVariant',
+    ]
+    for cl in api2_classes:
+        try:
+            sip.setapi(cl, 2)
+        except ValueError:
+            sip.setapi(cl, 1)
+    from PyQt5 import QtGui, QtCore, QtOpenGL, QtWidgets
+    QtCore.Signal = QtCore.pyqtSignal
+    QtCore.Slot = QtCore.pyqtSlot
+    QtCore.QString = str
+    os.environ['QT_API'] = 'pyqt'
+    def QtLoadUI(uifile):
+        from PyQt5 import uic
+        return uic.loadUi(uifile)
 else:
     raise ImportError("Python Variant not specified")
 
-__all__ = [QtGui, QtCore, QtLoadUI, variant]
+__all__ = [QtGui, QtCore, QtLoadUI, QtWidgets, variant]
