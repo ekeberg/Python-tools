@@ -1,5 +1,4 @@
 import numpy as _numpy
-import nfft as _nfft
 from . import rotations as _rotations
 from . import constants as _constants
 from . import conversions as _conversions
@@ -48,6 +47,7 @@ def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size):
 
 def calculate_diffraction(scattering_factor_density, density_pixel_size, rotation,
                           image_shape, wavelength, detector_distance, pixel_size):
+    import nfft as _nfft
     base_coordinates = ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size)
     rotated_coordinates = _rotations.rotate_array(rotation, base_coordinates)
     diffraction = _nfft.nfft(scattering_factor_density, density_pixel_size, rotated_coordinates)
