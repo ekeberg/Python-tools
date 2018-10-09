@@ -4,8 +4,8 @@ import numpy as _numpy
 import scipy as _scipy
 import scipy.interpolate
 
-from .QtVersions import QtGui, QtCore
-from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from .QtVersions import QtGui, QtCore, QtWidgets
+from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 VTK_VERSION = _vtk.vtkVersion().GetVTKMajorVersion()
 
@@ -44,9 +44,9 @@ def array_to_float_array(array_in, dtype=None):
     else:
         raise ValueError("Wrong shape of array must be 1D or 2D.")
     array_contiguous = _numpy.ascontiguousarray(array_in, dtype)
-    float_array.SetVoidArray(array_contiguous, 
+    float_array.SetVoidArray(array_contiguous,
                              _numpy.product(array_contiguous.shape), 1)
-    float_array._contiguous_array = array_contiguous  # Hack to keep the array of being garbage collected
+    float_array._contiguous_array = array_contiguous  # Hack to keep the array from being garbage collected
     return float_array
 
 def array_to_vtk(array_in, dtype=None):
@@ -64,7 +64,7 @@ def array_to_vtk(array_in, dtype=None):
     elif dtype == _numpy.int8:
         float_array = _vtk.vtkCharArray()
     else:
-        raise ValueError("Wrong format of input array, must be float32 or float64")
+        raise ValueError("Wrong format of input array, must be one of float32, float64, uint8, int8")
     if len(array_in.shape) != 1 and len(array_in.shape) != 2:
         raise ValueError("Wrong shape: array must be 1D or 2D.")
     #float_array.SetNumberOfComponents(_numpy.product(array_in.shape))
@@ -96,7 +96,8 @@ def window_to_png(render_window, file_name, magnification=1):
     """Get a screen capture from the provided vtkRenderWindow."""
     window_to_image_filter = _vtk.vtkWindowToImageFilter()
     window_to_image_filter.SetInput(render_window)
-    window_to_image_filter.SetMagnification(magnification)
+    #window_to_image_filter.SetMagnification(magnification)
+    window_to_image_filter.SetScale(magnification)
     window_to_image_filter.SetInputBufferTypeToRGBA()
     window_to_image_filter.Update()
 
@@ -108,14 +109,14 @@ def window_to_png(render_window, file_name, magnification=1):
 def poly_data_to_actor(poly_data, lut):
     """Minimal function to create an actor from a poly data. This hides the mapper
     step which is sometimes useful but doesn't need to be explicitly tampered with."""
-    mapper = vtk.vtkPolyDataMapper()
+    mapper = _vtk.vtkPolyDataMapper()
     mapper.SetInputData(poly_data)
     mapper.SetLookupTable(lut)
     mapper.SetUseLookupTableScalarRange(True)
-    actor = vtk.vtkActor()
+    actor = _vtk.vtkActor()
     actor.SetMapper(mapper)
     return actor
-    
+
 class SphereMap(object):
     """Plot on a spherical shell."""
     def __init__(self, n):
@@ -491,7 +492,7 @@ def plot_isosurface(volume, level=None):
     render_window.Render()
     interactor.Start()
 
-class InteractiveIsosurface(QtGui.QMainWindow):
+class InteractiveIsosurface(QtWidgets.QMainWindow):
     def __init__(self, volume):
         super(InteractiveIsosurface, self).__init__()
         self._default_size = (600, 600)
@@ -500,10 +501,10 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         #self._volume = numpy.ascontiguousarray(volume, dtype="float32")
         self._surface_object = IsoSurface(volume)
 
-        self._central_widget = QtGui.QWidget(self)
+        self._central_widget = QtWidgets.QWidget(self)
         self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
         self._vtk_widget.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
-    
+
         self._renderer = _vtk.vtkRenderer()
         self._renderer.SetBackground(0., 0., 0.)
 
@@ -512,10 +513,10 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         self._THRESHOLD_SLIDER_MAXIMUM = 1000
         self._THRESHOLD_SLIDER_INIT = self._THRESHOLD_SLIDER_MAXIMUM/2
         self._threshold_table = self._adaptive_slider_values(volume, self._THRESHOLD_SLIDER_MAXIMUM, volume.min(), volume.max())
-        self._threshold_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self._threshold_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self._threshold_slider.setMaximum(self._THRESHOLD_SLIDER_MAXIMUM)
 
-        self._layout = QtGui.QVBoxLayout()
+        self._layout = QtWidgets.QVBoxLayout()
         self._layout.addWidget(self._vtk_widget)
         self._layout.addWidget(self._threshold_slider)
 
@@ -539,16 +540,26 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         interpolator = _scipy.interpolate.interp1d(_numpy.arange(len(unique_values)), unique_values)
         level_table = interpolator(_numpy.linspace(0., len(unique_values)-1, slider_maximum+1))
         return level_table
-    
+
 def plot_isosurface_interactive(volume):
-    app = QtGui.QApplication(["Interactive IsoSurface"])
+    #app = QtGui.QApplication(["Interactive IsoSurface"])
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        app = QtWidgets.QApplication(["Interactive IsoSurface"])
     interactive_isosurface = InteractiveIsosurface(volume)
     interactive_isosurface.show()
     interactive_isosurface.initialize()
     interactive_isosurface.activateWindow()
+    interactive_isosurface.show()
     interactive_isosurface.raise_()
     app.exec_()
-    
+    #print 1./0.
+    #app.processEvents()
+    app = QtWidgets.QApplication.instance()
+    if app is None:
+        app = QtWidgets.QApplication(["Foo"])
+
+
 def plot_planes(array_in, log=False, cmap=None):
     """Plot two interactive planes cutting the provided volume."""
     array_in = _numpy.float64(array_in)
@@ -605,7 +616,7 @@ class SynchronizedInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick):
         #super(SynchronizedInteractorStyle, self).__init__()
         self._moving = False
         self._panning = False
-        self._shift_pressed = False        
+        self._shift_pressed = False
         self._renderers = []
 
         self.AddObserver("MouseMoveEvent", self._mouse_move_event)
@@ -691,7 +702,7 @@ class SynchronizedInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick):
 def synchronize_renderers(renderer_list):
     for renderer in renderer_list:
         render_window = renderer.GetRenderWindow()
-        interactor = render_window.GetInteractor()        
+        interactor = render_window.GetInteractor()
         my_interactor_style = SynchronizedInteractorStyle()
         interactor.SetInteractorStyle(my_interactor_style)
         my_interactor_style.add_renderer(renderer)
@@ -702,7 +713,7 @@ def synchronize_renderers(renderer_list):
     for renderer in renderer_list:
         renderer.SetActiveCamera(camera)
 
-def setup_window(size=(400, 400), background=(1., 1., 1.)):
+def setup_window(size=(800, 800), background=(1., 1., 1.)):
     renderer = _vtk.vtkRenderer()
     #renderer.SetUseDepthPeeling(True)
     render_window = _vtk.vtkRenderWindow()
@@ -718,82 +729,111 @@ def setup_window(size=(400, 400), background=(1., 1., 1.)):
     render_window.Render()
     return renderer, render_window, interactor
 
-def scatterplot_3d(data, color=None, point_size=None, cmap="jet", point_shape=None):
-    if len(data.shape) != 2 or data.shape[1] != 3:
-        raise ValueError("data must have shape (n, 3) where n is the number of points.")
-    if point_shape is None:
-        if len(data) <= 1000:
-            point_shape = "spheres"
+
+
+class ScatterPlot(object):
+    """Class for plotting multiple dataset in one scatterplot."""
+    def __init__(self):
+        self._renderer, self._render_window, self._interactor = setup_window()
+
+        self._bounds = _numpy.array((0., 1., 0., 1., 0., 1.))
+        self._axes_actor = _vtk.vtkCubeAxesActor()
+        self._axes_actor.SetBounds(self._bounds)
+
+        self._axes_actor.SetCamera(self._renderer.GetActiveCamera())
+        self._axes_actor.SetFlyModeToStaticTriad()
+
+        self._axes_actor.GetXAxesLinesProperty().SetColor(0., 0., 0.)
+        self._axes_actor.GetYAxesLinesProperty().SetColor(0., 0., 0.)
+        self._axes_actor.GetZAxesLinesProperty().SetColor(0., 0., 0.)
+        for i in range(3):
+            self._axes_actor.GetLabelTextProperty(i).SetColor(0., 0., 0.)
+            self._axes_actor.GetTitleTextProperty(i).SetColor(0., 0., 0.)
+
+        self._renderer.AddActor(self._axes_actor)
+
+    def plot(self, data, color="black", color_value=None, cmap="viridis", point_size=None, pixel_point=False):
+        """Add a 3D scatterplot to the current plot. Data is given as an array
+        of size (N, 3). Color denotes the one color used for every
+        point while color_value is an array of scalars that are used
+        to color the points with a given color map.
+
+        """
+
+        if len(data.shape) != 2 or data.shape[1] != 3:
+            raise ValueError("data must have shape (n, 3) where n is the number of points.")
+
+        data = _numpy.float32(data)
+        data_vtk = array_to_float_array(data)
+        point_data = _vtk.vtkPoints()
+        point_data.SetData(data_vtk)
+        points_poly_data = _vtk.vtkPolyData()
+        points_poly_data.SetPoints(point_data)
+
+        if not color_value is None:
+            lut = get_lookup_table(color_value.min(), color_value.max(), colorscale=cmap)
+            color_scalars = array_to_vtk(_numpy.float32(color_value.copy()))
+            color_scalars.SetLookupTable(lut)
+            points_poly_data.GetPointData().SetScalars(color_scalars)
+
+        import matplotlib
+        color_rgb = matplotlib.colors.to_rgb(color)
+
+
+        if pixel_point:
+            if point_size is None:
+                point_size = 3
+            glyph_filter = _vtk.vtkVertexGlyphFilter()
+            glyph_filter.SetInputData(points_poly_data)
+            glyph_filter.Update()
         else:
-            point_shape = "squares"
-    data = _numpy.float32(data)
-    data_vtk = array_to_float_array(data)
-    point_data = _vtk.vtkPoints()
-    point_data.SetData(data_vtk)
-    points_poly_data = _vtk.vtkPolyData()
-    points_poly_data.SetPoints(point_data)
-    
-    if not color is None:
-        lut = get_lookup_table(color.min(), color.max())
-        color_scalars = array_to_vtk(_numpy.float32(color.copy()))
-        color_scalars.SetLookupTable(lut)
-        points_poly_data.GetPointData().SetScalars(color_scalars)
-        
-    if point_shape == "spheres":
-        if point_size is None:
-            point_size = _numpy.array(data).std() / len(data)**(1./3.) / 3.
-        glyph_filter = _vtk.vtkGlyph3D()
-        glyph_filter.SetInputData(points_poly_data)
-        sphere_source = _vtk.vtkSphereSource()
-        sphere_source.SetRadius(point_size)
-        glyph_filter.SetSourceConnection(sphere_source.GetOutputPort())
-        glyph_filter.SetScaleModeToDataScalingOff()
-        if not color is None:
-            glyph_filter.SetColorModeToColorByScalar()
-        else:
-            glyph_filter.SetColorMode(0)
-        glyph_filter.Update()
-    elif point_shape == "squares":
-        if point_size is None:
-            point_size = 3
-        glyph_filter = _vtk.vtkVertexGlyphFilter()
-        glyph_filter.SetInputData(points_poly_data)
-        glyph_filter.Update()
-    else:
-        raise ValueError("{0} is not a valid entry for points".format(points))
+            if point_size is None:
+                point_size = _numpy.array(data).std() / len(data)**(1./3.) / 3.
+            glyph_filter = _vtk.vtkGlyph3D()
+            glyph_filter.SetInputData(points_poly_data)
+            sphere_source = _vtk.vtkSphereSource()
+            sphere_source.SetRadius(point_size)
+            glyph_filter.SetSourceConnection(sphere_source.GetOutputPort())
+            glyph_filter.SetScaleModeToDataScalingOff()
+            if not color_value is None:
+                glyph_filter.SetColorModeToColorByScalar()
+            else:
+                glyph_filter.SetColorMode(0)
+            glyph_filter.Update()
 
-    poly_data = _vtk.vtkPolyData()
-    poly_data.ShallowCopy(glyph_filter.GetOutput())
+        poly_data = _vtk.vtkPolyData()
+        poly_data.ShallowCopy(glyph_filter.GetOutput())
 
-    renderer, render_window, interactor = setup_window()
+        mapper = _vtk.vtkPolyDataMapper()
+        mapper.SetInputData(poly_data)
+        if color_value is not None:
+            mapper.SetLookupTable(lut)
+            mapper.SetUseLookupTableScalarRange(True)
 
-    mapper = _vtk.vtkPolyDataMapper()
-    mapper.SetInputData(poly_data)
-    if not color is None:
-        mapper.SetLookupTable(lut)
-        mapper.SetUseLookupTableScalarRange(True)
+        points_actor = _vtk.vtkActor()
+        points_actor.SetMapper(mapper)
+        points_actor.GetProperty().SetPointSize(point_size)
+        points_actor.GetProperty().SetColor(*color_rgb)
 
-    points_actor = _vtk.vtkActor()
-    points_actor.SetMapper(mapper)
-    points_actor.GetProperty().SetPointSize(point_size)
-    points_actor.GetProperty().SetColor(0., 0., 0.)
+        new_bounds = _numpy.array(points_actor.GetBounds())
+        self._bounds[0::2] = _numpy.minimum(self._bounds[0::2], new_bounds[0::2])
+        self._bounds[1::2] = _numpy.maximum(self._bounds[1::2], new_bounds[1::2])
+        self._axes_actor.SetBounds(self._bounds)
 
-    axes_actor = _vtk.vtkCubeAxesActor()
-    axes_actor.SetBounds(points_actor.GetBounds())
-    axes_actor.SetCamera(renderer.GetActiveCamera())
-    axes_actor.SetFlyModeToStaticTriad()
-    #axes_actor.GetProperty().SetColor(0., 0., 0.)
-    axes_actor.GetXAxesLinesProperty().SetColor(0., 0., 0.)
-    axes_actor.GetYAxesLinesProperty().SetColor(0., 0., 0.)
-    axes_actor.GetZAxesLinesProperty().SetColor(0., 0., 0.)
-    for i in range(3):
-        axes_actor.GetLabelTextProperty(i).SetColor(0., 0., 0.)
-        axes_actor.GetTitleTextProperty(i).SetColor(0., 0., 0.)
+        self._renderer.AddActor(points_actor)
 
-    renderer.AddActor(points_actor)
-    renderer.AddActor(axes_actor)
+        self._render_window.Render()
 
-    render_window.Render()
-    interactor.Start()
+    def start(self):
+        self._interactor.Start()
 
+def scatterplot(data, color="black", color_value=None, cmap="viridis", point_size=None, pixel_point=False):
+    """Plot a 3D scatterplot. Data is given as an array of size (N,
+    3). Color denotes the one color used for every point while
+    color_value is an array of scalars that are used to color the
+    points with a given color map.
 
+    """
+    plot_object = ScatterPlot()
+    plot_object.plot(data, color, color_value, cmap, point_size, pixel_point)
+    plot_object.start()
