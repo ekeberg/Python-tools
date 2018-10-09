@@ -86,6 +86,7 @@ class SliceGenerator(object):
                                                           self._detector_pixel_size).reshape((self._side, self._side, 3))
         self._coordinates *= 1./abs(self._coordinates).max()
         
+        
         self._image_values = _vtk.vtkFloatArray()
         self._image_values.SetNumberOfComponents(1)
         self._image_values.SetName("Intensity")
@@ -198,7 +199,7 @@ class Plot(object):
             self._custom_lut_range["max"] = True
             self._lut.SetRange(cmax, self._lut.GetRange()[1])
 
-    def set_lut(self):
+    def set_lut(self, lut):
         """NOT IMPLEMENTED. Provide a user-defined colorscale
         as a vtkLookupTable"""
-        pass
+        self._lut = lut
