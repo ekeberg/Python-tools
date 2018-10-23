@@ -20,7 +20,7 @@ def get_fit_quality(this_rot, reference_rot):
     return min([_numpy.linalg.norm(reference_rot - this_rot),
                 _numpy.linalg.norm(reference_rot + this_rot)])
 
-def get_absolute_orientation_error(correct_rotations, recovered_rotations, symmetry_operations):
+def get_absolute_orientation_error(correct_rotations, recovered_rotations, symmetry_operations, return_individual_errors=False):
     number_of_patterns = len(recovered_rotations)
     average_angular_diff = 0.
     count = 0.
@@ -60,15 +60,20 @@ def get_absolute_orientation_error(correct_rotations, recovered_rotations, symme
     average_rot = relative_rotations.mean(axis=0)
     average_rot = _rotmodule.quaternion_normalize(average_rot)
 
-    average_diff = 0.
+    diff_angles = _numpy.zeros(number_of_patterns)
+    
     for index in range(number_of_patterns):
         adjusted_rotation = _rotmodule.quaternion_multiply(_rotmodule.quaternion_multiply(symmetry_operations[symmetry_version[index]], _rotmodule.quaternion_inverse(average_rot)), recovered_rotations[index])
         relative_rotation = _rotmodule.quaternion_multiply(_rotmodule.quaternion_inverse(adjusted_rotation),
                                                           correct_rotations[index])
         diff_angle = get_angle(adjusted_rotation, correct_rotations[index])
-        average_diff += diff_angle
-    average_diff /= number_of_patterns
-    return average_diff
+        diff_angles[index] = diff_angle
+        
+    average_diff = diff_angles.mean()
+    if return_individual_errors:
+        return diff_angles
+    else:
+        return average_diff
 
 def get_relative_orientation_error(correct_rotations, recovered_rotations, symmetry_operations):
     number_of_samples = 1000
