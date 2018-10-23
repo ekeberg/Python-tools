@@ -20,7 +20,50 @@ def get_fit_quality(this_rot, reference_rot):
     return min([_numpy.linalg.norm(reference_rot - this_rot),
                 _numpy.linalg.norm(reference_rot + this_rot)])
 
-def get_absolute_orientation_error(correct_rotations, recovered_rotations, symmetry_operations, return_individual_errors=False):
+def average_relative_orientation(rotations_1, rotations_2, symmetry_operations):
+    number_of_patterns = len(rotations_2)
+    average_angular_diff = 0.
+    count = 0.
+
+    relative_rotations = _numpy.zeros((rotations_2.shape[0], 4))
+    symmetry_version = _numpy.zeros(rotations_2.shape[0], dtype=_numpy.int32)
+    for index in range(number_of_patterns):
+        relative_rot = _rotmodule.quaternion_multiply(rotations_2[index],
+                                                     _rotmodule.quaternion_inverse(rotations_1[index]))
+        _rotmodule.quaternion_fix_sign(relative_rot)
+        relative_rot_sym = [_rotmodule.quaternion_multiply(relative_rot, this_symmetry_operation)
+                            for this_symmetry_operation in symmetry_operations]
+        for this_relative_rot_sym in relative_rot_sym:
+            _rotmodule.quaternion_fix_sign(this_relative_rot_sym)
+
+        reference_rot = _rotmodule.random_quaternion()
+
+        fit_quality = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.float64)
+        flip = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.bool8)
+        for sym_index, this_relative_rot in enumerate(relative_rot_sym):
+            fit_quality_1 = _numpy.linalg.norm(relative_rot[0] - this_relative_rot)
+            fit_quality_2 = _numpy.linalg.norm(relative_rot[0] + this_relative_rot)
+            if fit_quality_1 < fit_quality_2:
+                fit_quality[sym_index] = fit_quality_1
+                flip[sym_index] = False
+            else:
+                fit_quality[sym_index] = fit_quality_2
+                flip[sym_index] = True
+
+        best_index = fit_quality.argmin()
+        if flip[best_index]:
+            relative_rotations[index, :] = -relative_rot_sym[best_index]
+        else:
+            relative_rotations[index, :] = relative_rot_sym[best_index]
+        symmetry_version[index] = best_index
+
+    average_rot = relative_rotations.mean(axis=0)
+    average_rot = _rotmodule.quaternion_normalize(average_rot)
+    return average_rot
+
+def get_absolute_orientation_error(correct_rotations, recovered_rotations,
+                                   symmetry_operations=((1., 0., 0., 0.), ),
+                                   return_individual_errors=False):
     number_of_patterns = len(recovered_rotations)
     average_angular_diff = 0.
     count = 0.
