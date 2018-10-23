@@ -4,7 +4,7 @@ import numpy as _numpy
 import scipy as _scipy
 import scipy.interpolate
 
-from .QtVersions import QtGui, QtCore
+from .QtVersions import QtGui, QtCore, QtWidgets
 from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 VTK_VERSION = _vtk.vtkVersion().GetVTKMajorVersion()
@@ -23,8 +23,9 @@ def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", 
     for i in range(number_of_colors):
         color = matplotlib.cm.cmap_d[colorscale](float(i) / float(number_of_colors))
         lut.SetTableValue(i, color[0], color[1], color[2], 1.)
-    lut.SetUseBelowRangeColor(True)
-    lut.SetUseAboveRangeColor(True)
+    if VTK_VERSION >= 6:
+        lut.SetUseBelowRangeColor(True)
+        lut.SetUseAboveRangeColor(True)
     return lut
 
 def array_to_float_array(array_in, dtype=None):
@@ -380,7 +381,10 @@ class IsoSurface(object):
         self._setup_data(_numpy.float32(volume))
 
         self._surface_algorithm = _vtk.vtkMarchingCubes()
-        self._surface_algorithm.SetInputData(self._image_data)
+        if VTK_VERSION >= 6:
+            self._surface_algorithm.SetInputData(self._image_data)
+        else:
+            self._surface_algorithm.SetInput(self._image_data)
         self._surface_algorithm.ComputeNormalsOn()
 
         if level is not None:
@@ -491,7 +495,7 @@ def plot_isosurface(volume, level=None):
     render_window.Render()
     interactor.Start()
 
-class InteractiveIsosurface(QtGui.QMainWindow):
+class InteractiveIsosurface(QtWidgets.QMainWindow):
     def __init__(self, volume):
         super(InteractiveIsosurface, self).__init__()
         self._default_size = (600, 600)
@@ -500,7 +504,7 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         #self._volume = numpy.ascontiguousarray(volume, dtype="float32")
         self._surface_object = IsoSurface(volume)
 
-        self._central_widget = QtGui.QWidget(self)
+        self._central_widget = QtWidgets.QWidget(self)
         self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
         self._vtk_widget.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
     
@@ -512,10 +516,10 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         self._THRESHOLD_SLIDER_MAXIMUM = 1000
         self._THRESHOLD_SLIDER_INIT = self._THRESHOLD_SLIDER_MAXIMUM/2
         self._threshold_table = self._adaptive_slider_values(volume, self._THRESHOLD_SLIDER_MAXIMUM, volume.min(), volume.max())
-        self._threshold_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self._threshold_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self._threshold_slider.setMaximum(self._THRESHOLD_SLIDER_MAXIMUM)
 
-        self._layout = QtGui.QVBoxLayout()
+        self._layout = QtWidgets.QVBoxLayout()
         self._layout.addWidget(self._vtk_widget)
         self._layout.addWidget(self._threshold_slider)
 
@@ -541,7 +545,7 @@ class InteractiveIsosurface(QtGui.QMainWindow):
         return level_table
     
 def plot_isosurface_interactive(volume):
-    app = QtGui.QApplication(["Interactive IsoSurface"])
+    app = QtWidgets.QApplication(["Interactive IsoSurface"])
     interactive_isosurface = InteractiveIsosurface(volume)
     interactive_isosurface.show()
     interactive_isosurface.initialize()
