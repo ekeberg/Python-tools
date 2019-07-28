@@ -7,7 +7,8 @@ def slave(function):
     comm = _MPI.COMM_WORLD
     status = _MPI.Status()
     while 1:
-        data = comm.recv(obj=None, source=0, tag=_MPI.ANY_TAG, status=status)
+        # data = comm.recv(obj=None, source=0, tag=_MPI.ANY_TAG, status=status)
+        data = comm.recv(source=0, tag=_MPI.ANY_TAG, status=status)
         if status.Get_tag():
             break
         result = function(data[1])
@@ -40,12 +41,12 @@ def master(jobs):
             next_job = job_stack.pop()
         except IndexError:
             break
-        data = comm.recv(obj=None, source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG, status=status)
+        data = comm.recv(source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG, status=status)
         all_data.append(data)
         comm.send(obj=next_job, dest=status.Get_source(), tag=WORKTAG)
 
     for i in range(1, active_size):
-        data = comm.recv(obj=None, source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG)
+        data = comm.recv(source=_MPI.ANY_SOURCE, tag=_MPI.ANY_TAG)
         all_data.append(data)
 
     for i in range(1, active_size):
@@ -83,4 +84,9 @@ def rank():
     comm = _MPI.COMM_WORLD
     rank = comm.Get_rank()
     return rank
-    
+
+def size():
+    comm = _MPI.COMM_WORLD
+    size = comm.Get_size()
+    return size
+
