@@ -88,7 +88,7 @@ def array_to_image_data(array_in, dtype=None):
     array_flat = array_in.flatten()
     float_array = array_to_float_array(array_flat, dtype)
     image_data = _vtk.vtkImageData()
-    image_data.SetDimensions(*array_in.shape)
+    image_data.SetDimensions(*(array_in.shape[::-1]))
     image_data.GetPointData().SetScalars(float_array)
     return image_data
 
@@ -368,7 +368,7 @@ class SphereMap(object):
 
 class IsoSurface(object):
     """Generate and plot isosurfacs."""
-    def __init__(self, volume, level=None):
+    def __init__(self, volume, spacing=(1., 1., 1.), level=None):
         self._surface_algorithm = None
         self._renderer = None
         self._actor = None
@@ -379,6 +379,7 @@ class IsoSurface(object):
         self._image_data = _vtk.vtkImageData()
         self._image_data.GetPointData().SetScalars(self._float_array)
         self._setup_data(_numpy.float32(volume))
+        self._image_data.SetSpacing(spacing[2], spacing[1], spacing[0])
 
         self._surface_algorithm = _vtk.vtkMarchingCubes()
         self._surface_algorithm.SetInputData(self._image_data)
@@ -403,7 +404,7 @@ class IsoSurface(object):
         self._float_array.SetNumberOfValues(_numpy.product(volume.shape))
         self._float_array.SetNumberOfComponents(1)
         self._float_array.SetVoidArray(self._volume_array, _numpy.product(volume.shape), 1)
-        self._image_data.SetDimensions(*self._volume_array.shape)
+        self._image_data.SetDimensions(*(self._volume_array.shape[::-1]))
 
     def set_renderer(self, renderer):
         """Set the vtkRenderer to render the isosurfaces. Adding a new renderer will remove the last one."""
@@ -472,9 +473,9 @@ class IsoSurface(object):
         self._float_array.Modified()
         self._render()
 
-def plot_isosurface(volume, level=None):
+def plot_isosurface(volume, spacing=(1., 1., 1.), level=None):
     """Plot isosurfaces of the provided module. Levels can be iterable or singel value."""
-    surface_object = IsoSurface(volume, level)
+    surface_object = IsoSurface(volume, spacing, level)
 
     renderer = _vtk.vtkRenderer()
     render_window = _vtk.vtkRenderWindow()
@@ -493,13 +494,13 @@ def plot_isosurface(volume, level=None):
     interactor.Start()
 
 class InteractiveIsosurface(QtWidgets.QMainWindow):
-    def __init__(self, volume):
+    def __init__(self, volume, spacing=(1., 1., 1.)):
         super(InteractiveIsosurface, self).__init__()
         self._default_size = (600, 600)
         self.resize(*self._default_size)
 
         #self._volume = numpy.ascontiguousarray(volume, dtype="float32")
-        self._surface_object = IsoSurface(volume)
+        self._surface_object = IsoSurface(volume, spacing)
 
         self._central_widget = QtWidgets.QWidget(self)
         self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
@@ -541,12 +542,12 @@ class InteractiveIsosurface(QtWidgets.QMainWindow):
         level_table = interpolator(_numpy.linspace(0., len(unique_values)-1, slider_maximum+1))
         return level_table
 
-def plot_isosurface_interactive(volume):
+def plot_isosurface_interactive(volume, spacing=(1., 1., 1)):
     #app = QtGui.QApplication(["Interactive IsoSurface"])
     app = QtWidgets.QApplication.instance()
     if app is None:
         app = QtWidgets.QApplication(["Interactive IsoSurface"])
-    interactive_isosurface = InteractiveIsosurface(volume)
+    interactive_isosurface = InteractiveIsosurface(volume, spacing)
     interactive_isosurface.show()
     interactive_isosurface.initialize()
     interactive_isosurface.activateWindow()
@@ -560,7 +561,7 @@ def plot_isosurface_interactive(volume):
         app = QtWidgets.QApplication(["Foo"])
 
 
-def plot_planes(array_in, log=False, cmap=None):
+def plot_planes(array_in, spacing=(1., 1., 1.), log=False, cmap=None):
     """Plot two interactive planes cutting the provided volume."""
     array_in = _numpy.float64(array_in)
     renderer = _vtk.vtkRenderer()
@@ -578,6 +579,7 @@ def plot_planes(array_in, log=False, cmap=None):
     picker.SetTolerance(0.005)
 
     image_data = array_to_image_data(array_in)
+    image_data.SetSpacing(spacing[2], spacing[1], spacing[0])
 
     def setup_plane():
         """Create and setup a singel plane."""
@@ -598,11 +600,11 @@ def plot_planes(array_in, log=False, cmap=None):
 
     plane_1 = setup_plane()
     plane_1.SetPlaneOrientationToXAxes()
-    plane_1.SetSliceIndex(array_in.shape[0]//2)
+    plane_1.SetSliceIndex(int(array_in.shape[0]*spacing[0]/2))
     plane_1.SetEnabled(1)
     plane_2 = setup_plane()
     plane_2.SetPlaneOrientationToYAxes()
-    plane_2.SetSliceIndex(array_in.shape[1]//2)
+    plane_2.SetSliceIndex(int(array_in.shape[1]*spacing[1]/2))
     plane_2.SetEnabled(1)
 
     renderer.SetBackground(0., 0., 0.)
