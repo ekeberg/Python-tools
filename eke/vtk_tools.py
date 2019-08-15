@@ -23,8 +23,9 @@ def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", 
     for i in range(number_of_colors):
         color = matplotlib.cm.cmap_d[colorscale](float(i) / float(number_of_colors))
         lut.SetTableValue(i, color[0], color[1], color[2], 1.)
-    lut.SetUseBelowRangeColor(True)
-    lut.SetUseAboveRangeColor(True)
+    if VTK_VERSION >= 6:
+        lut.SetUseBelowRangeColor(True)
+        lut.SetUseAboveRangeColor(True)
     return lut
 
 def array_to_float_array(array_in, dtype=None):
@@ -382,7 +383,10 @@ class IsoSurface(object):
         self._image_data.SetSpacing(spacing[2], spacing[1], spacing[0])
 
         self._surface_algorithm = _vtk.vtkMarchingCubes()
-        self._surface_algorithm.SetInputData(self._image_data)
+        if VTK_VERSION >= 6:
+            self._surface_algorithm.SetInputData(self._image_data)
+        else:
+            self._surface_algorithm.SetInput(self._image_data)
         self._surface_algorithm.ComputeNormalsOn()
 
         if level is not None:

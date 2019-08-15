@@ -14,8 +14,12 @@ def relative_angle(rot1, rot2):
     abs_diff_angle = min(abs(diff_angle), abs(diff_angle-2.*_numpy.pi))
     return abs_diff_angle
 
-def average_relative_orientation(
-        rotations_1, rotations_2, symmetry_operations=((1., 0., 0., 0.), )):
+def get_fit_quality(this_rot, reference_rot):
+    return min([_numpy.linalg.norm(reference_rot - this_rot),
+                _numpy.linalg.norm(reference_rot + this_rot)])
+
+def average_relative_orientation(rotations_1, rotations_2,
+                                 symmetry_operations=((1., 0., 0., 0.), )):
     number_of_patterns = len(rotations_2)
     average_angular_diff = 0.
     count = 0.
@@ -61,7 +65,8 @@ def average_relative_orientation(
 
 def absolute_orientation_error(
         correct_rotations, recovered_rotations,
-        symmetry_operations=((1., 0., 0., 0.), )):
+        symmetry_operations=((1., 0., 0., 0.), ),
+        return_individual_errors=False):
     number_of_patterns = len(recovered_rotations)
     average_angular_diff = 0.
     count = 0.
@@ -117,13 +122,18 @@ def absolute_orientation_error(
     # inv(correct) = inv(average) * inv(symmetry) * inv(recovered)
     # correct = recovered * symmetry * average
 
-    average_diff = 0.
+    diff_angles = _numpy.zeros(number_of_patterns)
+    
     for index in range(number_of_patterns):
         adjusted_rotation = _rotmodule.multiply(_rotmodule.multiply(_rotmodule.inverse(symmetry_operations[symmetry_version[index]]), _rotmodule.inverse(average_rot)), recovered_rotations[index])
         diff_angle = relative_angle(correct_rotations[index], adjusted_rotation)
-        average_diff += diff_angle
-    average_diff /= number_of_patterns
-    return average_diff
+        diff_angles[index] = diff_angle
+        
+    average_diff = diff_angles.mean()
+    if return_individual_errors:
+        return diff_angles
+    else:
+        return average_diff
 
 def relative_orientation_error(
         correct_rotations, recovered_rotations,
