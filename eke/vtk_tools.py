@@ -369,7 +369,7 @@ class SphereMap(object):
 
 class IsoSurface(object):
     """Generate and plot isosurfacs."""
-    def __init__(self, volume, spacing=(1., 1., 1.), level=None):
+    def __init__(self, volume, level=None, spacing=(1., 1., 1.)):
         self._surface_algorithm = None
         self._renderer = None
         self._actor = None
@@ -477,9 +477,9 @@ class IsoSurface(object):
         self._float_array.Modified()
         self._render()
 
-def plot_isosurface(volume, spacing=(1., 1., 1.), level=None):
+def plot_isosurface(volume, level=None, spacing=(1., 1., 1.)):
     """Plot isosurfaces of the provided module. Levels can be iterable or singel value."""
-    surface_object = IsoSurface(volume, spacing, level)
+    surface_object = IsoSurface(volume, level, spacing)
 
     renderer = _vtk.vtkRenderer()
     render_window = _vtk.vtkRenderWindow()
@@ -720,6 +720,7 @@ def synchronize_renderers(renderer_list):
         renderer.SetActiveCamera(camera)
 
 def setup_window(size=(800, 800), background=(1., 1., 1.)):
+    """Returns (renderer, render_window, interactor)"""
     renderer = _vtk.vtkRenderer()
     #renderer.SetUseDepthPeeling(True)
     render_window = _vtk.vtkRenderWindow()
