@@ -9,12 +9,12 @@ def scale_image_2d(image, factor):
     factor"""
     size_x = image.shape[0]
     size_y = image.shape[1]
-    center_x = size_x/2
-    center_y = size_y/2
-    window_x = int(size_x/factor)
-    window_y = int(size_y/factor)
-    image_ft = _numpy.fft2(image[center_x-window_x/2:center_x+window_x/2,
-                                center_y-window_y/2:center_y+window_y/2])
+    center_x = size_x//2
+    center_y = size_y//2
+    window_x = int(size_x//factor)
+    window_y = int(size_y//factor)
+    image_ft = _numpy.fft2(image[center_x-window_x//2:center_x+window_x//2,
+                                center_y-window_y//2:center_y+window_y//2])
     image_scaled = abs(_numpy.fft.ifftn(_numpy.fft.fftshift(image_ft), [size_x, size_y]))
 
     return image_scaled
@@ -27,15 +27,15 @@ def scale_image_3d(image, factor):
     size_x = image.shape[0]
     size_y = image.shape[1]
     size_z = image.shape[2]
-    center_x = size_x/2
-    center_y = size_y/2
-    center_z = size_z/2
-    window_x = int(size_x/factor)
-    window_y = int(size_y/factor)
-    window_z = int(size_z/factor)
-    image_ft = _numpy.fft.fftn(image[center_x-window_x/2:center_x+window_x/2,
-                                center_y-window_y/2:center_y+window_y/2,
-                                center_z-window_z/2:center_z+window_z/2],
+    center_x = size_x//2
+    center_y = size_y//2
+    center_z = size_z//2
+    window_x = int(size_x//factor)
+    window_y = int(size_y//factor)
+    window_z = int(size_z//factor)
+    image_ft = _numpy.fft.fftn(image[center_x-window_x//2:center_x+window_x//2,
+                                center_y-window_y//2:center_y+window_y//2,
+                                center_z-window_z//2:center_z+window_z//2],
                           [size_x, size_y, size_z])
     image_scaled = abs(_numpy.fft.ifftn(_numpy.fft.fftshift(image_ft), [size_x, size_y, size_z]))
     return image_scaled
@@ -52,8 +52,8 @@ def crop_and_pad(image, center, side):
 
     ret = _numpy.zeros((side, )*dims, dtype=image.dtype)
 
-    low_in = _numpy.array(center)-side/2.0+0.5
-    high_in = _numpy.array(center)+side/2.0+0.5
+    low_in = _numpy.float64(center)-side/2.0+0.5
+    high_in = _numpy.float64(center)+side/2.0+0.5
 
     low_out = _numpy.zeros(dims)
     high_out = _numpy.array((side,)*dims)
@@ -66,6 +66,10 @@ def crop_and_pad(image, center, side):
             high_out[i] -= abs(image.shape[i] - high_in[i])
             high_in[i] = image.shape[i]
 
+    low_in = _numpy.int32(low_in)
+    high_in = _numpy.int32(high_in)
+    low_out = _numpy.int32(low_out)
+    high_out = _numpy.int32(high_out)
     if dims == 2:
         ret[low_out[0]:high_out[0], low_out[1]:high_out[1]] = image[low_in[0]:high_in[0], low_in[1]:high_in[1]]
     else:

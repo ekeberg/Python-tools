@@ -1,23 +1,25 @@
 #!/usr/bin/env python
 import sys
-import pylab
-from optparse import OptionParser
+import numpy
+import matplotlib
+import matplotlib.pyplot
+import argparse
 
 def plot_simple(in_file):
     try:
-        data = pylab.loadtxt(sys.argv[1])
+        data = numpy.loadtxt(in_file)
     except:
         raise IOError("Can't read %s." % in_file)
 
-    for i in pylab.transpose(data):
-        pylab.plot(i)
+    for i in numpy.transpose(data):
+        matplotlib.pyplot.plot(i)
 
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog <data>")
-    (options, args) = parser.parse_args()
-    if len(args) == 0: raise IOError("No datafile provided")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    args = parser.parse_args()
 
-    plot_simple(args[0])
+    plot_simple(args.file)
     pylab.show()
 

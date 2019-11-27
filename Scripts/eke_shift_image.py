@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-import spimage, sys
-from optparse import OptionParser
+import spimage
+import sys
+import argparse
 
 def shift_image(in_file,out_file = 0):
     try:
@@ -16,21 +17,12 @@ def shift_image(in_file,out_file = 0):
     try:
         spimage.sp_image_write(img_s,out_file,0)
     except:
-        print "Error: Can not write to %s" % out_file
+        print("Error: Can not write to %s" % out_file)
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog <input_image.h5> [<output_image.h5>]")
-    
-    (options, args) = parser.parse_args()
-    if len(args) == 0:
-        print "An input image is needed"
-        exit(0)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("infile")
+    parser.add_argument("outfile")    
+    args = parser.parse_args()
 
-    in_file = args[0]
-    
-    if len(args) == 1:
-        out_file = in_file
-    else:
-        out_file = args[1]
-
-    shift_image(in_file, out_file)
+    shift_image(args.infile, args.outfile)

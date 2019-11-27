@@ -1,9 +1,9 @@
 """Small GUI tools for use in smaller python scripts. I think the implementation
 of the Manipulator looks weirt, but it works. Needs non integer manipulation."""
-from .QtVersions import QtCore, QtGui
+from .QtVersions import QtCore, QtGui, QtWidgets
 import sys as _sys
 
-class Manipulator(QtGui.QMainWindow):
+class Manipulator(QtWidgets.QMainWindow):
     """Run a function with varying numerical input using a slider to change the value.
     Designed for use with matplotlib."""
     def __init__(self, function, value_ranges, value_names, parent=None):

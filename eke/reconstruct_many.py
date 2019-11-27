@@ -62,7 +62,7 @@ class MultipleReconstructions(object):
     def start(self):
         """Run all reconstructions."""
         for file_name in self._files:
-            print 'Reconstruct %s' % file_name
+            print('Reconstruct %s' % file_name)
             Reconstructer(self._conf_file, file_name, self._base_dir, self._n_recs, self._conf_dict).start()
 
 if __name__ == "__main__":

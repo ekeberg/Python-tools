@@ -1,45 +1,45 @@
 #!/usr/bin/env python
 import sys
-import pylab
+import numpy
 from eke import elements
 from eke import conversions
-from optparse import OptionParser
+import argparse
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog -w WAVELENGTH -e ENERGY -m MATERIAL")
-    parser.add_option("-w", action="store", type="float", dest="wavelength",
-                      help="Photon wavelength in nm.")
-    parser.add_option("-e", action="store", type="float", dest="energy",
-                      help="Photon energy in eV (takes presedence over wavelength).")
-    parser.add_option("-m", action="store", type="string", dest="material",
-                      help="Material. Can be an element or one of water, protein, virus, cell.")
-    parser.add_option("-d", action="store", type="float", dest="density",
-                      help="If the material is an element, the density has to be provided.")
-    (options,argv) = parser.parse_args()
-    if not options.material:
-        print "Error: A material has to be specified."
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-w", "--wavelength", type=float,
+                        help="Photon wavelength in nm.")
+    parser.add_argument("-e", "--energy", type=float,
+                        help="Photon energy in eV (takes presedence over wavelength).")
+    parser.add_argument("-m", "--material",
+                        help="Material. Can be an element or one of water, protein, virus, cell.")
+    parser.add_argument("-d", "--density", type=float,
+                        help="If the material is an element, the density has to be provided.")
+    args = parser.parse_args()
+    if not args.material:
+        print("Error: A material has to be specified.")
         exit(1)
-    elif not (options.wavelength or options.energy):
-        print "Error: Energy or wavelength has to be specified."
+    elif not (args.wavelength or args.energy):
+        print("Error: Energy or wavelength has to be specified.")
         exit(1)
 
-    if options.energy:
-        energy = options.energy
+    if args.energy:
+        energy = args.energy
     else:
-        energy = conversions.nm_to_ev(options.wavelength)
+        energy = conversions.nm_to_ev(args.wavelength)
 
-    if options.material in elements.elements:
-        if not options.density:
-            print "Error: density has to be provided for this material."
+    if args.material in elements.ELEMENTS:
+        if not args.density:
+            print("Error: density has to be provided for this material.")
             exit(1)
-        kwargs = {options.material : 1}
-        attenuation_length = elements.get_attenuation_length(energy,elements.Material(options.density,
+        kwargs = {args.material : 1}
+        attenuation_length = elements.get_attenuation_length(energy,elements.Material(args.density,
                                                                                       **kwargs))
-    elif options.material.lower() in elements.materials.keys():
-        attenuation_length = elements.get_attenuation_length(energy,elements.materials[options.material.lower()])
+    elif args.material.lower() in elements.MATERIALS.keys():
+        attenuation_length = elements.get_attenuation_length(energy,elements.MATERIALS[args.material.lower()])
     else:
-        print "Error: invalid material."
+        print("Error: invalid material.")
         exit(1)
         
-    print "%g um" % (attenuation_length*1e6)
+    print("%g um" % (attenuation_length*1e6))
 

@@ -23,7 +23,7 @@ def elser_particle(array_size, particle_size, feature_size, return_blured=True):
 
     for _ in range(4):
         # binary constrast
-        particle_average = _numpy.median(particle[-particle_mask])
+        particle_average = _numpy.median(particle[~particle_mask])
         particle[particle > particle_average] = 1.
         particle[particle <= particle_average] = 0.
         particle[particle_mask] = 0.
@@ -33,7 +33,7 @@ def elser_particle(array_size, particle_size, feature_size, return_blured=True):
         particle[:, :] = abs(_numpy.fft.ifftn(particle_ft))
 
     if not return_blured:
-        particle_average = _numpy.median(particle[-particle_mask])
+        particle_average = _numpy.median(particle[~particle_mask])
         particle[particle > particle_average] = 1.
         particle[particle <= particle_average] = 0.
 
@@ -56,6 +56,7 @@ def elser_particle_nd(array_shape, feature_size, mask=None, return_blured=True):
     for index, this_exp in enumerate(component_exp):
         this_slice = [_numpy.newaxis]*len(array_shape)
         this_slice[index] = slice(None)
+        this_slice = tuple(this_slice)
         lp_kernel *= this_exp[this_slice]
     lp_kernel = _numpy.fft.fftshift(lp_kernel)
 

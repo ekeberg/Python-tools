@@ -1,6 +1,7 @@
 """Parallelise the execution of a single function with many inputs."""
+from future import standard_library
 import multiprocessing as _multiprocessing
-import Queue as _Queue
+import queue as _queue
 
 class Worker(_multiprocessing.Process):
     """Runs a single function for many different outputs."""
@@ -29,21 +30,21 @@ class Worker(_multiprocessing.Process):
         while True:
             try:
                 tmp = self.working_queue.get(timeout=0.1) #timeout of 0.1 is choosen adhoc.
-            except _Queue.Empty:
+            except _queue.Empty:
                 break
             if tmp == None:
                 break
             if not self.quiet:
                 try:
-                    print "%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize())
+                    print("%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize()))
                 except NotImplementedError:
-                    print "%s process %d" % (self.name, tmp[0])
-            print tmp[0]
-            print self.process
-            print tmp[1]
+                    print("%s process %d" % (self.name, tmp[0]))
+            print(tmp[0])
+            print(self.process)
+            print(tmp[1])
             self.return_dict[tmp[0]] = self.process(*tmp[1])
         if not self.quiet:
-            print "%s done" % self.name
+            print("%s done" % self.name)
 
 
 def run_parallel(jobs, function, n_cpu=0, quiet=False):
@@ -70,7 +71,7 @@ def run_parallel(jobs, function, n_cpu=0, quiet=False):
     for worker in workers:
         worker.join()
 
-    values = return_dict.values()
+    values = list(return_dict.values())
     my_manager.shutdown()
     return values
 

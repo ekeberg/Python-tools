@@ -1,13 +1,14 @@
 #!/usr/bin/env python
-import sys, os, spimage
-#from PyQt4.QtCore import *
-#from PyQt4.QtGui import *
+import sys
+import os
+from eke import sphelper
 from PyQt4 import QtCore, QtGui
-from pylab import *
+#from pylab import *
+import numpy
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from optparse import OptionParser
+import argparse
 
 class AppForm(QtGui.QMainWindow):
     def __init__(self, filename, parent=None):
@@ -23,12 +24,10 @@ class AppForm(QtGui.QMainWindow):
         self._main_frame = QtGui.QWidget()
         self._image = None
         try:
-            self._image_sp = spimage.sp_image_read(filename,0)
-        except:
-            print "Must provide a file"
+            self._image = sphelper.import_spimage(filename)
+        except IOError:
+            print("Must provide a file")
             exit(1)
-
-        self._image = self._image_sp.image
 
         self._dpi = 100
         self._fig = Figure((10.0, 10.0), dpi=self._dpi)
@@ -49,7 +48,7 @@ class AppForm(QtGui.QMainWindow):
         self._angle_slider.setValue(self._angle)
         self._angle_slider.setTracking(True)
         
-        self._angle_label = QtGui.QLabel("angle = %g" % (self._angle/pi*180.))
+        self._angle_label = QtGui.QLabel("angle = %g" % (self._angle/numpy.pi*180.))
         self._angle_label.setFixedWidth(100)
 
         #self.connect(self._angle_slider, SIGNAL('sliderMoved(int)'), self._angle_changed)
@@ -111,37 +110,34 @@ class AppForm(QtGui.QMainWindow):
 
     @classmethod
     def _diff_2d(cls, input, direction_angle):
-        raw_diff_x = exp(-1.j*angle(input[:, 1:])) - exp(-1.j*angle(input[:, :-1]))
-        diff_x = (-1.+2.*(imag(raw_diff_x*exp(-1.j*angle(input[:, 1:]))) > 0.))*abs(raw_diff_x)
-        diff_x_smooth = zeros(input.shape)
+        raw_diff_x = numpy.exp(-1.j*numpy.angle(input[:, 1:])) - numpy.exp(-1.j*numpy.angle(input[:, :-1]))
+        diff_x = (-1.+2.*(numpy.imag(raw_diff_x*numpy.exp(-1.j*numpy.angle(input[:, 1:]))) > 0.))*abs(raw_diff_x)
+        diff_x_smooth = numpy.zeros(input.shape)
         diff_x_smooth[:, :-1] += diff_x
         diff_x_smooth[:, 1:] += diff_x
         diff_x_smooth[:, 1:-1] /= 2.
-        raw_diff_y = exp(-1.j*angle(input[1:, :])) - exp(-1.j*angle(input[:-1, :]))
-        diff_y = (-1.+2.*(imag(raw_diff_y*exp(-1.j*angle(input[1:, :]))) > 0.))*abs(raw_diff_y)
-        diff_y_smooth = zeros(input.shape)
+        raw_diff_y = numpy.exp(-1.j*numpy.angle(input[1:, :])) - numpy.exp(-1.j*numpy.angle(input[:-1, :]))
+        diff_y = (-1.+2.*(numpy.imag(raw_diff_y*numpy.exp(-1.j*numpy.angle(input[1:, :]))) > 0.))*abs(raw_diff_y)
+        diff_y_smooth = numpy.zeros(input.shape)
         diff_y_smooth[:-1, :] += diff_y
         diff_y_smooth[1:, :] += diff_y
         diff_y_smooth[1:-1, :] /= 2.
         #return -diff_x_smooth-diff_y_smooth
-        return cos(direction_angle)*diff_x_smooth + sin(direction_angle)*diff_y_smooth
+        return numpy.cos(direction_angle)*diff_x_smooth + numpy.sin(direction_angle)*diff_y_smooth
 
     def _angle_changed(self,new_angle):
         #self.a = self.a_slider.getValue()
-        self._angle = 2.*pi * float(new_angle) / float(self._slider_length)
-        self._angle_label.setText("angle = %g" % (self._angle/pi*180.))
+        self._angle = 2.*numpy.pi * float(new_angle) / float(self._slider_length)
+        self._angle_label.setText("angle = %g" % (self._angle/numpy.pi*180.))
         self._update_image()
 
 def main():
-    parser = OptionParser(usage="%prog image")
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    args = parser.parse_args()
     
-    if len(args) == 0:
-        print "Must provide an image."
-        exit(1)
-
     app = QtGui.QApplication(sys.argv)
-    form = AppForm(args[0])
+    form = AppForm(args.file)
     form.show()
     app.exec_()
 

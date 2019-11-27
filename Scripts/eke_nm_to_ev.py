@@ -1,24 +1,13 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import sys
 import os
-from optparse import OptionParser
-
-sys.path.append('%s/Python/Modules' % os.path.expanduser('~'))
-
+import argparse
 from eke import conversions
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog <wavelength in nm>")
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("wavelength", type=float, help="Wavelength [nm]")
+    args = parser.parse_args()
 
-    if len(args) < 1:
-        print "Must provide an argument"
-        exit(1)
-
-    try:
-        argument = float(args[0])
-    except ValueError:
-        print "Invalid argument, can't convert to float"
-        exit(1)
-
-    print str(conversions.nm_to_ev(argument))+" eV"
+    print("{0} eV".format(conversions.nm_to_ev(args.wavelength)))

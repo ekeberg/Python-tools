@@ -29,12 +29,16 @@ class Quaternion(object):
         return self._elements[index]
 
     def __mul__(self, other):
+        if not isinstance(other, Quaternion):
+            raise TypeError("Can only multiply a Quaternion with another Quaternion. Not a {0}".format(other))
         return Quaternion((self[0]*other[0] - self[1]*other[1] - self[2]*other[2] - self[3]*other[3],
                            self[0]*other[1] + self[1]*other[0] + self[2]*other[3] - self[3]*other[2],
                            self[0]*other[2] - self[1]*other[3] + self[2]*other[0] + self[3]*other[1],
                            self[0]*other[3] + self[1]*other[2] - self[2]*other[1] + self[3]*other[0]))
 
     def __rmul__(self, other):
+        if not isinstance(other, Quaternion):
+            raise TypeError("Can only multiply a Quaternion with another Quaternion. Not a {0}".format(other))
         return Quaternion((other[0]*self[0] - other[1]*self[1] - other[2]*self[2] - other[3]*self[3],
                            other[0]*self[1] + other[1]*self[0] + other[2]*self[3] - other[3]*self[2],
                            other[0]*self[2] - other[1]*self[3] + other[2]*self[0] + other[3]*self[1],
@@ -51,6 +55,14 @@ def angle(quaternion):
 def axis(quaternion):
     """Get the axis of rotation for a quaternion"""
     return quaternion[1:] / _numpy.linalg.norm(quaternion[1:])
+
+def random():
+    """Get a random quaternion"""
+    random_base = _numpy.random.random(3)
+    return Quaternion((_numpy.sqrt(1.-random_base[0]) * _numpy.sin(2.*_numpy.pi*random_base[1]),
+                       _numpy.sqrt(1.-random_base[0]) * _numpy.cos(2.*_numpy.pi*random_base[1]),
+                       _numpy.sqrt(random_base[0]) * _numpy.sin(2.*_numpy.pi*random_base[2]),
+                       _numpy.sqrt(random_base[0]) * _numpy.cos(2.*_numpy.pi*random_base[2])))
 
 def from_angle_and_dir(angle, direction):
     """Create a Quaternion from an angle and a direction"""

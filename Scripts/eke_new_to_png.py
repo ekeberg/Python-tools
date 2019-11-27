@@ -4,14 +4,17 @@ This program converts all .h5 files in the current
 directory to .png using the HAWK program
 image_to_png
 """
-import os, re, sys, spimage
-import scripts
-from optparse import OptionParser
-from optparse import OptionGroup
+from __future__ import print_function
+import os
+import re
+import sys
+import spimage
+from eke import scripts
+import argparse
 
 def to_png(*arguments):
     if len(arguments) <= 0:
-        print """
+        print("""
     This program converts all h5 files in the curren directory to png.
     Usage:  python_script_new_to_png [colorscale]
 
@@ -26,10 +29,10 @@ def to_png(*arguments):
     Shift (can be combined with the others)
     Support
 
-    """
+    """)
         return
     elif not (isinstance(arguments,list) or isinstance(arguments,tuple)):
-        print "function to_png takes must have a list or string input"
+        print("function to_png takes must have a list or string input")
         return
 
 
@@ -37,15 +40,15 @@ def to_png(*arguments):
     l = os.listdir('.')
 
     expr = re.compile('.h5$')
-    h5_files = filter(expr.search,l)
+    h5_files = list(filter(expr.search,l))
 
     expr = re.compile('.png$')
-    png_files = filter(expr.search,l)
+    png_files = list(filter(expr.search,l))
 
     files = [f for f in h5_files if f[:-2]+"png" not in png_files]
     files.sort()
 
-    print "Converting %d files" % len(files)
+    print("Converting %d files" % len(files))
 
     log_flag = 0
     shift_flag = 0
@@ -72,7 +75,7 @@ def to_png(*arguments):
         elif flag == 'Support':
             support_flag = 1
         else:
-            print "unknown flag %s" % flag
+            print("unknown flag %s" % flag)
 
     if log_flag == 1:
         color += 128
@@ -113,31 +116,23 @@ def read_files(in_dir, out_dir):
     return files
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog [options]")
-    parser.add_option("-c", "--color", action="store", type="string", dest="colorscale", default="jet",
-                      help="Colorscale")
-    parser.add_option("-l", "--log", action="store_true", dest="log", default=False,
-                      help="Log scale")
-    parser.add_option("-s", "--shift", action="store_true", dest="shift", default=False,
-                      help="Shift image")
-    parser.add_option("-m", "--mask", action="store_true", dest="mask", default=False,
-                      help="Plot mask")
-    parser.add_option("-i", "--input", action="store", type="string", dest="input", default=".",
-                      help="Input directory")
-    parser.add_option("-o", "--output", action="store", type="string", dest="output", default=".",
-                      help="Output directory")
-    (options,args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("indir", default=".", help="Input directory")
+    parser.add_argument("outdir", default=".", help="Output directory")    
+    parser.add_argument("-c", "--colorscale", default="jet", help="Colorscale")
+    parser.add_argument("-l", "--log", action="store_true", help="Log scale")
+    parser.add_argument("-s", "--shift", action="store_true", help="Shift image")
+    parser.add_argument("-m", "--mask", action="store_true", help="Plot mask")
+    args = parser.parse_args()
 
     plot_setup = scripts.to_png.PlotSetup()
-    plot_setup.set_color(options.colorscale)
-    print options.log
-    plot_setup.set_log(options.log)
-    plot_setup.set_shift(options.shift)
-    plot_setup.set_mask(options.mask)
+    plot_setup.set_color(args.colorscale)
+    print(args.log)
+    plot_setup.set_log(args.log)
+    plot_setup.set_shift(args.shift)
+    plot_setup.set_mask(args.mask)
 
-    files = read_files(options.input, options.output)
+    files = read_files(args.indir, args.outdir)
 
-    scripts.to_png.to_png_parallel(files, options.output, plot_setup)
-
-    #scripts.to_png.to_png(*sys.argv[1:])
+    scripts.to_png.to_png_parallel(files, args.output, plot_setup)
 

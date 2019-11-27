@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 import sys
 import pylab
-from optparse import OptionParser
+import argparse
 
 def plot_1d(arguments):
     if isinstance(arguments,str):
         arguments = [arguments]
     if len(arguments) < 1:
-        print "Need at least one data set"
+        print("Need at least one data set")
         sys.exit(1)
 
     fig = pylab.figure(1)
@@ -17,7 +17,7 @@ def plot_1d(arguments):
         try:
             data = pylab.loadtxt(f)
         except:
-            print "Error %s is not a readable file.\n" % (f)
+            print("Error %s is not a readable file.\n" % (f))
             sys.exit(1)
 
         #data = pylab.transpose(data)
@@ -30,7 +30,8 @@ def plot_1d(arguments):
     return data
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog <data>")
-    (options, args) = parser.parse_args()
-    plot_1d(args[0])
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    args = parser.parse_args()
+    plot_1d(args.file)
     pylab.show()

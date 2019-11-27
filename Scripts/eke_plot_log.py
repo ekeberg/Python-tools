@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 import sys
-import pylab
-from optparse import OptionParser
+import numpy
+import matplotlib
+import matplotlib.pyplot
 
 PLOTS = ["it", "ereal", "efourier", "fc_fo", "sup_size", "beta", "threshold", "algorithm", "d_ereal", "d_sup_size", "blur_radius", "int_cum_fluct", "object_area", "phase_relation_error", "correlation_with_solution", "phase_blur_radius", "delta_rho", "iterations_s"]
 
@@ -9,7 +10,7 @@ NAMES = [r'Outerloop iterations', r'$E_{real}$', r'$E_{fourier}$', r'$\left<\fra
 
 def plot_log(log_file, plot_types):
     try:
-        data = pylab.loadtxt(log_file,skiprows=43)
+        data = numpy.loadtxt(log_file,skiprows=43)
     except:
         IOError("Can not read %s" % log_file)
 
@@ -23,30 +24,29 @@ def plot_log(log_file, plot_types):
             indices.append(PLOTS.index(plot_type)+1)
 
     for i in indices:
-        pylab.plot(data[:,0],data[:,i],label=NAMES[i-1])
+        matplotlib.pyplot.plot(data[:,0],data[:,i],label=NAMES[i-1])
 
-    pylab.legend()
+    matplotlib.pyplot.legend()
 
 
 
 if __name__ == "__main__":
     from eke import tools
+    import argparse    
 
-    parser = OptionParser(usage="%prog [-p plot1 -p plot2 ...] <logfile.log>")
-    parser.add_option("-p", action="append", type="choice", dest="plots", help="Specify a plot to plot.",
-                      choices=("it", "ereal", "efourier", "fc_fo", "sup_size", "beta", "threshold", "algorithm", "d_ereal", "d_sup_size", "blur_radius", "int_cum_fluct", "object_area", "phase_relation_error", "correlation_with_solution", "phase_blur_radius", "delta_rho", "iterations_s"), default=[])
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    parser.add_argument("-p" "--plot", action="append", choices=("it", "ereal", "efourier", "fc_fo", "sup_size", "beta", "threshold", "algorithm", "d_ereal", "d_sup_size", "blur_radius", "int_cum_fluct", "object_area", "phase_relation_error", "correlation_with_solution", "phase_blur_radius", "delta_rho", "iterations_s"), help="Specify a plot to plot.")
+                  
+    args = parser.parse_args()
     
-    tools.remove_duplicates(options.plots)
+    tools.remove_duplicates(options.plot)
 
-    if len(options.plots) == 0:
-        options.plots.append("ereal")
-        options.plots.append("efourier")
-    
-    if len(args) == 0:
-        raise IOError("Need to provide a log file") 
+    if len(args.plot) == 0:
+        args.plot.append("ereal")
+        args.plot.append("efourier")
 
-    plot_log(args[0], options.plots)
-    pylab.show()
+    plot_log(args.file, args.plot)
+    matplotlib.pyplot.show()
     
     

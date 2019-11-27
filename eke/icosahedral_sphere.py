@@ -3,7 +3,7 @@ Also contains functions to generate face and edge coordinates of an icosahedron.
 import numpy as _numpy
 import itertools as _itertools
 
-_PHI = (1+_numpy.sqrt(5))/2.
+_PHI = (1.+_numpy.sqrt(5))/2.
 
 def n_to_points(sampling_n):
     """How many sampling points corresponds to a specific n."""
@@ -12,9 +12,9 @@ def n_to_points(sampling_n):
     return 2+10*sampling_n**2
 
 def points_to_n(n_points):
-    sampling_n = (n_points-2) / 10.
+    sampling_n = (n_points-2.) / 10.
     if sampling_n != int(sampling_n):
-        print sampling_n
+        print(sampling_n)
         raise ValueError("{0} points does not correspond to any n".format(n_points))
     return int(sampling_n)
 

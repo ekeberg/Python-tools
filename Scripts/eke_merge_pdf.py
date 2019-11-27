@@ -1,8 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
 import os
 import PyPDF2
-from optparse import OptionParser
-from optparse import OptionGroup
+import argparse
 
 def merge_pdf_files(input_filename_list, output_filename):
     input_file_handles = [PyPDF2.PdfFileReader(f) for f in input_filename_list]
@@ -15,17 +15,17 @@ def merge_pdf_files(input_filename_list, output_filename):
     merger.write(output_filename)
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog [-o OUT_FILE] FILE1 FILE2 FILE3 ...")
-    parser.add_option("-o", action="store", type="string", dest="output_filename")
-    (options,args) = parser.parse_args()
-    
-    if len(args) < 2:
-        parser.error("At least two filenames must be specified")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("first_file")
+    parser.add_argument("additional_files", nargs="+")
+    parser.add_argument("outfile")
+    #parser.add_argument("-o", action="store", type="string", dest="output_filename")
+    args = parser.parse_args()
 
-    if options.output_filename == None:
+    if args.outfile == None:
         output_filename = os.path.splitext(args[0])[0]+"_joined.pdf"
-        print "No output file specified. Output will be written to {0}".format(output_filename)
+        print("No output file specified. Output will be written to {0}".format(output_filename))
     else:
-        output_filename = options.output_filename
+        output_filename = args.outfile
 
-    merge_pdf_files(args, output_filename)
+    merge_pdf_files([args.first_file]+args.additional_files, output_filename)

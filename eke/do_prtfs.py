@@ -1,16 +1,20 @@
 """Calculate Phase Retrieval Transfer Function (PRTF).
 I don't know if this module works!"""
-#from pylab import *
-#import pylab
+import sys
+if sys.version_info < (3, 0):
+    from future import standard_library
+    standard_library.install_aliases()
+from builtins import object
 import os as _os
 import re as _re
 import shutil as _shutil
-import Queue as _Queue
+import queue as _Queue
 import multiprocessing as _multiprocessing
 import itertools as _itertools
 
 class PRTF(object):
-    """Calculate prtf after a multiple reconstruction. Puts the result in a directory named prtf in baseDir."""
+    """Calculate prtf after a multiple reconstruction. Puts the
+    result in a directory named prtf in baseDir."""
     def __init__(self, base_dir, prefix):
         self.base_dir = base_dir
         self.prefix = prefix
@@ -66,18 +70,18 @@ class MultiplePRTF(_multiprocessing.Process):
                 data = self.working_queue.get()
             except _Queue.Empty:
                 break
-            print "%s : %s" % (self.name, data)
-            print "%s : %d left" % (self.name, self.working_queue.qsize())
+            print("%s : %s" % (self.name, data))
+            print("%s : %d left" % (self.name, self.working_queue.qsize()))
             prtf = PRTF(data, self.prefix)
             if prtf.n_recs >= self.n_lim:
-                print "%s do" % self.name
+                print("%s do" % self.name)
                 prtf.start()
                 if _os.path.isfile('%s/prtf/%s-avg_image.h5' % (data, self.prefix)):
                     _shutil.copy('%s/prtf/%s-avg_image.h5' % (data, self.prefix),
                                 '%s/%s.h5' % (self.final_dest, _os.path.basename(data)))
-                print "%s done" % self.name
+                print("%s done" % self.name)
             else:
-                print "%s dont" % self.name
+                print("%s dont" % self.name)
 
 def start_prtfs(base_dir, n_lim, prefix, out_dir, cpu_count):
     """Convenient function for calculating a single PRTF"""

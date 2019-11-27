@@ -4,13 +4,13 @@ This program converts all .h5 files in the current
 directory to .png using the HAWK program
 image_to_png
 """
-import os, re, sys, spimage
-#import os, re, sys, sphelper
-#from guppy import hpy
-from optparse import OptionParser
-from optparse import OptionGroup
+import os
+import re
+import sys
+import spimage
+import argparse
 
-class PlotSetup:
+class PlotSetup(object):
     scales = {"Phase" : spimage.SpColormapPhase,
               "Jet" : spimage.SpColormapJet,
               "Gray" : spimage.SpColormapGrayScale}
@@ -46,7 +46,7 @@ def read_files(directory):
 
 def evaluate_arguments(arguments):
     if len(arguments) <= 0:
-        print """
+        print("""
     This program converts all h5 files in the curren directory to png.
     Usage:  python_script_to_png [colorscale]
 
@@ -61,10 +61,10 @@ def evaluate_arguments(arguments):
     Shift (can be combined with the others)
     Support
 
-    """
+    """)
         return
     elif not (isinstance(arguments,list) or isinstance(arguments,tuple)):
-        print "function to_png takes must have a list or string input"
+        print("function to_png takes must have a list or string input")
         return
 
     log_flag = 0
@@ -92,7 +92,7 @@ def evaluate_arguments(arguments):
         elif flag == 'Support':
             support_flag = 1
         else:
-            print "unknown flag %s" % flag
+            print("unknown flag %s" % flag)
 
     if log_flag == 1:
         color += 128
@@ -120,7 +120,7 @@ def get_support_function(bool):
 
 def to_png_parallel(input_files, output_dir, plot_setup):
     import multiprocessing
-    import Queue
+    import queue
 
     class Worker(multiprocessing.Process):
         def __init__(self, working_queue, out_dir, process_function, color):
@@ -137,28 +137,28 @@ def to_png_parallel(input_files, output_dir, plot_setup):
         def run(self):
             while not self.working_queue.empty():
                 try:
-                    print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
+                    print("%s get new, approx %d left" % (self.name,self.working_queue.qsize()))
                 except NotImplementedError:
                     pass
                 try:
                     #f = self.working_queue.get_nowait()
                     f = self.working_queue.get()
-                except Queue.Empty:
+                except queue.Empty:
                     break
                 self.process(f)
                 # h = hpy()
                 # print "%s:\n" % self.name
                 # print h.heap()
-            print "%s done" % self.name
+            print("%s done" % self.name)
 
     def split_files(files,n):
         from pylab import split, array
         rest = len(files)%n
         if rest:
-            super_list = split(array(files)[:-rest],len(files)/n)
+            super_list = split(array(files)[:-rest],len(files)//n)
             super_list.append(files[-rest:])
         else:
-            super_list = split(array(files),len(files)/n)
+            super_list = split(array(files),len(files)//n)
         return super_list
 
     def run_threads(nThreads):
@@ -197,29 +197,23 @@ def to_png(input_dir, output_dir, plot_setup):
         spimage.sp_image_free(img)
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog [options]")
-    parser.add_option("-c", "--color", action="store", type="string", dest="colorscale", default="jet",
-                      help="Colorscale")
-    parser.add_option("-l", "--log", action="store_true", dest="log", default=False,
-                      help="Log scale")
-    parser.add_option("-s", "--shift", action="store_true", dest="shift", default=False,
-                      help="Shift image")
-    parser.add_option("-m", "--mask", action="store_true", dest="mask", default=False,
-                      help="Plot mask")
-    parser.add_option("-i", "--input", action="store", type="string", dest="input", default=".",
-                      help="Input directory. Default is .")
-    parser.add_option("-o", "--output", action="store", type="string", dest="output", default=".",
-                      help="Output directory. Default is .")
-    (options,args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("indir", default=".", help="Input directory. Default is .")
+    parser.add_argument("outdir", default=".", help="Output directory. Default is .")    
+    parser.add_argument("-c", "--colorscale", default="jet", help="Colorscale")
+    parser.add_argument("-l", "--log", action="store_true", help="Log scale")
+    parser.add_argument("-s", "--shift", action="store_true", help="Shift image")
+    parser.add_argument("-m", "--mask", action="store_true", help="Plot mask")
+    args = parser.parse_args()
 
     plot_setup = PlotSetup()
-    plot_setup.set_color(options.colorscale)
-    print options.log
-    plot_setup.set_log(options.log)
-    plot_setup.set_shift(options.shift)
-    plot_setup.set_mask(options.mask)
+    plot_setup.set_color(args.colorscale)
+    print(args.log)
+    plot_setup.set_log(args.log)
+    plot_setup.set_shift(args.shift)
+    plot_setup.set_mask(args.mask)
 
-    files = read_files(options.input)
+    files = read_files(args.indir)
 
-    to_png_parallel(files, options.output, plot_setup)
+    to_png_parallel(files, args.outdir, plot_setup)
 

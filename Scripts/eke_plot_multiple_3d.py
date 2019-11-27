@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import sys
 import numpy
 from eke.QtVersions import QtCore, QtGui
@@ -35,7 +36,7 @@ class MainWindow(QtGui.QMainWindow):
         self._surface_slider.setTracking(True)
         self._slider_levels = 1000
         self._surface_slider.setRange(1, self._slider_levels)
-        self._surface_slider.setValue(self._slider_levels/2)
+        self._surface_slider.setValue(self._slider_levels//2)
 
         def on_slider_change(self, new_slider_value):
             new_surface_value = self._value_calculator(float(new_slider_value) / float(self._slider_levels))

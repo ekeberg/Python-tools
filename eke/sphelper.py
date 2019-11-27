@@ -56,7 +56,7 @@ def save_spimage(image, filename, mask=None):
         else:
             file_handle['phased'] = [0]
 
-        if mask != None:
+        if mask is not None:
             if _numpy.shape(mask) != _numpy.shape(mask):
                 raise ValueError("Mask and image have to be the same size")
             file_handle['mask'] = mask

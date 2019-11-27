@@ -36,6 +36,7 @@ class Progress(object):
         self._expected_time_left = self._last_iteration_time * (self._number_of_iterations -
                                                                 self._tasks_completed)
     def print_message(self, always_output=False):
+        new_time = self._time
         if always_output or new_time > (self._last_output_time + self._max_output_period):
             bar_length = 50
             done_length = int(float(self._tasks_completed) / float(self._number_of_iterations) * bar_length)

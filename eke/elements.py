@@ -1,14 +1,19 @@
 """X-ray material properties. Calculate cross section, attenuation length and more."""
+import sys
 import numpy as _numpy
 import pickle as _pickle
 import os as _os
 from . import conversions as _conversions
 from . import constants as _constants
 
-_ELEMENTS_FILE = open(_os.path.join(_os.path.split(__file__)[0], "elements.dat"), "r")
-ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE)
-_ELEMENTS_FILE.close()
-ELEMENTS = ATOMIC_MASS.keys()
+if sys.version_info >= (3, 0):
+    pickle_arguments = {"encoding": "latin1"}
+else:
+    pickle_arguments = {}
+
+with open(_os.path.join(_os.path.split(__file__)[0], "elements.dat"), "rb") as _ELEMENTS_FILE:
+    ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE, **pickle_arguments)
+ELEMENTS = list(ATOMIC_MASS.keys())
 
 class ChemicalComposition(object):
     """This class contains a set of relative abundances of materials."""
@@ -77,7 +82,11 @@ MATERIALS = {"protein" : Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
              "water" : Material(1000, O=1, H=2),
              "virus" : Material(1455, H=72.43, C=47.52, N=13.55, O=17.17, P=1.11, S=0.7),
              "cell" : Material(1000, H=23, C=3, N=1, O=10, P=0, S=1),
-             "silicon_nitride": Material(3440, Si=3, N=4)}
+             "silicon_nitride": Material(3440, Si=3, N=4),
+             "air": Material(1.225, N=78, O=21, Ar=1),
+             "gold": Material(19300, Au=1),
+             "aluminium": Material(2700, Al=1)}
+
 
 def get_scattering_factor(element, photon_energy):
     """
@@ -94,7 +103,7 @@ def get_scattering_power(photon_energy, material, complex_scattering_factor=Fals
     total_atomic_ammounts = 0.0
     f_1 = 0.0
     f_2 = 0.0
-    for element, value in material.element_ratios().iteritems():
+    for element, value in material.element_ratios().items():
         # sum up average atom density
         average_density += value*ATOMIC_MASS[element]*_constants.u
         total_atomic_ammounts += value
@@ -122,7 +131,7 @@ def get_attenuation_length(photon_energy, material):
     average_density = 0.0
     total_atomic_ammounts = 0.0
     f_2 = 0.0
-    for element, value in material.element_ratios().iteritems():
+    for element, value in material.element_ratios().items():
         # sum up average atom density
         average_density += value*ATOMIC_MASS[element]*_constants.u
         total_atomic_ammounts += value
@@ -146,7 +155,7 @@ def get_index_of_refraction(photon_energy, material):
     total_atomic_ammounts = 0.
     f_1 = 0.
     f_2 = 0.
-    for element, value in material.element_ratios().iteritems():
+    for element, value in material.element_ratios().items():
         average_density += value*ATOMIC_MASS[element]*_constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
@@ -165,8 +174,8 @@ def get_phase_shift(photon_energy, material, distance):
     """Returns the phase shift that that amount of material will cause."""
     index_of_refraction = get_index_of_refraction(photon_energy, material)
     phase_shift_per_period = (1.-_numpy.real(index_of_refraction)) * (2.*_numpy.pi)
-    number_of_wavelengths = distance / (_conversions.ev_to_m(photon_energy) *
-                                        _numpy.real(index_of_refraction))
+    number_of_wavelengths = float(distance) / (_conversions.ev_to_m(photon_energy) *
+                                               _numpy.real(index_of_refraction))
     total_phase_shift = number_of_wavelengths*phase_shift_per_period
     return total_phase_shift
     
@@ -181,7 +190,9 @@ def get_phase_shift(photon_energy, material, distance):
 #         self.coefs_c = None
 
 def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
-    """Evaluate the scattering factor. s should be given in 1/A"""
+    """Evaluate the scattering factor. s should be given in m"""
+    raise NotImplementedError
+    scattering_vector * 1e10
     return ((atom["a"][0]*_numpy.exp(-atom["b"][0]*scattering_vector**2) +
              atom["a"][1]*_numpy.exp(-atom["b"][1]*scattering_vector**2) +
              atom["a"][2]*_numpy.exp(-atom["b"][2]*scattering_vector**2) +
@@ -191,8 +202,8 @@ def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
 def read_atomsf():
     """Read pickled element properties"""
     file_name = _os.path.join(_os.path.split(__file__)[0], "atomsf.dat")
-    with open(file_name, "r") as _atomsf_file:
-        atomsf_data = _pickle.load(_atomsf_file)
+    with open(file_name, "rb") as _atomsf_file:
+        atomsf_data = _pickle.load(_atomsf_file, **pickle_arguments)
     return atomsf_data
 
 ATOMSF_DATA = read_atomsf()
@@ -200,18 +211,20 @@ ATOMSF_DATA = read_atomsf()
 def write_atomsf(data_dict):
     """Pickle element properties (read by parse_atomsf)"""
     file_name = _os.path.join(_os.path.split(__file__)[0], "atomsf.dat")
-    with open(file_name, "w") as _atomsf_file:
-        _pickle.dump(data_dict, _atomsf_file)
+    with open(file_name, "wb") as _atomsf_file:
+        if sys.version_info >= (3, 0):
+            _pickle.dump(data_dict, _atomsf_file, protocol=2)
+            _pickle.dump(data_dict, _atomsf_file)
 
 def parse_atomsf(file_path='atomsf.lib'):
     """Read atomsf.lib libraray"""
     file_handle = open(file_path)
     file_lines = file_handle.readlines()
     data_lines = [line for line in file_lines if line[:2] != 'AD']
-
+    
     data_dict = {}
 
-    for i in range(len(data_lines)/5):
+    for i in range(len(data_lines)//5):
         element = data_lines[i*5].split()[0]
         #atom_cont = Atom5G(element)
         atom_cont = {}
@@ -235,3 +248,13 @@ def parse_atomsf(file_path='atomsf.lib'):
 
     return data_dict
 
+def structure_factor(element, q, debye_waller=0.):
+    """q and debye_waller is given in m^-1"""
+    A = _numpy.array(ATOMSF_DATA[element]["a"])[_numpy.newaxis, :]
+    B = _numpy.array(ATOMSF_DATA[element]["b"])[_numpy.newaxis, :]
+    C = ATOMSF_DATA[element]["c"]
+    q = q[:, _numpy.newaxis]*1e-10
+    debye_waller = debye_waller*1e-10
+    structure_factor = (A*_numpy.exp(-(B + debye_waller)*q**2*0.25) +
+                        C*_numpy.exp(-debye_waller*q**2*0.25)).sum(axis=1)
+    return structure_factor.squeeze()

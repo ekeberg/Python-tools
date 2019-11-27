@@ -3,7 +3,7 @@ import numpy as _numpy
 import vtk as _vtk
 import nfft as _nfft
 from . import vtk_tools
-from . import rotations
+from . import rotmodule
 from . import diffraction
 
 def downsample_pattern(image, factor):
@@ -29,12 +29,12 @@ class Generate(object):
         self._wavelength = float(wavelength)
         self._detector_distance = float(detector_distance)
         self._detector_pixel_size = float(detector_pixel_size)
-        self._coordinates = diffraction.ewald_coordinates((self._image_shape, )*2, self._wavelength,
+        self._coordinates = diffraction.ewald_coordinates(self._image_shape, self._wavelength,
                                                           self._detector_distance, self._detector_pixel_size)
 
     def _rotated_coordinates(self, rot):
         """Return base coordinates rotated by rot. Rot is a quaternion."""
-        rotated_coordinates = rotations.rotate_array(rot, self._coordinates)
+        rotated_coordinates = rotmodule.rotate(rot, self._coordinates)
         z_rotated = rotated_coordinates[:, 0].reshape(self._image_shape)
         y_rotated = rotated_coordinates[:, 1].reshape(self._image_shape)
         x_rotated = rotated_coordinates[:, 2].reshape(self._image_shape)
@@ -51,7 +51,7 @@ class Generate(object):
         returns the wave field and "intensity" returns the absolute square
         of the wave field."""
         if rot is None:
-            rot = rotations.random_quaternion()
+            rot = rotmodule.random_quaternion()
         coordinates = self._rotated_coordinates(rot)
 
         pattern_flat = _nfft.nfft(self._real_volume, self._real_pixel_size, coordinates)

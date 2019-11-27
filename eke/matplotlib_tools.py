@@ -7,6 +7,8 @@ import matplotlib.widgets
 import matplotlib.colors
 import itertools as _itertools
 import abc as _abc
+#from future.utils import with_metaclass
+from six import with_metaclass
 
 
 def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
@@ -25,15 +27,14 @@ def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
     return scatter_plot
 
 
-class BaseBrowser(object):
-    __metaclass__ = _abc.ABCMeta
+class BaseBrowser(with_metaclass(_abc.ABCMeta)):
     def __init__(self, data, layout=(1, 1)):
         self._data = data
         self._layout = layout
 
         self._number_of_plots = len(data)
         self._plots_per_page = _numpy.product(layout)
-        self._number_of_pages = (self._number_of_plots-1) / self._plots_per_page + 1
+        self._number_of_pages = (self._number_of_plots-1) // self._plots_per_page + 1
         self._current_page = 0
 
         with _matplotlib.rc_context({"toolbar": "None"}):
@@ -43,7 +44,7 @@ class BaseBrowser(object):
         self._fig.set_facecolor("white")
         self._fig.subplots_adjust(left=0., bottom=0.1, right=1., top=0.95, wspace=0., hspace=0.05)
 
-        self._axes = [self._fig.add_subplot(layout[0], layout[1], 1+i0*layout[1]+i1) for i0, i1 in _itertools.product(xrange(layout[0]), xrange(layout[1]))]
+        self._axes = [self._fig.add_subplot(layout[0], layout[1], 1+i0*layout[1]+i1) for i0, i1 in _itertools.product(range(layout[0]), range(layout[1]))]
 
         ax_prev = self._fig.add_axes([0.1, 0.01, 0.3, 0.09])
         ax_next = self._fig.add_axes([0.6, 0.01, 0.3, 0.09])
@@ -98,13 +99,13 @@ class ImageBrowser(BaseBrowser):
 
     def _first_plot(self):
         self._plot_array = []
-        for local_index in xrange(self._plots_per_page):
+        for local_index in range(self._plots_per_page):
             self._plot_array.append(self._axes[local_index].imshow(self._data[self._local_to_global_index(local_index)], norm=self._norm))
             self._axes[local_index].axis("off")
             self._fig.canvas.draw()
 
     def _plot(self):
-        for local_index in xrange(self._plots_per_page):
+        for local_index in range(self._plots_per_page):
             if self._local_to_global_index(local_index) >= self._number_of_plots:
                 self._plot_array[local_index].set_data(_numpy.zeros(self._data[0].shape))
             else:
@@ -117,17 +118,16 @@ class PlotBrowser(BaseBrowser):
 
     def _first_plot(self):
         self._plot_array = []
-        for local_index in xrange(self._plots_per_page):
+        for local_index in range(self._plots_per_page):
             self._plot_array.append(self._axes[local_index].plot(self._data[self._local_to_global_index(local_index)]))
             self._fig.canvas.draw()
 
     def _plot(self):
-        for local_index in xrange(self._plots_per_page):
+        for local_index in range(self._plots_per_page):
             self._plot_array[local_index][0].set_data(_numpy.arange(len(self._data[0])), self._data[self._local_to_global_index(local_index)])
             self._fig.canvas.draw()
 
-class BaseScatterplotPick(object):
-    __metaclass__ = _abc.ABCMeta
+class BaseScatterplotPick(with_metaclass(_abc.ABCMeta)):
     def __init__(self, x, y, data):
         self._data = data
         self._fig = _matplotlib.pyplot.figure("ScatterPick")
@@ -184,3 +184,12 @@ class PlotScatterplotPick(BaseScatterplotPick):
     def _plot(self, index):
         self.data_plot[0].set_data(self._data[index])
         self._fig.canvas.draw()
+
+def complex_plot(array, vmin=None, vmax=None):
+    if vmin is None:
+        vmin = abs(array).min()
+    if vmax is None:
+        vmax = abs(array).max()
+    return _matplotlib.colors.hsv_to_rgb(_numpy.dstack((_numpy.mod(_numpy.angle(array), 2.*_numpy.pi)/(2.*_numpy.pi),
+                                                        0.85 * _numpy.ones_like(abs(array)),
+                                                        (abs(array) - vmin) / (vmax - vmin))))

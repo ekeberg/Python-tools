@@ -1,5 +1,5 @@
 import numpy as _numpy
-from . import rotations as _rotations
+from . import rotmodule as _rotmodule
 from . import constants as _constants
 from . import conversions as _conversions
 
@@ -29,36 +29,16 @@ def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size):
     output_coordinates[:, 2] = x2.flatten()
     return output_coordinates
 
-    # pixels_to_im = pixel_size/detector_distance/wavelength
-    # x0_pixels = _numpy.arange(image_shape[0]) - image_shape[0]/2. + 0.5
-    # x1_pixels = _numpy.arange(image_shape[1]) - image_shape[1]/2. + 0.5
-    # x0 = x0_pixels*pixels_to_im
-    # x1 = x1_pixels*pixels_to_im
-    # r_pixels = _numpy.sqrt(x0_pixels[:, _numpy.newaxis]**2 + x1_pixels[_numpy.newaxis, :]**2)
-    # theta = _numpy.arctan(r_pixels*pixel_size / detector_distance)
-    # x2 = 1./wavelength*(1 - _numpy.cos(theta))
-
-    # x0_2d, x1_2d = _numpy.meshgrid(x0, x1, indexing="ij")
-    # output_coordinates = _numpy.zeros((_numpy.prod(image_shape), 3))
-    # output_coordinates[:, 0] = x0_2d.flatten()
-    # output_coordinates[:, 1] = x1_2d.flatten()
-    # output_coordinates[:, 2] = x2.flatten()
-    # return output_coordinates
-
 def calculate_diffraction(scattering_factor_density, density_pixel_size, rotation,
                           image_shape, wavelength, detector_distance, pixel_size):
     import nfft as _nfft
-    base_coordinates = ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size)
-    rotated_coordinates = _rotations.rotate_array(rotation, base_coordinates)
-    diffraction = _nfft.nfft(scattering_factor_density, density_pixel_size, rotated_coordinates)
+    base_coordinates = ewald_coordinates(
+        image_shape, wavelength,
+        detector_distance, pixel_size)
+    rotated_coordinates = _rotmodule.rotate_array(rotation, base_coordinates)
+    diffraction = _nfft.nfft(scattering_factor_density, density_pixel_size,
+                             rotated_coordinates)
     return diffraction.reshape(image_shape)
-
-    # base_coordinates = ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size)
-    # rotated_coordinates = _rotations.rotate_array(rotation, base_coordinates)
-    # largest_distance_in_fourier_space = 1./(2.*density_pixel_size)
-    # scaled_coordinates = rotated_coordinates * 0.5 / largest_distance_in_fourier_space
-    # diffraction = _nfft.nfft(scattering_factor_density, scaled_coordinates)
-    # return diffraction.reshape(image_shape)
 
 def sphere_diffraction(diameter, material, number_of_fringes=10):
     raise NotImplementedError("half-written function. Should complete it later.")
@@ -67,6 +47,7 @@ def sphere_diffraction(diameter, material, number_of_fringes=10):
     detector_distance = 730e-3
     coords = [_numpy.arange(this_detector_shape) - this_detector_shape/2.+0.5]
     r = _numpy.sqrt(coords[0][:, _numpy.newaxis]**2 + coords[1][_numpy.newaxis, :]**2)
+    
 
 
 

@@ -29,15 +29,18 @@ def allocate_image(shape):
         raise ValueError("Array must be 2 or 3 dimensional")
     return img
 
-def get_basic_phaser(amplitudes, support, mask=None):
+def get_basic_phaser(amplitudes, support, mask=None, algorithm=None):
     """This function is not finished"""
     if mask is None:
         amplitudes_sp = image_from_array(amplitudes)
     else:
         amplitudes_sp = image_from_array(amplitudes, mask)
-    beta = _spimage.sp_smap_alloc(1)
-    _spimage.sp_smap_insert(beta, 0, 0.9)
-    phase_alg = _spimage.sp_phasing_hio_alloc(beta, _spimage.SpNoConstraints)
+    if algorithm is None:
+        beta = _spimage.sp_smap_alloc(1)
+        _spimage.sp_smap_insert(beta, 0, 0.9)
+        phase_alg = _spimage.sp_phasing_hio_alloc(beta, _spimage.SpNoConstraints)
+    else:
+        phase_alg = algorithm
     support_sp = image_from_array(support)
     sup_alg = _spimage.sp_support_array_init(_spimage.sp_support_static_alloc(), 20)
 
@@ -118,9 +121,9 @@ def center_image_2d(img, radius):
     needed in the form of the variable radius."""
     sigma = radius
     x_coordinates = pylab.arange(pylab.shape(img.image)[0], dtype='float64') -\
-                    pylab.shape(img.image)[0]/2.0 + 0.5
+                    pylab.shape(img.image)[0]/2. + 0.5
     y_coordinates = pylab.arange(pylab.shape(img.image)[1], dtype='float64') -\
-                    pylab.shape(img.image)[1]/2.0 + 0.5
+                    pylab.shape(img.image)[1]/2. + 0.5
     kernel = pylab.exp(-(x_coordinates[:, pylab.newaxis]**2 +
                          y_coordinates[pylab.newaxis, :]**2)/2.0/sigma**2)
 
@@ -138,9 +141,9 @@ def center_image_2d(img, radius):
                 min_v = abs(img_bt[y_index, x_index])
                 min_x = x_index
                 min_y = y_index
-    print min_x, min_y
-    spimage.sp_image_translate(img, -(-min_x + pylab.shape(img_bt)[0]/2),
-                               -(-min_y + pylab.shape(img_bt)[1]/2),
+    print(min_x, min_y)
+    spimage.sp_image_translate(img, -(-min_x + pylab.shape(img_bt)[0]//2),
+                               -(-min_y + pylab.shape(img_bt)[1]//2),
                                0, spimage.SP_TRANSLATE_WRAP_AROUND)
     shift = spimage.sp_image_shift(img)
     spimage.sp_image_free(img)
@@ -152,11 +155,11 @@ def center_image_3d(img, radius):
     needed in the form of the variable radius."""
     sigma = radius
     x_coordinates = pylab.arange(pylab.shape(img.image)[0], dtype='float64') -\
-                    pylab.shape(img.image)[0]/2.0 + 0.5
+                    pylab.shape(img.image)[0]/2. + 0.5
     y_coordinates = pylab.arange(pylab.shape(img.image)[1], dtype='float64') -\
-                    pylab.shape(img.image)[1]/2.0 + 0.5
+                    pylab.shape(img.image)[1]/2. + 0.5
     z_coordinates = pylab.arange(pylab.shape(img.image)[2], dtype='float64') -\
-                    pylab.shape(img.image)[2]/2.0 + 0.5
+                    pylab.shape(img.image)[2]/2. + 0.5
     kernel = pylab.exp(-(x_coordinates[:, pylab.newaxis, pylab.newaxis]**2+
                          y_coordinates[pylab.newaxis, :, pylab.newaxis]**2+
                          z_coordinates[pylab.newaxis, pylab.newaxis, :]**2)/2.0/sigma**2)
@@ -178,10 +181,10 @@ def center_image_3d(img, radius):
                     min_x = x_index
                     min_y = y_index
                     min_z = z_index
-    print min_x, min_y, min_z
-    spimage.sp_image_translate(img, -(-min_z + pylab.shape(img_bt)[0]/2),
-                               -(-min_y + pylab.shape(img_bt)[1]/2),
-                               -(-min_x + pylab.shape(img_bt)[2]/2), 1)
+    print(min_x, min_y, min_z)
+    spimage.sp_image_translate(img, -(-min_z + pylab.shape(img_bt)[0]//2),
+                               -(-min_y + pylab.shape(img_bt)[1]//2),
+                               -(-min_x + pylab.shape(img_bt)[2]//2), 1)
     shift = img
 
     return shift

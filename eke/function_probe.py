@@ -25,5 +25,5 @@ if %s:
         """Delete stored variables"""
         variables = self.__dict__.copy()
         for variable in variables:
-            exec "del self.%s" % variable
+            exec("del self.%s" % variable)
 

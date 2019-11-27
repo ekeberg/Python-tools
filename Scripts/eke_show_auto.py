@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-import sys, os, spimage
+import sys
+import os
+from eke import sphelper
 from PyQt4.QtCore import *
 from PyQt4.QtGui import *
-from pylab import *
+import numpy
 from matplotlib.backends.backend_qt4agg import FigureCanvasQTAgg as FigureCanvas
-from matplotlib.backends.backend_qt4agg import NavigationToolbar2QTAgg as NavigationToolbar
+from matplotlib.backends.backend_qt4agg import NavigationToolbar2QT as NavigationToolbar
 from matplotlib.figure import Figure
-from optparse import OptionParser
+import argparse
 
 class AppForm(QMainWindow):
     def __init__(self, filename, parent=None):
@@ -19,21 +21,16 @@ class AppForm(QMainWindow):
     def create_main_frame(self, filename):
         self.main_frame = QWidget()
         self.image = None
-        try:
-            self.img = spimage.sp_image_read(filename,0)
-        except:
-            print "Must provide a file"
-            exit(1)
 
-        self.image = self.img.image
+        self.image, self.image_center = sphelper.import_spimage(filename, ["image", "image_center"])
 
-        x_array = arange(shape(self.image)[0]) - self.img.detector.image_center[0]
-        y_array = arange(shape(self.image)[1]) - self.img.detector.image_center[1]
-        X_array, Y_array = meshgrid(x_array, y_array)
-        X_array = transpose(X_array); Y_array = transpose(Y_array)
-        self.r = sqrt(X_array**2 + Y_array**2)
+        x_array = numpy.arange(self.image.shape[0]) - self.image_center[0]
+        y_array = numpy.arange(self.image.shape[1]) - self.image_center[1]
+        X_array, Y_array = numpy.meshgrid(x_array, y_array)
+        X_array = numpy.transpose(X_array); Y_array = numpy.transpose(Y_array)
+        self.r = numpy.sqrt(X_array**2 + Y_array**2)
 
-        self.auto_unfiltered = fftshift(abs(fft2(self.image)))
+        self.auto_unfiltered = numpy.fft.fftshift(abs(numpy.fft.fft2(self.image)))
 
         self.dpi = 100
         self.fig = Figure((10.0, 10.0), dpi=self.dpi)
@@ -82,25 +79,25 @@ class AppForm(QMainWindow):
             xlim = self.ax.get_xlim()
             ylim = self.ax.get_ylim()
         else:
-            xlim = [0,shape(self.image)[0]]
-            ylim = [0,shape(self.image)[1]]
+            xlim = [0, self.image.shape[0]]
+            ylim = [0, self.image.shape[1]]
         if self.filter_box.checkState():
             self.out = self.auto
         else:
             self.out = self.auto_unfiltered
         self.fig.clf()
         self.ax = self.fig.add_subplot(111)
-        self.ax.imshow(log(self.out),origin='lower')
+        self.ax.imshow(numpy.log(self.out), origin='lower')
         self.ax.set_xlim(xlim)
         self.ax.set_ylim(ylim)
         self.canvas.draw()
 
     def calculate_kernel(self):
-        self.kernel = (self.r/2.0/self.a)**4*exp(2.0-self.r**2/2.0/self.a**2)
-        self.kernel[self.r > 2.0*self.a] = ones(shape(self.kernel))[self.r > 2.0*self.a]
+        self.kernel = (self.r/2./self.a)**4*numpy.exp(2.-self.r**2/2./self.a**2)
+        self.kernel[self.r > 2.*self.a] = numpy.ones(self.kernel.shape)[self.r > 2.*self.a]
 
     def calculate_auto(self):
-        self.auto = fftshift(abs(fft2(self.image*self.kernel)))
+        self.auto = numpy.fft.fftshift(abs(numpy.fft.fft2(self.image*self.kernel)))
 
     def update_image(self,new_a = None):
         if self.filter_box.checkState():
@@ -111,7 +108,6 @@ class AppForm(QMainWindow):
         self.draw()
 
     def a_changed(self,new_a):
-        #self.a = self.a_slider.getValue()
         self.a = new_a
         self.a_label.setText("a = %g" % self.a)
 
@@ -119,15 +115,12 @@ class AppForm(QMainWindow):
         self.update_image()
         
 def main():
-    parser = OptionParser(usage="%prog PATTERN")
-    (options, args) = parser.parse_args()
-    
-    if len(args) == 0:
-        print "Must provide a pattern."
-        exit(1)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    args = parser.parse_args()
 
     app = QApplication(sys.argv)
-    form = AppForm(args[0])
+    form = AppForm(args.file)
     form.show()
     app.exec_()
 

@@ -5,11 +5,11 @@ import scipy.interpolate
 from eke import sphelper
 import sys
 import argparse
-from eke.QtVersions import QtCore, QtGui
+from eke.QtVersions import QtCore, QtGui, QtWidgets
 import vtk
 from eke import vtk_tools
 from vtk.util import numpy_support
-from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
+from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 import time
 
 def read_image(image_file, mask):
@@ -24,14 +24,14 @@ def read_image(image_file, mask):
     return img
 
 
-class VtkWindow(QtGui.QMainWindow):
+class VtkWindow(QtWidgets.QMainWindow):
     def __init__(self, volume):
         super(VtkWindow, self).__init__()
-        self._default_size = 600
+        self._default_size = 800
         self.resize(self._default_size, self._default_size)
         self._volume = numpy.ascontiguousarray(volume, dtype="float32")
 
-        self._central_widget = QtGui.QWidget(self)
+        self._central_widget = QtWidgets.QWidget(self)
         self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
         self._vtk_widget.SetInteractorStyle(vtk.vtkInteractorStyleRubberBandPick())
 
@@ -45,7 +45,7 @@ class VtkWindow(QtGui.QMainWindow):
         self._renderer = vtk.vtkRenderer()
         self._renderer.SetBackground(0., 0., 0.)
 
-        self._layout = QtGui.QVBoxLayout()
+        self._layout = QtWidgets.QVBoxLayout()
         self._layout.addWidget(self._vtk_widget)
 
         self._central_widget.setLayout(self._layout)
@@ -65,7 +65,7 @@ class SurfaceViewer(VtkWindow):
 
         self._value_range = (self._volume.min(), self._volume.max())
 
-        self._SLIDER_MAXIMUM = 1000
+        self._SLIDER_MAXIMUM = 10000
         self._INITIAL_SLIDER_POSITION = self._SLIDER_MAXIMUM//2
         if vmin is None:
             vmin=self._volume.min()
@@ -96,7 +96,7 @@ class SurfaceViewer(VtkWindow):
         self._renderer.Render()
         self._vtk_widget.Render()
         
-        self._level_slider = QtGui.QSlider(QtCore.Qt.Horizontal)
+        self._level_slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self._level_slider.setMaximum(self._SLIDER_MAXIMUM)
         self._level_slider.valueChanged.connect(self._slider_changed)
         self._level_slider.setValue(self._INITIAL_SLIDER_POSITION)
@@ -183,6 +183,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--shift", action="store_true", help="Shift image.")
     parser.add_argument("-l", "--log", action="store_true", help="Plot in log scale.")
     parser.add_argument("-m", "--mask", action="store_true", help="Plot mask.")
+    parser.add_argument("-p", "--phase", action="store_true", help="Plot phase.")
     parser.add_argument("-S", "--surface", action="store_true", help="Plot surface")
     parser.add_argument("--min", type=float, help="Lower limit of plot values")
     parser.add_argument("--max", type=float, help="Upper limit of plot values")
@@ -193,15 +194,18 @@ if __name__ == "__main__":
     image = read_image(args.filename, args.mask)
     if args.shift:
         image = numpy.fft.fftshift(image)
-    if abs(image.imag).max() > 0:
-        image = abs(image)
+    if numpy.iscomplexobj(image):
+        if args.phase:
+            image = numpy.angle(image)
+        else:
+            image = abs(image)
 
     # if args.min is not None:
     #     image[image < args.min] = args.min
     # if args.max is not None:
     #     image[image > args.max] = args.max
 
-    app = QtGui.QApplication([args.filename])
+    app = QtWidgets.QApplication([args.filename])
     if args.surface:
         program = SurfaceViewer(image)
     else:

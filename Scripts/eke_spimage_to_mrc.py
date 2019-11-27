@@ -1,4 +1,5 @@
 from numpy import float32
+from functools import reduce
 
 def invert_matrix(tf):
 
@@ -62,7 +63,7 @@ class Data_Cache:
 
     for g in groups:
       gtable = self.groups
-      if not gtable.has_key(g):
+      if g not in gtable:
 	gtable[g] = []
       gtable[g].append(d)
 
@@ -74,7 +75,7 @@ class Data_Cache:
   def lookup_data(self, key):
 
     data = self.data
-    if data.has_key(key):
+    if key in data:
       d = data[key]
       d.last_access = self.time_stamp()
       v = d.value
@@ -88,7 +89,7 @@ class Data_Cache:
   def remove_key(self, key):
 
     data = self.data
-    if data.has_key(key):
+    if key in data:
       self.remove_data(data[key])
     self.reduce_use()
 
@@ -97,7 +98,7 @@ class Data_Cache:
   def group_keys_and_data(self, group):
 
     groups = self.groups
-    if not groups.has_key(group):
+    if group not in groups:
       return []
 
     kd = map(lambda d: (d.key, d.value), groups[group])
@@ -347,7 +348,7 @@ class Grid_Data:
   def read_matrix(self, ijk_origin = (0,0,0), ijk_size = None,
                   ijk_step = (1,1,1), progress = None):
 
-    raise NotImplementedError, 'Grid %s has no read_matrix() routine' % self.name
+    raise NotImplementedError('Grid %s has no read_matrix() routine' % self.name)
 
   # ---------------------------------------------------------------------------
   # Convenience routine.
@@ -855,7 +856,7 @@ def closest_mrc2000_type(type):
     elif type in (int8, character):
         ctype = int8
     else:
-        raise TypeError, ('Volume data has unrecognized type %s' % type)
+        raise TypeError('Volume data has unrecognized type %s' % type)
 
     return ctype
 

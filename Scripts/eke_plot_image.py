@@ -1,8 +1,11 @@
 #!/usr/bin/env python
-#import spimage, pylab, sys, re
 from eke import sphelper
-import pylab, sys, re
-from optparse import OptionParser
+import numpy
+import matplotlib
+import matplotlib.pyplot
+import sys
+import re
+import argparse
 
 def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
     
@@ -26,14 +29,14 @@ def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
 
     if plot_shifted:
         #img = spimage.sp_image_shift(img)
-        image = pylab.fftshift(image)
-        mask = pylab.fftshift(mask)
+        image = numpy.fft.fftshift(image)
+        mask = numpy.fft.fftshift(mask)
 
     def no_log(x):
         return x
 
     if plot_log:
-        log_function = pylab.log
+        log_function = numpy.log
     else:
         log_function = no_log
 
@@ -42,48 +45,20 @@ def plot_image(in_file, function, plot_mask, plot_log, plot_shifted):
     else:
         plot_input = image
         
-    function_dict = {"abs" : abs, "phase" : pylab.angle, "real" : pylab.real, "imag" : pylab.imag}
+    function_dict = {"abs" : abs, "phase" : numpy.angle, "real" : numpy.real, "imag" : numpy.imag}
     
-    pylab.imshow(log_function(function_dict[function](plot_input)), cmap=colormap, origin="lower", interpolation="nearest")
-    pylab.show()
-
-    # if (plot_flag == "mask"):
-    #     pylab.imshow(img.mask,origin='lower',interpolation="nearest")
-    # elif(plot_flag == "phase"):
-    #     pylab.imshow(pylab.angle(img.image),cmap='hsv',origin='lower',interpolation="nearest")
-    # elif(plot_flag == "real"):
-    #     pylab.imshow(log_function(pylab.real(img.image)),origin='lower',interpolation="nearest")
-    # elif(plot_flag == "imag"):
-    #     pylab.imshow(log_function(pylab.imag(img.image)),origin='lower',interpolation="nearest")
-    # else:
-    #     pylab.imshow(log_function(abs(img.image)),origin='lower',interpolation="nearest")
-
-    # pylab.show()
+    matplotlib.pyplot.imshow(log_function(function_dict[function](plot_input)), cmap=colormap, origin="lower", interpolation="nearest")
+    matplotlib.pyplot.show()
 
 if __name__ == "__main__":
-    parser = OptionParser(usage="%prog image")
-    parser.add_option("-m", action="store_true", dest="mask", help="Plot the mask.")
-    parser.add_option("-f", action="store", type="choice", dest="function", help="What to plot in the image.",
-                      choices=("abs", "phase", "real", "imag"), default="abs")
-    parser.add_option("-l", action="store_true", dest="log", help="Plot in log scale.")
-    parser.add_option("-s", action="store_true", dest="shift", help="Shift image.")
-    (options, args) = parser.parse_args()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("file")
+    parser.add_argument("-m", "--mask", action="store_true", help="Plot the mask.")
+    parser.add_argument("-f", "--function", choices=("abs", "phase", "real", "imag"), default="abs",
+                        help="What to plot in the image.")
+    parser.add_argument("-l", "--log", action="store_true", help="Plot in log scale.")
+    parser.add_argument("-s", "--shift", action="store_true", help="Shift image.")
+    args = parser.parse_args()
     
-    plot_image(args[0], options.function, options.mask, options.log, options.shift)
+    plot_image(args.file, args.function, args.mask, args.log, args.shift)
     
-#     try:
-#         plot_image(str(sys.argv[1]),*(sys.argv[2:]))
-#     except:
-#         print """
-# Usage:  python_script_plot_image <image.h5> [arguments]
-
-# Arguments:
-# abs    plot the absolute value of the image (default)
-# mask   plot the image mask
-# phase  plot the phase of the image
-# log    plot the image in log scale 
-# shift  shift the image before plotting
-
-# Several or none of the above arguments might be combined
-
-# """

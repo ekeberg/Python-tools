@@ -3,7 +3,7 @@ import numpy as _numpy
 
 def dictionary_to_hdf5(file_name, dict_in):
     def write_group(group_handle, dict_in):
-        for name, value in dict_in.iteritems():
+        for name, value in dict_in.items():
             if isinstance(value, dict):
                 new_group = group_handle.create_group(name)
                 write_group(new_group, value)
@@ -15,7 +15,7 @@ def dictionary_to_hdf5(file_name, dict_in):
 def hdf5_to_dictionary(file_name):
     def read_group(group):
         return_dictionary = {}
-        for name, value in group.iteritems():
+        for name, value in group.items():
             if isinstance(value, _h5py.Dataset):
                 return_dictionary[name] = value[...]
             elif isinstance(value, _h5py.Group):
