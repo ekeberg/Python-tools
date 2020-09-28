@@ -1,19 +1,6 @@
 import numpy as _numpy
 from . import rotmodule as _rotmodule
 
-def relative_angle(rot1, rot2):
-    """Angle of the relative orientation from rot1 to rot2"""
-    w = _rotmodule.relative(rot1, rot2)[0]
-    if w > 1:
-        print("w = {0}".format(w))
-        w = 1.
-    if w < -1:
-        print("w = {0}".format(w))
-        w = -1.
-    diff_angle = 2.*_numpy.arccos(w)
-    abs_diff_angle = min(abs(diff_angle), abs(diff_angle-2.*_numpy.pi))
-    return abs_diff_angle
-
 def get_fit_quality(this_rot, reference_rot):
     return min([_numpy.linalg.norm(reference_rot - this_rot),
                 _numpy.linalg.norm(reference_rot + this_rot)])
@@ -126,7 +113,7 @@ def absolute_orientation_error(
     
     for index in range(number_of_patterns):
         adjusted_rotation = _rotmodule.multiply(_rotmodule.multiply(_rotmodule.inverse(symmetry_operations[symmetry_version[index]]), _rotmodule.inverse(average_rot)), recovered_rotations[index])
-        diff_angle = relative_angle(correct_rotations[index], adjusted_rotation)
+        diff_angle = _rotmodule.relative_angle(correct_rotations[index], adjusted_rotation)
         diff_angles[index] = diff_angle
         
     average_diff = diff_angles.mean()
@@ -156,7 +143,7 @@ def relative_orientation_error(
         for this_correct_relative in correct_relative:
             _rotmodule.fix_sign(this_correct_relative)
         
-        angle = [relative_angle(this_correct_relative, recovered_relative)
+        angle = [_rotmodule.relative_angle(this_correct_relative, recovered_relative)
                  for this_correct_relative in correct_relative]
         diff_angle = min(angle)
         average_angle += diff_angle

@@ -95,7 +95,7 @@ def fix_sign(quat):
         quat_array[do_flip, :] = -quat_array[do_flip, :]
         under_consideration &= quat_array[..., index] == 0.
             
-def multiply(quat_1, quat_2):
+def _multiply_single(quat_1, quat_2):
     """Return the product of quat_1 and quat_2"""
     quat_1 = _numpy.array(quat_1)
     quat_2 = _numpy.array(quat_2)
@@ -121,8 +121,32 @@ def multiply(quat_1, quat_2):
                         quat_1[..., 3]*quat_2[..., 0])
     return quat_out.squeeze()
 
+def multiply(*list_of_quaternions):
+    """Return the product of all the provided quaternions"""
+    if len(list_of_quaternions) < 1:
+        raise ValueError("Must provide at least one quaternion to multiply")
+    result = list_of_quaternions[0]
+    for this_rot in list_of_quaternions[1:]:
+        result = _multiply_single(result, this_rot)
+    return result
+
 def relative(quat_1, quat_2):
     return multiply(inverse(quat_1), quat_2)
+
+def angle(quat):
+    """Angle of the rotation"""
+    w = quat[0]
+    if w > 1:
+        w = 1.
+    if w < -1:
+        w = -1.
+    diff_angle = 2.*_numpy.arccos(w)
+    abs_diff_angle = min(abs(diff_angle), abs(diff_angle-2.*_numpy.pi))
+    return abs_diff_angle
+
+def relative_angle(rot1, rot2):
+    """Angle of the relative orientation from rot1 to rot2"""
+    return angle(relative(rot1, rot2))
 
 # def rotate(quat, point):
 #     """Rotate a point by the quaternion"""
