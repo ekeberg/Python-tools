@@ -504,7 +504,7 @@ class InteractiveIsosurface(QtWidgets.QMainWindow):
         self.resize(*self._default_size)
 
         #self._volume = numpy.ascontiguousarray(volume, dtype="float32")
-        self._surface_object = IsoSurface(volume, spacing)
+        self._surface_object = IsoSurface(volume, spacing=spacing)
 
         self._central_widget = QtWidgets.QWidget(self)
         self._vtk_widget = QVTKRenderWindowInteractor(self._central_widget)
