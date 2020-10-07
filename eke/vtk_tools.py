@@ -20,8 +20,11 @@ def get_lookup_table(minimum_value, maximum_value, log=False, colorscale="jet", 
     lut.SetTableRange(minimum_value, maximum_value)
     lut.SetNumberOfColors(number_of_colors)
     lut.Build()
+
+    cmap = matplotlib.cm.get_cmap(colorscale)
     for i in range(number_of_colors):
-        color = matplotlib.cm.cmap_d[colorscale](float(i) / float(number_of_colors))
+        # color = matplotlib.cm.cmap_d[colorscale](float(i) / float(number_of_colors))
+        color = cmap(float(i) / float(number_of_colors))
         lut.SetTableValue(i, color[0], color[1], color[2], 1.)
     if VTK_VERSION >= 6:
         lut.SetUseBelowRangeColor(True)
