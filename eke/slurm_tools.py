@@ -36,7 +36,7 @@ def index_to_multiple(index, lengths):
     for i, length in enumerate(lengths):
         div = _numpy.prod(lengths[i+1:])
         mod = length
-        result.append((index / div) % mod)
+        result.append((index // div) % mod)
     return tuple(result)
 
 def multiple_to_index(multiple, lengths):
