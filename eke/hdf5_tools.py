@@ -35,3 +35,12 @@ def read_numpy(filename):
     with _h5py.File(filename, "r") as file_handle:
         array = file_handle["data"][...]
     return array
+
+def read_dataset(filename, loc):
+    with _h5py.File(filename, "r") as file_handle:
+        array = file_handle[loc][...]
+    return array
+
+def write_datset(filename, loc, data):
+    with _h5py.File(filename, "a") as file_handle:
+        file_handle.create_dataset(loc, data=data)
