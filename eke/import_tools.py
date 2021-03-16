@@ -9,3 +9,10 @@ def import_module(filename):
     module = _util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+def module_path(module_name):
+    spec = _util.find_spec(module_name)
+    if spec is None:
+        raise ImportError(f"Can not import {module_name}")
+    else:
+        return spec.origin
