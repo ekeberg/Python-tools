@@ -51,7 +51,10 @@ scripts = ["eke_attenuation_length.py",
            "eke_show_auto.py",
            "eke_split_pnccd.py",
            "eke_to_png.py",
-           "eke_view_pnccd.py"]
+           "eke_view_pnccd.py",
+           "eke_pdb_fix_element.py",
+           "eke_hdf5_copy.py",
+           "eke_hdf5_del.py"]
 
 scripts_dir = "Scripts"
 scripts_full_path = [os.path.join(scripts_dir, this_script)
