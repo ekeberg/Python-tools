@@ -23,7 +23,6 @@ def read_image(image_file, mask):
         raise IOError("%s is not a readable h5 image." % image_file)
     return img
 
-
 class VtkWindow(QtWidgets.QMainWindow):
     def __init__(self, volume):
         super(VtkWindow, self).__init__()

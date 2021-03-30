@@ -413,6 +413,12 @@ class IsoSurface(object):
         self._float_array.SetVoidArray(self._volume_array, _numpy.product(volume.shape), 1)
         self._image_data.SetDimensions(*(self._volume_array.shape[::-1]))
 
+    def set_volume(self, volume):
+        if volume.shape != self._volume_array.shape:
+            raise ValueError(f"volume must have same shape as previsous volume: {self._volume_array.shape}")
+        self._volume_array[:] = volume
+        self._float_array.SetVoidArray(self._volume_array, _numpy.product(self._volume_array.shape), 1)
+        
     def set_renderer(self, renderer):
         """Set the vtkRenderer to render the isosurfaces. Adding a new renderer will remove the last one."""
         if self._actor is None:
@@ -606,11 +612,11 @@ def plot_planes(array_in, spacing=(1., 1., 1.), log=False, cmap=None):
         return plane
 
     plane_1 = setup_plane()
-    plane_1.SetPlaneOrientationToXAxes()
+    plane_1.SetPlaneOrientationToYAxes()
     plane_1.SetSliceIndex(int(array_in.shape[0]*spacing[0]/2))
     plane_1.SetEnabled(1)
     plane_2 = setup_plane()
-    plane_2.SetPlaneOrientationToYAxes()
+    plane_2.SetPlaneOrientationToZAxes()
     plane_2.SetSliceIndex(int(array_in.shape[1]*spacing[1]/2))
     plane_2.SetEnabled(1)
 
