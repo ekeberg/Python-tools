@@ -101,9 +101,9 @@ class SliceGenerator(object):
 
         self._polygons = _vtk.vtkCellArray()
 
-        if slice_shape is "square":
+        if slice_shape == "square":
             self._square_slice()
-        elif slice_shape is "circle":
+        elif slice_shape == "circle":
             self._circular_slice()
         else:
             raise ValueError("Unknown slice shape: {}".format(slice_shape))
