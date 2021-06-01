@@ -1,5 +1,6 @@
 """A mix of tools that didn't fit anywhere else."""
 import numpy as _numpy
+import scipy.fft as _fft
 
 class Resampler(object):
     """Can be used to resample arbitrarily positioned
@@ -109,11 +110,11 @@ def gaussian_blur_nonperiodic(array, sigma):
 
     kernel_ft = _numpy.exp(-2.*sigma**2*_numpy.pi**2*(x_array/large_size)**2)
     kernel_ft = ((large_size/_numpy.sqrt(2.*_numpy.pi)/sigma) *
-                 _numpy.fft.fftshift(kernel_ft))
+                 _fft.fftshift(kernel_ft))
 
-    image_ft = _numpy.fft.fftn(large_array)
+    image_ft = _fft.fftn(large_array)
     image_ft *= kernel_ft
-    blured_large_array = _numpy.fft.ifftn(image_ft)
+    blured_large_array = _fft.ifftn(image_ft)
     return blured_large_array[pad_size:-pad_size]
     #return blured_large_array
 
@@ -298,15 +299,15 @@ def downsample(image, factor):
 
 def correlation(image1, image2):
     """Mathematical correlation F-1(F(i1) F(i1)*) (not Pearson correlation)"""
-    image1_ft = _numpy.fft.fft2(image1)
-    image2_ft = _numpy.fft.fft2(image2)
-    return abs(_numpy.fft.fftshift(_numpy.fft.ifft2(_numpy.conjugate(image1_ft)*image2_ft)))
+    image1_ft = _fft.fftn(image1)
+    image2_ft = _fft.fftn(image2)
+    return abs(_fft.fftshift(_fft.ifftn(_numpy.conjugate(image1_ft)*image2_ft)))
 
 def convolution(image1, image2):
     """Mathematical concvolution F-1(F(i1) F(i2))."""
-    image1_ft = _numpy.fft.fft2(image1)
-    image2_ft = _numpy.fft.fft2(image2)
-    return abs(_numpy.fft.fftshift(_numpy.fft.ifft2(image1_ft*image2_ft)))
+    image1_ft = _fft.fftn(image1)
+    image2_ft = _fft.fftn(image2)
+    return abs(_fft.fftshift(_fft.ifftn(image1_ft*image2_ft)))
 
 def pearson_correlation(data_1, data_2):
     """Pearson correlation."""
@@ -328,7 +329,7 @@ def random_diffraction(image_size, object_size):
     image_real[image_size//2-lower_bound:image_size//2+higher_bound,
                image_size//2-lower_bound:image_size//2+higher_bound] = (
                    _numpy.random.random((object_size, )*2))
-    #image_fourier = _numpy.fft.fftshift(_numpy.fft.fft2(_numpy.fft.fftshift(image_real)))
+    #image_fourier = _fft.fftshift(_fft.fft2(_fft.fftshift(image_real)))
     image_fourier = fourier(image_real)
     return image_fourier
 
@@ -367,10 +368,10 @@ def pad_with_zeros(small_image, shape):
     return large_image
 
 def upsample(image, new_shape):
-    # image_ft = pad_with_zeros(_numpy.fft.ifftshift(
-    #     _numpy.fft.fftn(_numpy.fft.fftshift(image))), new_shape)
+    # image_ft = pad_with_zeros(_fft.ifftshift(
+    #     _fft.fftn(_fft.fftshift(image))), new_shape)
     image_ft = pad_with_zeros(fourier(image), new_shape)
-    # image_large = _numpy.fft.fftshift(_numpy.fft.ifftn(_numpy.fft.ifftshift(image_ft)))
+    # image_large = _fft.fftshift(_fft.ifftn(_fft.ifftshift(image_ft)))
     image_large = ifourier(image_ft)
     if _numpy.iscomplexobj(image):
         return image_large
@@ -405,9 +406,9 @@ def shift(image, distance):
 
 def fourier(array):
     """Fourier transform with shifting"""
-    return _numpy.fft.ifftshift(_numpy.fft.fftn(_numpy.fft.fftshift(array)))
+    return _fft.ifftshift(_fft.fftn(_fft.fftshift(array)))
 
 def ifourier(array):
     """Inverse Fourier transform with shifting"""
-    return _numpy.fft.fftshift(_numpy.fft.ifftn(_numpy.fft.ifftshift(array)))
+    return _fft.fftshift(_fft.ifftn(_fft.ifftshift(array)))
     

@@ -1,6 +1,7 @@
 """Generate binary contrast particles with a tunable feature size."""
 from __future__ import absolute_import
 import numpy as _numpy
+import scipy.fft as _fft
 from eke import tools
 
 def elser_particle(array_size, particle_size, feature_size, return_blured=True):
@@ -16,8 +17,8 @@ def elser_particle(array_size, particle_size, feature_size, return_blured=True):
                         y_coordinates[_numpy.newaxis, :, _numpy.newaxis]**2 +
                         z_coordinates[:, _numpy.newaxis, _numpy.newaxis]**2)
     particle_mask = radius > particle_size/2.
-    #lp_mask = _numpy.fftn.fftshift(radius > array_size/(feature_size*4.))
-    lp_kernel = _numpy.fft.fftshift(_numpy.exp(-radius**2*float(feature_size)**2/float(array_size)**2))
+    #lp_mask = _fft.fftshift(radius > array_size/(feature_size*4.))
+    lp_kernel = _fft.fftshift(_numpy.exp(-radius**2*float(feature_size)**2/float(array_size)**2))
 
     particle = _numpy.random.random((array_size, )*3)
 
@@ -28,9 +29,9 @@ def elser_particle(array_size, particle_size, feature_size, return_blured=True):
         particle[particle <= particle_average] = 0.
         particle[particle_mask] = 0.
         # smoothen
-        particle_ft = _numpy.fft.fftn(particle)
+        particle_ft = _fft.fftn(particle)
         particle_ft *= lp_kernel
-        particle[:, :] = abs(_numpy.fft.ifftn(particle_ft))
+        particle[:, :] = abs(_fft.ifftn(particle_ft))
 
     if not return_blured:
         particle_average = _numpy.median(particle[~particle_mask])
@@ -58,7 +59,7 @@ def elser_particle_nd(array_shape, feature_size, mask=None, return_blured=True):
         this_slice[index] = slice(None)
         this_slice = tuple(this_slice)
         lp_kernel *= this_exp[this_slice]
-    lp_kernel = _numpy.fft.fftshift(lp_kernel)
+    lp_kernel = _fft.fftshift(lp_kernel)
 
     particle = _numpy.random.random(array_shape)
     for _ in range(4):
@@ -66,9 +67,9 @@ def elser_particle_nd(array_shape, feature_size, mask=None, return_blured=True):
         particle[particle > particle_average] = 1.
         particle[particle <= particle_average] = 0.
         particle[~mask] = 0.
-        particle_ft = _numpy.fft.fftn(particle)
+        particle_ft = _fft.fftn(particle)
         particle_ft *= lp_kernel
-        particle[:] = abs(_numpy.fft.ifftn(particle_ft))
+        particle[:] = abs(_fft.ifftn(particle_ft))
 
     if not return_blured:
         particle_average = _numpy.median(particle[mask])
@@ -93,15 +94,15 @@ def _elser_particle_old(resolution):
                         y_coordinates[_numpy.newaxis, :, _numpy.newaxis]**2 +
                         z_coordinates[:, _numpy.newaxis, _numpy.newaxis]**2)
     particle_mask = radius > resolution/2.
-    lp_mask = _numpy.fft.fftshift(radius > resolution/4.)
+    lp_mask = _fft.fftshift(radius > resolution/4.)
 
     particle = _numpy.random.random((resolution+2, resolution+2, resolution+2))
 
     for _ in range(4):
         particle[particle_mask] = 0.0
-        particle_ft = _numpy.fft.fftn(particle)
+        particle_ft = _fft.fftn(particle)
         particle_ft[lp_mask] = 0.0
-        particle[:, :] = abs(_numpy.fft.ifftn(particle))
+        particle[:, :] = abs(_fft.ifftn(particle))
         particle_average = _numpy.average(particle.flatten())
         particle[particle > 0.5*particle_average] = 1.0
         particle[particle <= 0.5*particle_average] = 0.0
@@ -118,8 +119,8 @@ def _elser_particle_old(resolution):
 #     for s in sides:
 #         print "generate side %d particle" % s
 #         images.append(elser_particle(s))
-#         image_ft = _numpy.fft.fftn(images[-1])
-#         images_big.append(abs(_numpy.fft.ifftn(_numpy.fft.fftshift(image_ft), [sides[-1], sides[-1], sides[-1]])))
+#         image_ft = _fft.fftn(images[-1])
+#         images_big.append(abs(_fft.ifftn(_fft.fftshift(image_ft), [sides[-1], sides[-1], sides[-1]])))
 #         images_binary.append(images_big[-1] > 1.5*_numpy.average(images_big[-1].flatten()))
 
 

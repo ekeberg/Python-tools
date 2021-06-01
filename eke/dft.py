@@ -1,5 +1,6 @@
 """Create DFT matrices for 1D and 2D Fourier transforms"""
 import numpy as _numpy
+import scipy.fft as _fft
 from . import tools as _tools
 import matplotlib as _matplotlib
 from matplotlib.colors import LogNorm as _LogNorm
@@ -124,7 +125,7 @@ def dft_2d_masked_complex(y_side, x_side, mask_real, mask_fourier):
     dft[1::2, 0::2] = -_numpy.imag(dft_full)
     return dft
 
-def dft_nd(shape):
+def dft(*shape):
     """
     The dft matrix that is returnd works on complex vectors
     and returns a complex vector. Data is stored consistent with
@@ -143,22 +144,22 @@ def dft_nd(shape):
     return dft
 
 
-def dft_nd_real(shape):
+def dft_real(*shape):
     """
     The dft matrix that is returnd works on real vectors
     and returns complex numbers stored as a real vector
     as [a_real, a_imag, b_real, b_imag, ...]. Data is stored
     consistent with numpys flatten().
     """
-    dft_full = dft_nd(shape)
-    dft = _numpy.zeros((2*_numpy.prod(shape),
-                        _numpy.prod(shape)), dtype=_numpy.float64)
-    dft[0::2, :] = _numpy.real(dft_full)
-    dft[1::2, :] = _numpy.imag(dft_full)
-    return dft
+    dft_full = dft(*shape)
+    real_dft = _numpy.zeros((2*_numpy.prod(shape),
+                             _numpy.prod(shape)), dtype=_numpy.float64)
+    real_dft[0::2, :] = _numpy.real(dft_full)
+    real_dft[1::2, :] = _numpy.imag(dft_full)
+    return real_dft
 
 
-def dft_nd_masked(mask_real, mask_fourier):
+def dft_masked(mask_real, mask_fourier):
     """
     The dft matrix that is returnd works on complex vectors
     and returns a complex vector. Data is stored consistent with
@@ -188,7 +189,7 @@ def dft_nd_masked(mask_real, mask_fourier):
     return dft
 
 
-def dft_nd_masked_real(mask_real, mask_fourier):
+def dft_masked_real(mask_real, mask_fourier):
     """
     The dft matrix that is returnd works on real vectors
     and returns complex numbers stored as a real vector
@@ -198,7 +199,7 @@ def dft_nd_masked_real(mask_real, mask_fourier):
     
     mask_real = _numpy.bool8(mask_real)
     mask_fourier = _numpy.bool8(mask_fourier)
-    dft_full = dft_nd_masked(mask_real, mask_fourier)
+    dft_full = dft_masked(mask_real, mask_fourier)
     #dft = _numpy.zeros((mask_real.sum(), 2*mask_fourier.sum()), dtype=_numpy.float64)
     dft = _numpy.zeros((2*mask_fourier.sum(), mask_real.sum()), dtype=_numpy.float64)
 
@@ -214,7 +215,7 @@ def _test_dft_1d():
     """Print result of DFT multiplication and build in fft."""
     image_side = 4
     sample = _numpy.random.random(image_side)
-    ft_true = _numpy.fft.fft(sample)
+    ft_true = _fft.fft(sample)
     dft = dft_1d(image_side)
     ft_new = dft*_numpy.matrix(sample).transpose()
     print("built in")
@@ -227,7 +228,7 @@ def _test_dft_2d():
     """Print result of DFT multiplication and build in fft."""
     image_side = 2
     sample = _numpy.random.random((image_side, image_side*2))
-    ft_true = _numpy.fft.fft2(sample)
+    ft_true = _fft.fft2(sample)
     dft = dft_2d(image_side, image_side*2)
     ft_flat = dft*_numpy.matrix(sample.flatten()).transpose()
     ft_new = ft_flat.reshape((image_side, image_side*2))
@@ -240,9 +241,9 @@ def _test_dft_2d():
 def _test_dft_2d_visually():
     """Plot result of DFT multiplication and build in fft."""
     image_side = 100
-    sample = _numpy.fft.fftshift(_numpy.random.random((image_side, )*2))
-    sample *= _numpy.fft.fftshift(_tools.circular_mask(image_side, 10))
-    ft_true = _numpy.fft.fft2(sample)
+    sample = _fft.fftshift(_numpy.random.random((image_side, )*2))
+    sample *= _fft.fftshift(_tools.circular_mask(image_side, 10))
+    ft_true = _fft.fft2(sample)
     dft = dft_2d(image_side, image_side)
     ft_flat = dft*_numpy.matrix(sample.flatten()).transpose()
     ft_new = ft_flat.reshape((image_side, image_side))
@@ -259,23 +260,23 @@ def _test_dft_2d_visually():
     ax4.imshow(_numpy.angle(ft_new), cmap="hsv")
     fig.canvas.draw()
 
-def _test_dft_nd():
+def _test_dft():
     side = 4
     
     dft_1d_1 = dft_1d(side)
-    dft_1d_2 = dft_nd((side, ))
+    dft_1d_2 = dft((side, ))
     print(abs((dft_1d_1 - dft_1d_2)).sum())
 
     dft_2d_1 = dft_2d(side, side)
-    dft_2d_2 = dft_nd((side, side))
+    dft_2d_2 = dft((side, side))
     print(abs((dft_2d_1 - dft_2d_2)).sum())
 
     dft_1d_real_1 = dft_1d_real(side)
-    dft_1d_real_2 = dft_nd_real((side, ))
+    dft_1d_real_2 = dft_real((side, ))
     print(abs((dft_1d_1 - dft_1d_2)).sum())
 
     dft_2d_real_1 = dft_2d_real(side, side)
-    dft_2d_real_2 = dft_nd_real((side, side))
+    dft_2d_real_2 = dft_real((side, side))
     print(abs((dft_2d_1 - dft_2d_2)).sum())
 
     
@@ -286,8 +287,8 @@ def _test_dft_3d():
     """Print result of DFT multiplication and build in fft."""
     image_side = 3
     sample = _numpy.random.random((image_side, image_side*2, image_side))
-    ft_true = _numpy.fft.fftn(sample)
-    dft = dft_nd((image_side, image_side*2, image_side))
+    ft_true = _fft.fftn(sample)
+    dft = dft((image_side, image_side*2, image_side))
     ft_flat = _numpy.array(dft*_numpy.matrix(sample.flatten()).transpose())
     ft_new = ft_flat.reshape((image_side, image_side*2, image_side))
     print("built in")

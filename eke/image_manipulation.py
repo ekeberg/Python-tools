@@ -1,6 +1,7 @@
 """A collection of image manipulation functions. Some of them uses spimage objects
 and some numpy arrays."""
 import numpy as _numpy
+import scipy.fft as _fft
 
 def scale_image_2d(image, factor):
     """Scales up the image by the scaling factor. No cropping is done.
@@ -13,9 +14,9 @@ def scale_image_2d(image, factor):
     center_y = size_y//2
     window_x = int(size_x//factor)
     window_y = int(size_y//factor)
-    image_ft = _numpy.fft2(image[center_x-window_x//2:center_x+window_x//2,
+    image_ft = _fft.fft2(image[center_x-window_x//2:center_x+window_x//2,
                                 center_y-window_y//2:center_y+window_y//2])
-    image_scaled = abs(_numpy.fft.ifftn(_numpy.fft.fftshift(image_ft), [size_x, size_y]))
+    image_scaled = abs(_fft.ifftn(_fft.fftshift(image_ft), [size_x, size_y]))
 
     return image_scaled
 
@@ -33,11 +34,11 @@ def scale_image_3d(image, factor):
     window_x = int(size_x//factor)
     window_y = int(size_y//factor)
     window_z = int(size_z//factor)
-    image_ft = _numpy.fft.fftn(image[center_x-window_x//2:center_x+window_x//2,
+    image_ft = _fft.fftn(image[center_x-window_x//2:center_x+window_x//2,
                                 center_y-window_y//2:center_y+window_y//2,
                                 center_z-window_z//2:center_z+window_z//2],
                           [size_x, size_y, size_z])
-    image_scaled = abs(_numpy.fft.ifftn(_numpy.fft.fftshift(image_ft), [size_x, size_y, size_z]))
+    image_scaled = abs(_fft.ifftn(_fft.fftshift(image_ft), [size_x, size_y, size_z]))
     return image_scaled
 
 def crop_and_pad(image, center, side):
