@@ -6,9 +6,10 @@ from . import rotmodule as _rotmodule
 def relative_orientation_error(correct_rotations,
                                recovered_rotations,
                                symmetry_operations=((1., 0., 0., 0.), ),
-                               shallow_ewald=False):
+                               shallow_ewald=False,
+                               number_of_samples=1000):
     symmetry_operations = _numpy.array(symmetry_operations)
-    number_of_samples = 200 #3000
+    # number_of_samples = 200 #3000
     number_of_rotations = len(recovered_rotations)
     average_angle = 0.
     for _ in range(number_of_samples):
