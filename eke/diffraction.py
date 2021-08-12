@@ -2,32 +2,96 @@ import numpy as _numpy
 from . import rotmodule as _rotmodule
 from . import constants as _constants
 from . import conversions as _conversions
+from . import elements as _elements
 
 def shannon_angle(size, wavelength):
     """Takes the size (diameter) in nm and returns the angle of a nyquist pixel"""
     return wavelength/size
 
-def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size):
-    x0_pixels_1d = _numpy.arange(image_shape[0]) - image_shape[0]/2. + 0.5
-    x1_pixels_1d = _numpy.arange(image_shape[1]) - image_shape[1]/2. + 0.5
-    x1_pixels, x0_pixels = _numpy.meshgrid(x0_pixels_1d, x1_pixels_1d, indexing="ij")
-    x0_meters = x0_pixels*pixel_size
-    x1_meters = x1_pixels*pixel_size
-    #radius_meters = x0_meters[:, _numpy.newaxis]**2 + x1_meters[_numpy.newaxis, :]**2
-    radius_meters = _numpy.sqrt(x0_meters**2 + x1_meters**2)
+def ewald_coordinates(image_shape, wavelength, detector_distance, pixel_size,
+                      edge_distance=None):
+    try:
+        pixel_size[1]
+    except TypeError:
+        pixel_size = (pixel_size, pixel_size)
+    image_shape = tuple(image_shape)
+    if edge_distance is None:
+        edge_distance = image_shape[0]/2.
+    x_pixels_1d = _numpy.arange(image_shape[1]) - image_shape[1]/2. + 0.5
+    y_pixels_1d = _numpy.arange(image_shape[0]) - image_shape[0]/2. + 0.5
+    y_pixels, x_pixels = _numpy.meshgrid(y_pixels_1d, x_pixels_1d, indexing="ij")
+    x_meters = x_pixels*pixel_size[0]
+    y_meters = y_pixels*pixel_size[1]
+    radius_meters = _numpy.sqrt(x_meters**2 + y_meters**2)
 
     scattering_angle = _numpy.arctan(radius_meters / detector_distance)
-    x2 = -1./wavelength*(1. - _numpy.cos(scattering_angle))
-    radius_fourier = _numpy.sqrt(1./wavelength**2 - (1./wavelength - abs(x2))**2)
+    z = -1./wavelength*(1. - _numpy.cos(scattering_angle))
+    radius_fourier = _numpy.sqrt(1./wavelength**2 - (1./wavelength - abs(z))**2)
 
-    x0 = x0_meters * radius_fourier / radius_meters
-    x1 = x1_meters * radius_fourier / radius_meters
+    x = x_meters * radius_fourier / radius_meters
+    y = y_meters * radius_fourier / radius_meters
 
-    output_coordinates = _numpy.zeros((_numpy.prod(image_shape), 3))
-    output_coordinates[:, 0] = x0.flatten() #0
-    output_coordinates[:, 1] = x1.flatten() #1
-    output_coordinates[:, 2] = x2.flatten()
+    x[radius_meters == 0.] = 0.
+    y[radius_meters == 0.] = 0.
+
+    output_coordinates = _numpy.zeros((3, ) + image_shape)
+    output_coordinates[0, :, :] = x
+    output_coordinates[1, :, :] = y
+    output_coordinates[2, :, :] = z
+
+    # Rescale so that edge pixels match.
+    furthest_edge_coordinate = _numpy.sqrt(x[0, image_shape[1]//2]**2 + y[0, image_shape[1]//2]**2 + z[0, image_shape[1]//2]**2)
+    rescale_factor = edge_distance/furthest_edge_coordinate
+    output_coordinates *= rescale_factor
+
     return output_coordinates
+
+def ewald_coordinates_fourier(image_shape, wavelength, detector_distance, pixel_size):
+    try:
+        pixel_size[1]
+    except TypeError:
+        pixel_size = (pixel_size, pixel_size)
+    image_shape = tuple(image_shape)
+    x_pixels_1d = _numpy.arange(image_shape[1]) - image_shape[1]/2. + 0.5
+    y_pixels_1d = _numpy.arange(image_shape[0]) - image_shape[0]/2. + 0.5
+    y_pixels, x_pixels = _numpy.meshgrid(y_pixels_1d, x_pixels_1d, indexing="ij")
+    x_meters = x_pixels*pixel_size[0]
+    y_meters = y_pixels*pixel_size[1]
+    radius_meters = _numpy.sqrt(x_meters**2 + y_meters**2)
+
+    scattering_angle = _numpy.arctan(radius_meters / detector_distance)
+    z = -1./wavelength*(1. - _numpy.cos(scattering_angle))
+    radius_fourier = _numpy.sqrt(1./wavelength**2 - (1./wavelength - abs(z))**2)
+
+    x = x_meters * radius_fourier / radius_meters
+    y = y_meters * radius_fourier / radius_meters
+
+    x[radius_meters == 0.] = 0.
+    y[radius_meters == 0.] = 0.
+
+    output_coordinates = _numpy.zeros((3, ) + image_shape)
+    output_coordinates[0, :, :] = x
+    output_coordinates[1, :, :] = y
+    output_coordinates[2, :, :] = z
+
+    return output_coordinates
+
+def pixel_solid_angle(image_shape, detector_distance, pixel_size):
+    try:
+        pixel_size[1]
+    except TypeError:
+        pixel_size = (pixel_size, pixel_size)
+    image_shape = tuple(image_shape)
+    x_pixels_1d = _numpy.arange(image_shape[1]) - image_shape[1]/2. + 0.5
+    y_pixels_1d = _numpy.arange(image_shape[0]) - image_shape[0]/2. + 0.5
+    y_pixels, x_pixels = _numpy.meshgrid(y_pixels_1d, x_pixels_1d, indexing="ij")
+    x_meters = x_pixels*pixel_size[0]
+    y_meters = y_pixels*pixel_size[1]
+    z_meters = detector_distance
+    radius_meters = _numpy.sqrt(x_meters**2 + y_meters**2 + z_meters**2)
+
+    solid_angle = pixel_size[0]*pixel_size[1] / radius_meters**2
+    return solid_angle
 
 def calculate_diffraction(scattering_factor_density, density_pixel_size, rotation,
                           image_shape, wavelength, detector_distance, pixel_size):
@@ -40,16 +104,6 @@ def calculate_diffraction(scattering_factor_density, density_pixel_size, rotatio
                              rotated_coordinates)
     return diffraction.reshape(image_shape)
 
-def sphere_diffraction(diameter, material, number_of_fringes=10):
-    raise NotImplementedError("half-written function. Should complete it later.")
-    pixel_size = 75e-6
-    detector_shape = (1024, 1024)
-    detector_distance = 730e-3
-    coords = [_numpy.arange(this_detector_shape) - this_detector_shape/2.+0.5]
-    r = _numpy.sqrt(coords[0][:, _numpy.newaxis]**2 + coords[1][_numpy.newaxis, :]**2)
-    
-
-
 
 def klein_nishina(energy, scattering_angle, polarization_angle):
     """The cross section of a free electron. Energy given in eV, angles given in radians."""
@@ -60,3 +114,18 @@ def klein_nishina(energy, scattering_angle, polarization_angle):
             (relative_energy_change + 1./relative_energy_change -
              _numpy.sin(scattering_angle)**2*_numpy.cos(polarization_angle)**2))
 
+
+def sphere_diffraction(diameter, material, wavelength, image_shape, detector_distance, pixel_size, intensity):
+    photon_energy = _conversions.m_to_ev(wavelength)
+    intensity_photons = _conversions.J_to_ev(intensity) / photon_energy
+    r = diameter/2
+    F0 = _numpy.sqrt(intensity_photons)*2*_numpy.pi/wavelength**2
+    V = 4/3*_numpy.pi*r**3
+    dn = 1-_elements.get_index_of_refraction(photon_energy, material)
+    K = (F0*V*dn)**2
+    q = _numpy.sqrt((ewald_coordinates_fourier(image_shape, wavelength, detector_distance, pixel_size)**2).sum(axis=0))*2*_numpy.pi
+    Omega_p = pixel_solid_angle(image_shape, detector_distance, pixel_size)
+
+    diffraction = _numpy.sqrt(abs(K))*3*(_numpy.sin(q*r)-q*r*_numpy.cos(q*r))/((q*r)**3+_numpy.finfo("float64").eps)
+    diffraction *= _numpy.sqrt(Omega_p)
+    return diffraction

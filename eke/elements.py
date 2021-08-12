@@ -85,7 +85,8 @@ MATERIALS = {"protein" : Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
              "silicon_nitride": Material(3440, Si=3, N=4),
              "air": Material(1.225, N=78, O=21, Ar=1),
              "gold": Material(19300, Au=1),
-             "aluminium": Material(2700, Al=1)}
+             "aluminium": Material(2700, Al=1),
+             "sucrose": Material(1581, H=22, C=12, O=11)}
 
 
 def get_scattering_factor(element, photon_energy):
