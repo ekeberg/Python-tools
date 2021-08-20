@@ -22,7 +22,6 @@ def from_angle_and_dir(angle, direction):
     axis defined by direction. The rotation follows the right-hand rule."""
     angle = _numpy.mod(angle, 2.*_numpy.pi)
     quaternion = _numpy.zeros(4)
-    #normalized_dir = _numpy.array(dir)/norm(dir)
     quaternion[0] = _numpy.cos(angle/2.)
     normalization = _numpy.linalg.norm(direction)
     modulation = _numpy.sqrt(1.-quaternion[0]**2)

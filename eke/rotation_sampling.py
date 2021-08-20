@@ -1,7 +1,19 @@
 
 import numpy as _numpy
 import itertools as _itertools
+import pathlib as _pathlib
+import h5py as _h5py
 
+DATA_FILE = _pathlib.Path(__file__).parents[0] / "data/600_cell.h5"
+
+def _create_and_save_data():
+    print("600-cell data does not exist. Generating. This can take a few minutes.")
+    DATA_FILE.parents[0].mkdir(exist_ok=True)
+    with _h5py.File(DATA_FILE, "w") as file_handle:
+        file_handle.create_dataset("vertices", data=_base_vertices(allow_cached=False))
+        file_handle.create_dataset("edge_indices", data=_edge_indices(allow_cached=False))
+        file_handle.create_dataset("face_indices", data=_face_indices(allow_cached=False))
+        file_handle.create_dataset("cell_indices", data=_cell_indices(allow_cached=False))
 
 def local_rotations(angle_max, angle_step):
     if angle_max > 0.65:
@@ -97,15 +109,13 @@ def local_rotations(angle_max, angle_step):
 
     return local_rots
 
-def _base_vertices():
-    from eke import rotmodule
-    import itertools
-    import scipy.constants
 
+def _base_vertices_backend():
+    import scipy.constants
     rotations = _numpy.zeros((120, 4))
 
     # first 16
-    rotations[:16, :] = _numpy.array(list(itertools.product(*((-0.5, 0.5), )*4)))
+    rotations[:16, :] = _numpy.array(list(_itertools.product(*((-0.5, 0.5), )*4)))
 
     # next 8
     rotations[16:20] = _numpy.identity(4)
@@ -123,14 +133,23 @@ def _base_vertices():
             0)
 
     counter = 0
-    for v1, v2, v3 in itertools.product(*base[:3]):
+    for v1, v2, v3 in _itertools.product(*base[:3]):
         b = (v1, v2, v3, 0)
         for p in permutations:
             rotations[24+counter] = (b[p[0]], b[p[1]], b[p[2]], b[p[3]])
             counter += 1
     return rotations
 
-def _edge_indices():
+def _base_vertices(allow_cached=True):
+    if not allow_cached:
+        return _base_vertices_backend()
+    elif not DATA_FILE.exists():
+        _create_and_save_data()
+    with _h5py.File(DATA_FILE, "r") as file_handle:
+        return file_handle["vertices"][...]
+
+
+def _edge_indices_backend():
     verts = _base_vertices()
     products = _numpy.linalg.norm(verts[:, _numpy.newaxis, :] + verts[_numpy.newaxis, :, :], axis=2)
 
@@ -140,10 +159,17 @@ def _edge_indices():
     i1, i2 = _numpy.meshgrid(range(120), range(120), indexing="ij")
     all_i1 = i1[mask]
     all_i2 = i2[mask]
-    return all_i1, all_i2
-    
+    return _numpy.stack((all_i1, all_i2))
 
-def _face_indices():
+def _edge_indices(allow_cached=True):
+    if not allow_cached:
+        return _edge_indices_backend()
+    elif not DATA_FILE.exists():
+        _create_and_save_data()
+    with _h5py.File(DATA_FILE, "r") as file_handle:
+        return file_handle["edge_indices"][...]
+
+def _face_indices_backend():
     verts = _base_vertices()
     products = _numpy.linalg.norm(verts[:, _numpy.newaxis, _numpy.newaxis, :] +
                                   verts[_numpy.newaxis, :, _numpy.newaxis, :] +
@@ -160,10 +186,18 @@ def _face_indices():
     all_i1 = i1[mask]
     all_i2 = i2[mask]
     all_i3 = i3[mask]
-    return all_i1, all_i2, all_i3
-            
+    return _numpy.stack((all_i1, all_i2, all_i3))
 
-def _cell_indices():
+def _face_indices(allow_cached=True):
+    if not allow_cached:
+        return _face_indices_backend()
+    elif not DATA_FILE.exists():
+        _create_and_save_data()
+    with _h5py.File(DATA_FILE, "r") as file_handle:
+        return file_handle["face_indices"][...]
+
+
+def _cell_indices_backend():
     verts = _base_vertices()
     products = _numpy.linalg.norm(verts[:, _numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :] +
                                   verts[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis, :] +
@@ -185,56 +219,65 @@ def _cell_indices():
     all_i2 = i2[mask]
     all_i3 = i3[mask]
     all_i4 = i4[mask]
-    return all_i1, all_i2, all_i3, all_i4
+    return _numpy.stack((all_i1, all_i2, all_i3, all_i4))
+
+def _cell_indices(allow_cached=True):
+    if not allow_cached:
+        return _cell_indices_backend()
+    elif not DATA_FILE.exists():
+        _create_and_save_data()
+    with _h5py.File(DATA_FILE, "r") as file_handle:
+        return file_handle["cell_indices"][...]
     
 
-# def rotation_sampling(n):
-#     from eke import rotmodule
-#     import itertools
-#     import scipy.constants
+def _check_rot(rot):
+    for r in rot:
+        if r > 1e-10:
+            return True
+        if r < -1e-10:
+            return False
+    return False
 
-#     rotations = _numpy.zeros((2*rotmodule.n_to_rots(n), 4))
 
-#     # first 16
-#     rotations[:16, :] = _numpy.array(list(itertools.product(*((-0.5, 0.5), )*4)))
+def rotation_sampling(n):
+    verts = _base_vertices()
 
-#     # next 8
-#     rotations[16:20] = _numpy.identity(4)
-#     rotations[20:24] = -_numpy.identity(4)
+    edges = _edge_indices()
+    faces = _face_indices()
+    cells = _cell_indices()
 
-#     # next 96
-#     permutations = ((0, 1, 2, 3), (0, 3, 1, 2), (0, 2, 3, 1),
-#                     (1, 2, 0, 3), (1, 3, 2, 0), (1, 0, 3, 2),
-#                     (2, 0, 1, 3), (2, 3, 0, 1), (2, 1, 3, 0),
-#                     (3, 1, 0, 2), (3, 2, 1, 0), (3, 0, 2, 1))
+    all_points = []
+
+    for v in verts:
+        if _check_rot(v):
+            all_points.append(v)
     
-#     base = ((-0.5, 0.5),
-#             (-0.5*scipy.constants.golden_ratio, 0.5*scipy.constants.golden_ratio),
-#             (-0.5/scipy.constants.golden_ratio, 0.5/scipy.constants.golden_ratio),
-#             0)
+    for v1, v2 in zip(*edges):
+        for i in range(1, n):
+            new_point = (verts[v1] + (verts[v2]-verts[v1]) * (i/n))
+            if _check_rot(new_point):
+                all_points.append(new_point)
 
-#     counter = 0
-#     for v1, v2, v3 in itertools.product(*base[:3]):
-#         b = (v1, v2, v3, 0)
-#         for p in permutations:
-#             print(counter)
-#             rotations[24+counter] = (b[p[0]], b[p[1]], b[p[2]], b[p[3]])
-#             counter += 1
+    for v1, v2, v3 in zip(*faces):
+        for i1, i2 in _itertools.product(range(1, n), range(1, n)):
+            if i1 + i2 < n:
+                new_point = (verts[v1] +
+                             (verts[v2] - verts[v1]) * (i1/n) +
+                             (verts[v3] - verts[v1]) * (i2/n))
+                if _check_rot(new_point):
+                    all_points.append(new_point)
+    
+    for v1, v2, v3, v4 in zip(*cells):
+        for i1, i2, i3 in _itertools.product(range(1, n), range(1, n), range(1, n)):
+            if i1 + i2 + i3 < n:
+                new_point = (verts[v1] +
+                             (verts[v2]-verts[v1]) * (i1/n) +
+                             (verts[v3]-verts[v1]) * (i2/n) +
+                             (verts[v4]-verts[v1]) * (i3/n))
+                if _check_rot(new_point):
+                    all_points.append(new_point)
 
-#     # edges
-#     # edge_start_ind, endge_end_ind = _edge_indices()
-#     # for start_ind, end_ind in zip(edge_start_ind, edge_end_ind):
-#     #     steps = linspace(0, 1, n+1)[1:-1]
-#     #     steps[:, _numpy.newaxis]*
-
-#     return rotations
-
-# def rotation_sampling(n):
-#     verts = _base_vertices()
-
-#     edges = _edge_indices()
-#     faces = _face_indices()
-#     cells = _cell_indices()
-
-#     split_cells = 
+    all_points = _numpy.array(all_points)
+    all_points /= _numpy.linalg.norm(all_points, axis=1)[:, _numpy.newaxis]
+    return all_points
     
