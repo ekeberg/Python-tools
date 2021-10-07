@@ -48,27 +48,61 @@ def quaternion_to_euler_angle(quat):
 
 def quaternion_to_matrix(quat):
     """Dummy docstring"""
-    return _numpy.array([[quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2,
-                          2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
-                          2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],],
-                         [2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3],
-                          quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
-                          2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1]],
-                         [2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2],
-                          2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
-                          quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
+    if len(quat.shape) < 2:
+        matrix = _numpy.zeros((3, 3), dtype=quat.dtype)
+    else:
+        matrix = _numpy.zeros((len(quat), 3, 3), dtype=quat.dtype)
+
+    matrix[..., 0, 0] = quat[..., 0]**2+quat[..., 1]**2-quat[..., 2]**2-quat[..., 3]**2
+    matrix[..., 0, 1] = 2.0*quat[..., 1]*quat[..., 2]-2.0*quat[..., 0]*quat[..., 3]
+    matrix[..., 0, 2] = 2.0*quat[..., 1]*quat[..., 3]+2.0*quat[..., 0]*quat[..., 2]
+    matrix[..., 1, 0] = 2.0*quat[..., 1]*quat[..., 2]+2.0*quat[..., 0]*quat[..., 3]
+    matrix[..., 1, 1] = quat[..., 0]**2-quat[..., 1]**2+quat[..., 2]**2-quat[..., 3]**2
+    matrix[..., 1, 2] = 2.0*quat[..., 2]*quat[..., 3]-2.0*quat[..., 0]*quat[..., 1]
+    matrix[..., 2, 0] = 2.0*quat[..., 1]*quat[..., 3]-2.0*quat[..., 0]*quat[..., 2]
+    matrix[..., 2, 1] = 2.0*quat[..., 2]*quat[..., 3]+2.0*quat[..., 0]*quat[..., 1]
+    matrix[..., 2, 2] = quat[..., 0]**2-quat[..., 1]**2-quat[..., 2]**2+quat[..., 3]**2
+
+    return matrix
+
+    # return _numpy.array([[quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2,
+    #                       2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
+    #                       2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],],
+    #                      [2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3],
+    #                       quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
+    #                       2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1]],
+    #                      [2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2],
+    #                       2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
+    #                       quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
 
 def quaternion_to_matrix_bw(quat):
     """Dummy docstring"""
-    return _numpy.array([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
-                          2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
-                          2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
-                         [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
-                          quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
-                          2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]],
-                         [2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],
-                          2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
-                          quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
+    if len(quat.shape) < 2:
+        matrix = _numpy.zeros((3, 3), dtype=quat.dtype)
+    else:
+        matrix = _numpy.zeros((len(quat), 3, 3), dtype=quat.dtype)
+
+    matrix[..., 0, 0] = quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2
+    matrix[..., 0, 1] = 2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1]
+    matrix[..., 0, 2] = 2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]
+    matrix[..., 1, 0] = 2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1]
+    matrix[..., 1, 1] = quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2
+    matrix[..., 1, 2] = 2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]
+    matrix[..., 2, 0] = 2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2]
+    matrix[..., 2, 1] = 2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3]
+    matrix[..., 2, 2] = quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2
+
+    return matrix
+
+    # return _numpy.array([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
+    #                       2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
+    #                       2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
+    #                      [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
+    #                       quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
+    #                       2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]],
+    #                      [2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],
+    #                       2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
+    #                       quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
 
 def inverse(quat_in):
     """Return the inverse of the quaternion. Input is unchanged."""
@@ -218,54 +252,60 @@ def quaternion_to_axis(quat):
 def matrix_to_euler_angle(mat, order="zxz"):
     """This function is based on the following NASA paper:
     http://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19770024290.pdf"""
+
+    if len(mat.shape) < 3:
+        euler = _numpy.zeros(3, dtype=mat.dtype)
+    else:
+        euler = _numpy.zeros((len(mat), 3), dtype=mat.dtype)
+
     if order == "xyz":
-        euler = _numpy.array([_numpy.arctan2(-mat[1, 2], mat[2, 2]),
-                             _numpy.arctan2(mat[0, 2], _numpy.sqrt(1.-mat[0, 2]**2)),
-                             _numpy.arctan2(-mat[0, 1], mat[0, 0])])
+        euler[..., 0] = _numpy.arctan2(-mat[..., 1, 2], mat[..., 2, 2])
+        euler[..., 1] = _numpy.arctan2(mat[..., 0, 2], _numpy.sqrt(1.-mat[..., 0, 2]**2))
+        euler[..., 2] = _numpy.arctan2(-mat[..., 0, 1], mat[..., 0, 0])
     elif order == "xzy":
-        euler = _numpy.array([_numpy.arctan2(mat[2, 1], mat[1, 1]),
-                             _numpy.arctan2(-mat[0, 1], _numpy.sqrt(1.-mat[0, 1]**2)),
-                             _numpy.arctan2(mat[0, 2], mat[0, 0])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 2, 1], mat[..., 1, 1])
+        euler[..., 1] = _numpy.arctan2(-mat[..., 0, 1], _numpy.sqrt(1.-mat[..., 0, 1]**2))
+        euler[..., 2] = _numpy.arctan2(mat[..., 0, 2], mat[..., 0, 0])
     elif order == "xyx":
-        euler = _numpy.array([_numpy.arctan2(mat[1, 0], -mat[2, 0]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[0, 0]**2), mat[0, 0]),
-                             _numpy.arctan2(mat[0, 1], mat[0, 2])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 1, 0], -mat[..., 2, 0])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2), mat[..., 0, 0])
+        euler[..., 2] = _numpy.arctan2(mat[..., 0, 1], mat[..., 0, 2])
     elif order == "xzx":
-        euler = _numpy.array([_numpy.arctan2(mat[2, 0], mat[1, 0]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[0, 0]**2), mat[0, 0]),
-                             _numpy.arctan2(mat[0, 2], -mat[0, 1])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 2, 0], mat[..., 1, 0])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2), mat[..., 0, 0])
+        euler[..., 2] = _numpy.arctan2(mat[..., 0, 2], -mat[..., 0, 1])
     elif order == "yxz":
-        euler = _numpy.array([_numpy.arctan2(mat[2, 0], mat[2, 2]),
-                             _numpy.arctan2(-mat[1, 2], _numpy.sqrt(1.-mat[1, 2]**2)),
-                             _numpy.arctan2(mat[1, 0], -mat[1, 1])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 2])
+        euler[..., 1] = _numpy.arctan2(-mat[..., 1, 2], _numpy.sqrt(1.-mat[..., 1, 2]**2))
+        euler[..., 2] = _numpy.arctan2(mat[..., 1, 0], -mat[..., 1, 1])
     elif order == "yzx":
-        euler = _numpy.array([_numpy.arctan2(-mat[2, 0], mat[0, 0]),
-                             _numpy.arctan2(mat[1, 0], _numpy.sqrt(1.-mat[1, 0]**2)),
-                             _numpy.arctan2(-mat[1, 2], mat[1, 1])])
+        euler[..., 0] = _numpy.arctan2(-mat[..., 2, 0], mat[..., 0, 0])
+        euler[..., 1] = _numpy.arctan2(mat[..., 1, 0], _numpy.sqrt(1.-mat[..., 1, 0]**2))
+        euler[..., 2] = _numpy.arctan2(-mat[..., 1, 2], mat[..., 1, 1])
     elif order == "yxy":
-        euler = _numpy.array([_numpy.arctan2(mat[0, 1], mat[2, 1]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[1, 1]**2), mat[1, 1]),
-                             _numpy.arctan2(-mat[1, 0], -mat[1, 0])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 0, 1], mat[..., 2, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2), mat[..., 1, 1])
+        euler[..., 2] = _numpy.arctan2(-mat[..., 1, 0], -mat[..., 1, 0])
     elif order == "yzy":
-        euler = _numpy.array([_numpy.arctan2(mat[2, 1], -mat[0, 1]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[1, 1]**2), mat[1, 1]),
-                             _numpy.arctan2(mat[1, 2], mat[1, 0])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 2, 1], -mat[..., 0, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2), mat[..., 1, 1])
+        euler[..., 2] = _numpy.arctan2(mat[..., 1, 2], mat[..., 1, 0])
     elif order == "zxy":
-        euler = _numpy.array([_numpy.arctan2(-mat[0, 1], mat[1, 1]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[2, 1]**2), mat[2, 1]),
-                             _numpy.arctan2(mat[2, 0], mat[2, 2])])
+        euler[..., 0] = _numpy.arctan2(-mat[..., 0, 1], mat[..., 1, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 1]**2), mat[..., 2, 1])
+        euler[..., 2] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 2])
     elif order == "zyx":
-        euler = _numpy.array([_numpy.arctan2(mat[1, 0], mat[0, 0]),
-                             _numpy.arctan2(-mat[2, 0], _numpy.sqrt(1.-mat[2, 0]**2)),
-                             _numpy.arctan2(mat[2, 1], mat[2, 2])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 1, 0], mat[..., 0, 0])
+        euler[..., 1] = _numpy.arctan2(-mat[..., 2, 0], _numpy.sqrt(1.-mat[..., 2, 0]**2))
+        euler[..., 2] = _numpy.arctan2(mat[..., 2, 1], mat[..., 2, 2])
     elif order == "zxz":
-        euler = _numpy.array([_numpy.arctan2(mat[0, 2], -mat[1, 2]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[2, 2]**2), mat[2, 2]),
-                             _numpy.arctan2(mat[2, 0], mat[2, 1])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 0, 2], -mat[..., 1, 2])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2), mat[..., 2, 2])
+        euler[..., 2] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 1])
     elif order == "zyz":
-        euler = _numpy.array([_numpy.arctan2(mat[1, 2], mat[0, 2]),
-                             _numpy.arctan2(_numpy.sqrt(1.-mat[2, 2]**2), mat[2, 2]),
-                             _numpy.arctan2(mat[2, 1], -mat[2, 0])])
+        euler[..., 0] = _numpy.arctan2(mat[..., 1, 2], mat[..., 0, 2])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2), mat[..., 2, 2])
+        euler[..., 2] = _numpy.arctan2(mat[..., 2, 1], -mat[..., 2, 0])
     else:
         raise ValueError("unrecognized order: {0}".format(order))
         
