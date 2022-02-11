@@ -132,10 +132,15 @@ def _multiply_single(quat_1, quat_2):
     """Return the product of quat_1 and quat_2"""
     quat_1 = _numpy.array(quat_1)
     quat_2 = _numpy.array(quat_2)
-    if len(quat_1.shape) == 0:
-        quat_1 = quat_1.reshape((1, 4))
+    if (len(quat_1.shape) == 2 and len(quat_2.shape) == 1):
         quat_2 = quat_2.reshape((1, 4))
-    quat_out = _numpy.zeros(quat_1.shape)
+        quat_out = _numpy.zeros(quat_1.shape)
+    if (len(quat_2.shape) == 2 and len(quat_1.shape) == 1):
+        quat_1 = quat_1.reshape((1, 4))
+        quat_out = _numpy.zeros(quat_2.shape)
+    else:
+        quat_out = _numpy.zeros(quat_1.shape)
+        
     quat_out[..., 0] = (quat_1[..., 0]*quat_2[..., 0] -
                         quat_1[..., 1]*quat_2[..., 1] -
                         quat_1[..., 2]*quat_2[..., 2] -
