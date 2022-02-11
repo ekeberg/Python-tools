@@ -7,10 +7,10 @@ image_to_png
 from __future__ import print_function
 import os
 import re
-import sys
 import spimage
 from eke import scripts
 import argparse
+
 
 def to_png(*arguments):
     if len(arguments) <= 0:
@@ -31,19 +31,17 @@ def to_png(*arguments):
 
     """)
         return
-    elif not (isinstance(arguments,list) or isinstance(arguments,tuple)):
+    elif not (isinstance(arguments, list) or isinstance(arguments, tuple)):
         print("function to_png takes must have a list or string input")
         return
 
-
-    #l = os.popen('ls').readlines()
-    l = os.listdir('.')
+    files = os.listdir('.')
 
     expr = re.compile('.h5$')
-    h5_files = list(filter(expr.search,l))
+    h5_files = list(filter(expr.search, files))
 
     expr = re.compile('.png$')
-    png_files = list(filter(expr.search,l))
+    png_files = list(filter(expr.search, files))
 
     files = [f for f in h5_files if f[:-2]+"png" not in png_files]
     files.sort()
@@ -83,45 +81,48 @@ def to_png(*arguments):
     # for f in files:
     #     img = spimage.sp_image_read(f[:-1],0)
 
-    def shift_function(img):
-        return img
-
     if shift_flag:
         def shift_function(img):
             ret = spimage.sp_image_shift(img)
             spimage.sp_image_free(img)
             return ret
+    else:
+        def shift_function(img):
+            return img
 
     if support_flag:
         for f in files:
-            img = spimage.sp_image_read(f,0)
-            spimage.sp_image_mask_to_image(img,img)
+            img = spimage.sp_image_read(f, 0)
+            spimage.sp_image_mask_to_image(img, img)
             img = shift_function(img)
-            spimage.sp_image_write(img,f[:-2]+"png",color)
+            spimage.sp_image_write(img, f[:-2]+"png", color)
             spimage.sp_image_free(img)
     else:
         for f in files:
-            img = spimage.sp_image_read(f,0)
+            img = spimage.sp_image_read(f, 0)
             img = shift_function(img)
-            spimage.sp_image_write(img,f[:-2]+"png",color)
+            spimage.sp_image_write(img, f[:-2]+"png", color)
             spimage.sp_image_free(img)
+
 
 def read_files(in_dir, out_dir):
     in_files = os.listdir(in_dir)
-    h5_files = [f for f in in_files if  re.search('.h5$',f)]
+    h5_files = [f for f in in_files if re.search('.h5$', f)]
     out_files = os.listdir(in_dir)
-    png_files = [f for f in out_files if  re.search('.png$',f)]
+    png_files = [f for f in out_files if re.search('.png$', f)]
     files = [in_dir+'/'+f for f in h5_files if f[:-2]+"png" not in png_files]
     files.sort()
     return files
 
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("indir", default=".", help="Input directory")
-    parser.add_argument("outdir", default=".", help="Output directory")    
+    parser.add_argument("outdir", default=".", help="Output directory")
     parser.add_argument("-c", "--colorscale", default="jet", help="Colorscale")
     parser.add_argument("-l", "--log", action="store_true", help="Log scale")
-    parser.add_argument("-s", "--shift", action="store_true", help="Shift image")
+    parser.add_argument("-s", "--shift", action="store_true",
+                        help="Shift image")
     parser.add_argument("-m", "--mask", action="store_true", help="Plot mask")
     args = parser.parse_args()
 
@@ -135,4 +136,3 @@ if __name__ == "__main__":
     files = read_files(args.indir, args.outdir)
 
     scripts.to_png.to_png_parallel(files, args.output, plot_setup)
-

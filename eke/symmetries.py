@@ -2,6 +2,7 @@
 group symmetries. Functions return the rotation quaternions that
 relate symmetric elements."""
 
+
 import numpy as _numpy
 from . import rotations as _rotmodule
 from . import icosahedral_sphere as _icosahedral_sphere
@@ -10,8 +11,8 @@ from . import icosahedral_sphere as _icosahedral_sphere
 def rotational(fold, axis=(0., 0., 1.)):
     """Rotational symmetry around a specified axis."""
     rots = [_rotmodule.quaternion_from_dir_and_angle(2.*_numpy.pi *
-                                                    float(this_fold) /
-                                                    float(fold), axis)
+                                                     float(this_fold)
+                                                     / float(fold), axis)
             for this_fold in range(fold)]
     for this_rot in rots:
         _rotmodule.quaternion_fix_sign(this_rot)
@@ -20,17 +21,23 @@ def rotational(fold, axis=(0., 0., 1.)):
 
 def icosahedral():
     """Icosahedral (or 543) symmetry."""
-    five_fold_axes = _numpy.array(_icosahedral_sphere.icosahedron_vertices())
+    vertices = _icosahedral_sphere.icosahedron_vertices()
+    five_fold_axes = _numpy.array(vertices)
     all_five_fold = _numpy.array([rotational(5, axis)
-                                 for axis in five_fold_axes]).reshape((60, 4))
+                                 for axis in five_fold_axes])
+    all_five_fold = all_five_fold.reshape((60, 4))
 
-    three_fold_axes = _numpy.array(_icosahedral_sphere.icosahedron_faces()).mean(axis=1)
+    faces = _icosahedral_sphere.icosahedron_faces()
+    three_fold_axes = _numpy.array(faces).mean(axis=1)
     all_three_fold = _numpy.array([rotational(3, axis)
-                                  for axis in three_fold_axes]).reshape((60, 4))
+                                   for axis in three_fold_axes])
+    all_three_fold = all_three_fold.reshape((60, 4))
 
-    two_fold_axes = _numpy.array(_icosahedral_sphere.icosahedron_edges()).mean(axis=1)
+    edges = _icosahedral_sphere.icosahedron_edges()
+    two_fold_axes = _numpy.array(edges).mean(axis=1)
     all_two_fold = _numpy.array([rotational(2, axis)
-                                for axis in two_fold_axes]).reshape((60, 4))
+                                for axis in two_fold_axes])
+    all_two_fold = all_two_fold.reshape((60, 4))
 
     all_rotations = _numpy.concatenate((all_five_fold,
                                        all_three_fold,
@@ -41,8 +48,8 @@ def icosahedral():
         of that we are dealing with rotations and accepts rotations within
         an angle specified by the accuracy."""
         for this_rotation in rotation_list:
-            rel_angle = _rotmodule.quaternion_to_angle(_rotmodule.quaternion_relative(this_rotation,
-                                                                                    rotation))
+            rel_angle = _rotmodule.quaternion_to_angle(
+                _rotmodule.quaternion_relative(this_rotation, rotation))
             rel_angle = min(abs(rel_angle), abs(rel_angle-2.*_numpy.pi))
             if rel_angle < accuracy:
                 return True

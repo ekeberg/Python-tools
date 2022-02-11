@@ -1,6 +1,8 @@
 """A set of tools to handle quaternions and other functions related to
 spatial rotation."""
 import numpy as _numpy
+from . import refactor
+
 
 def random(number_of_quaternions=1, fix_sign=True):
     random_base = _numpy.random.random((number_of_quaternions, 3))
@@ -17,6 +19,7 @@ def random(number_of_quaternions=1, fix_sign=True):
         globals()["fix_sign"](quats)
     return quats.squeeze()
 
+
 def from_angle_and_dir(angle, direction):
     """The quaternion corresponding to a rotations of angle (rad) around the
     axis defined by direction. The rotation follows the right-hand rule."""
@@ -29,13 +32,15 @@ def from_angle_and_dir(angle, direction):
     fix_sign(quaternion)
     return quaternion
 
+
 def quaternion_to_euler_angle(quat):
     """Generate euler angles from the quaternion. The last angle
     corresponds to in-plane rotation."""
-    raise NotImplementedError("Convert to matrix and then to euler angle instead.")
+    raise NotImplementedError("Convert to matrix and then to euler angle "
+                              "instead.")
     euler = _numpy.zeros(3)
     euler[0] = _numpy.arctan2(2.0*(quat[0]*quat[1] + quat[2]*quat[3]),
-                             1.0 - 2.0*(quat[1]**2 + quat[2]**2))
+                              1.0 - 2.0*(quat[1]**2 + quat[2]**2))
     arcsin_argument = 2.0*(quat[0]*quat[2] - quat[1]*quat[3])
     if arcsin_argument > 1.0:
         arcsin_argument = 1.0
@@ -43,8 +48,9 @@ def quaternion_to_euler_angle(quat):
         arcsin_argument = -1.0
     euler[1] = _numpy.arcsin(arcsin_argument)
     euler[2] = _numpy.arctan2(2.0*(quat[0]*quat[3] + quat[1]*quat[2]),
-                             1.0 - 2.0*(quat[2]**2 + quat[3]**2))
+                              1.0 - 2.0*(quat[2]**2 + quat[3]**2))
     return euler
+
 
 def quaternion_to_matrix(quat):
     """Dummy docstring"""
@@ -53,27 +59,26 @@ def quaternion_to_matrix(quat):
     else:
         matrix = _numpy.zeros((len(quat), 3, 3), dtype=quat.dtype)
 
-    matrix[..., 0, 0] = quat[..., 0]**2+quat[..., 1]**2-quat[..., 2]**2-quat[..., 3]**2
-    matrix[..., 0, 1] = 2.0*quat[..., 1]*quat[..., 2]-2.0*quat[..., 0]*quat[..., 3]
-    matrix[..., 0, 2] = 2.0*quat[..., 1]*quat[..., 3]+2.0*quat[..., 0]*quat[..., 2]
-    matrix[..., 1, 0] = 2.0*quat[..., 1]*quat[..., 2]+2.0*quat[..., 0]*quat[..., 3]
-    matrix[..., 1, 1] = quat[..., 0]**2-quat[..., 1]**2+quat[..., 2]**2-quat[..., 3]**2
-    matrix[..., 1, 2] = 2.0*quat[..., 2]*quat[..., 3]-2.0*quat[..., 0]*quat[..., 1]
-    matrix[..., 2, 0] = 2.0*quat[..., 1]*quat[..., 3]-2.0*quat[..., 0]*quat[..., 2]
-    matrix[..., 2, 1] = 2.0*quat[..., 2]*quat[..., 3]+2.0*quat[..., 0]*quat[..., 1]
-    matrix[..., 2, 2] = quat[..., 0]**2-quat[..., 1]**2-quat[..., 2]**2+quat[..., 3]**2
-
+    matrix[..., 0, 0] = (quat[..., 0]**2 + quat[..., 1]**2
+                         - quat[..., 2]**2 - quat[..., 3]**2)
+    matrix[..., 0, 1] = (2 * quat[..., 1] * quat[..., 2]
+                         - 2 * quat[..., 0] * quat[..., 3])
+    matrix[..., 0, 2] = (2 * quat[..., 1] * quat[..., 3]
+                         + 2 * quat[..., 0] * quat[..., 2])
+    matrix[..., 1, 0] = (2 * quat[..., 1] * quat[..., 2]
+                         + 2 * quat[..., 0] * quat[..., 3])
+    matrix[..., 1, 1] = (quat[..., 0]**2 - quat[..., 1]**2
+                         + quat[..., 2]**2 - quat[..., 3]**2)
+    matrix[..., 1, 2] = (2 * quat[..., 2] * quat[..., 3]
+                         - 2 * quat[..., 0] * quat[..., 1])
+    matrix[..., 2, 0] = (2 * quat[..., 1] * quat[..., 3]
+                         - 2 * quat[..., 0] * quat[..., 2])
+    matrix[..., 2, 1] = (2 * quat[..., 2] * quat[..., 3]
+                         + 2 * quat[..., 0] * quat[..., 1])
+    matrix[..., 2, 2] = (quat[..., 0]**2 - quat[..., 1]**2
+                         - quat[..., 2]**2 + quat[..., 3]**2)
     return matrix
 
-    # return _numpy.array([[quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2,
-    #                       2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
-    #                       2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],],
-    #                      [2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3],
-    #                       quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
-    #                       2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1]],
-    #                      [2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2],
-    #                       2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
-    #                       quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2]])
 
 def quaternion_to_matrix_bw(quat):
     """Dummy docstring"""
@@ -91,18 +96,8 @@ def quaternion_to_matrix_bw(quat):
     matrix[..., 2, 0] = 2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2]
     matrix[..., 2, 1] = 2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3]
     matrix[..., 2, 2] = quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2
-
     return matrix
 
-    # return _numpy.array([[quat[0]**2-quat[1]**2-quat[2]**2+quat[3]**2,
-    #                       2.0*quat[2]*quat[3]+2.0*quat[0]*quat[1],
-    #                       2.0*quat[1]*quat[3]-2.0*quat[0]*quat[2]],
-    #                      [2.0*quat[2]*quat[3]-2.0*quat[0]*quat[1],
-    #                       quat[0]**2-quat[1]**2+quat[2]**2-quat[3]**2,
-    #                       2.0*quat[1]*quat[2]+2.0*quat[0]*quat[3]],
-    #                      [2.0*quat[1]*quat[3]+2.0*quat[0]*quat[2],
-    #                       2.0*quat[1]*quat[2]-2.0*quat[0]*quat[3],
-    #                       quat[0]**2+quat[1]**2-quat[2]**2-quat[3]**2]])
 
 def inverse(quat_in):
     """Return the inverse of the quaternion. Input is unchanged."""
@@ -111,13 +106,16 @@ def inverse(quat_in):
     quat_out[..., 1:] = -quat_in[..., 1:]
     return quat_out.squeeze()
 
+
 def normalize(quat):
-    """Normalize the quaternion and return the same object. (input quaternion is changed)"""
+    """Normalize the quaternion and return the same object. (input
+    quaternion is changed)"""
     if len(quat.shape) == 1:
         quat = quat.reshape((1, 4))
     norm = _numpy.linalg.norm(quat, axis=1)
     fix_sign(quat)
     return (quat/norm[:, _numpy.newaxis]).squeeze()
+
 
 def fix_sign(quat):
     shape = (1, 4) if len(quat.shape) == 1 else quat.shape
@@ -127,7 +125,8 @@ def fix_sign(quat):
         do_flip = under_consideration & (quat_array[..., index] < 0)
         quat_array[do_flip, :] = -quat_array[do_flip, :]
         under_consideration &= quat_array[..., index] == 0.
-            
+
+
 def _multiply_single(quat_1, quat_2):
     """Return the product of quat_1 and quat_2"""
     quat_1 = _numpy.array(quat_1)
@@ -154,6 +153,7 @@ def _multiply_single(quat_1, quat_2):
                         quat_1[..., 3]*quat_2[..., 0])
     return quat_out.squeeze()
 
+
 def multiply(*list_of_quaternions):
     """Return the product of all the provided quaternions"""
     if len(list_of_quaternions) < 1:
@@ -163,8 +163,10 @@ def multiply(*list_of_quaternions):
         result = _multiply_single(result, this_rot)
     return result
 
+
 def relative(quat_1, quat_2):
     return multiply(inverse(quat_1), quat_2)
+
 
 def angle(quat):
     """Angle of the rotation"""
@@ -177,37 +179,33 @@ def angle(quat):
     abs_diff_angle = min(abs(diff_angle), abs(diff_angle-2.*_numpy.pi))
     return abs_diff_angle
 
+
 def relative_angle(rot1, rot2):
     """Angle of the relative orientation from rot1 to rot2"""
     return angle(relative(rot1, rot2))
 
-# def rotate(quat, point):
-#     """Rotate a point by the quaternion"""
-#     rotation_matrix = quaternion_to_matrix(quat)
-#     return _numpy.squeeze(_numpy.array(
-#         rotation_matrix*_numpy.transpose(_numpy.matrix(point))))
-
-# def rotate(quat, z_coordinates, y_coordinates, x_coordinates):
-#     """Rotate coordinate vectors x, y and z by the rotation defined by the quaternion."""
-#     rotation_matrix = quaternion_to_matrix(quat)
-#     out_matrix = rotation_matrix*_numpy.matrix([z_coordinates, y_coordinates, x_coordinates])
-#     out_array = _numpy.array(out_matrix)
-#     return out_array[0], out_array[1], out_array[2]
 
 def rotate(quat, coordinates):
     rotation_matrix = quaternion_to_matrix(quat)
-    return rotation_matrix.dot(coordinates.T).T
+    # return rotation_matrix.dot(coordinates.T).T
+    return rotation_matrix.dot(coordinates)
+
 
 def rotate_array_bw(quat, x_coordinates, y_coordinates, z_coordinates):
-    """Like rotate_array but with the coordintes index backwords. Do not use."""
+    """Like rotate_array but with the coordintes index backwords. Do not
+    use."""
     rotation_matrix = quaternion_to_matrix_bw(quat)
-    out_array = rotation_matrix.dot(numpy.array([x_coordinates, y_coordinates, z_coordinates]))
+    out_array = rotation_matrix.dot(_numpy.array([x_coordinates,
+                                                  y_coordinates,
+                                                  z_coordinates]))
     return out_array[0], out_array[1], out_array[2]
 
+
 def read_quaternion_list(filename):
-    """Read an hdf5 file with quaternions. Quaternions are stored separately in
-    fields named '1', '2', .... A field 'number_of_rotations' define the number of
-    such fields."""
+    """Read an hdf5 file with quaternions. Quaternions are stored
+    separately in fields named '1', '2', .... A field
+    'number_of_rotations' define the number of such fields.
+    """
     import h5py
     with h5py.File(filename) as file_handle:
         number_of_rotations = file_handle['number_of_rotations'][...]
@@ -219,15 +217,18 @@ def read_quaternion_list(filename):
             weights[i] = quaternion_and_weight[4]
     return quaternions, weights
 
+
 def n_to_rots(sampling_n):
     """The number of rotations when the sampling parameter n is used"""
     return 10*(sampling_n+5*sampling_n**3)
+
 
 def n_to_angle(sampling_n):
     """The largest angle separating two adjacant orientations when the
     sampling parameter n is used."""
     tau = (1.0 + _numpy.sqrt(5.0))/2.0
     return 4./sampling_n/tau**3
+
 
 def rots_to_n(rots):
     """The sampling parameter n corresponding to a certain
@@ -238,17 +239,20 @@ def rots_to_n(rots):
         if this_rots == rots:
             return sampling_n
         if this_rots > rots:
-            raise ValueError("%d rotations does not correspond to any n" % rots)
+            raise ValueError(f"{rots} rotations does not correspond to any n")
         sampling_n += 1
+
 
 def quaternion_to_angle(quat):
     """The angle by which this transformation rotates"""
     return 2.*_numpy.arccos(quat[0])
 
+
 def quaternion_to_axis(quat):
     """The axis around which this rotation rotates"""
     return quat[1:]/_numpy.linalg.norm(quat[1:])
-    
+
+
 def matrix_to_euler_angle(mat, order="zxz"):
     """This function is based on the following NASA paper:
     http://ntrs.nasa.gov/archive/nasa/casi.ntrs.nasa.gov/19770024290.pdf"""
@@ -260,59 +264,72 @@ def matrix_to_euler_angle(mat, order="zxz"):
 
     if order == "xyz":
         euler[..., 0] = _numpy.arctan2(-mat[..., 1, 2], mat[..., 2, 2])
-        euler[..., 1] = _numpy.arctan2(mat[..., 0, 2], _numpy.sqrt(1.-mat[..., 0, 2]**2))
+        euler[..., 1] = _numpy.arctan2(mat[..., 0, 2],
+                                       _numpy.sqrt(1.-mat[..., 0, 2]**2))
         euler[..., 2] = _numpy.arctan2(-mat[..., 0, 1], mat[..., 0, 0])
     elif order == "xzy":
         euler[..., 0] = _numpy.arctan2(mat[..., 2, 1], mat[..., 1, 1])
-        euler[..., 1] = _numpy.arctan2(-mat[..., 0, 1], _numpy.sqrt(1.-mat[..., 0, 1]**2))
+        euler[..., 1] = _numpy.arctan2(-mat[..., 0, 1],
+                                       _numpy.sqrt(1.-mat[..., 0, 1]**2))
         euler[..., 2] = _numpy.arctan2(mat[..., 0, 2], mat[..., 0, 0])
     elif order == "xyx":
         euler[..., 0] = _numpy.arctan2(mat[..., 1, 0], -mat[..., 2, 0])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2), mat[..., 0, 0])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2),
+                                       mat[..., 0, 0])
         euler[..., 2] = _numpy.arctan2(mat[..., 0, 1], mat[..., 0, 2])
     elif order == "xzx":
         euler[..., 0] = _numpy.arctan2(mat[..., 2, 0], mat[..., 1, 0])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2), mat[..., 0, 0])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 0, 0]**2),
+                                       mat[..., 0, 0])
         euler[..., 2] = _numpy.arctan2(mat[..., 0, 2], -mat[..., 0, 1])
     elif order == "yxz":
         euler[..., 0] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 2])
-        euler[..., 1] = _numpy.arctan2(-mat[..., 1, 2], _numpy.sqrt(1.-mat[..., 1, 2]**2))
+        euler[..., 1] = _numpy.arctan2(-mat[..., 1, 2],
+                                       _numpy.sqrt(1.-mat[..., 1, 2]**2))
         euler[..., 2] = _numpy.arctan2(mat[..., 1, 0], -mat[..., 1, 1])
     elif order == "yzx":
         euler[..., 0] = _numpy.arctan2(-mat[..., 2, 0], mat[..., 0, 0])
-        euler[..., 1] = _numpy.arctan2(mat[..., 1, 0], _numpy.sqrt(1.-mat[..., 1, 0]**2))
+        euler[..., 1] = _numpy.arctan2(mat[..., 1, 0],
+                                       _numpy.sqrt(1.-mat[..., 1, 0]**2))
         euler[..., 2] = _numpy.arctan2(-mat[..., 1, 2], mat[..., 1, 1])
     elif order == "yxy":
         euler[..., 0] = _numpy.arctan2(mat[..., 0, 1], mat[..., 2, 1])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2), mat[..., 1, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2),
+                                       mat[..., 1, 1])
         euler[..., 2] = _numpy.arctan2(-mat[..., 1, 0], -mat[..., 1, 0])
     elif order == "yzy":
         euler[..., 0] = _numpy.arctan2(mat[..., 2, 1], -mat[..., 0, 1])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2), mat[..., 1, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 1, 1]**2),
+                                       mat[..., 1, 1])
         euler[..., 2] = _numpy.arctan2(mat[..., 1, 2], mat[..., 1, 0])
     elif order == "zxy":
         euler[..., 0] = _numpy.arctan2(-mat[..., 0, 1], mat[..., 1, 1])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 1]**2), mat[..., 2, 1])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 1]**2),
+                                       mat[..., 2, 1])
         euler[..., 2] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 2])
     elif order == "zyx":
         euler[..., 0] = _numpy.arctan2(mat[..., 1, 0], mat[..., 0, 0])
-        euler[..., 1] = _numpy.arctan2(-mat[..., 2, 0], _numpy.sqrt(1.-mat[..., 2, 0]**2))
+        euler[..., 1] = _numpy.arctan2(-mat[..., 2, 0],
+                                       _numpy.sqrt(1.-mat[..., 2, 0]**2))
         euler[..., 2] = _numpy.arctan2(mat[..., 2, 1], mat[..., 2, 2])
     elif order == "zxz":
         euler[..., 0] = _numpy.arctan2(mat[..., 0, 2], -mat[..., 1, 2])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2), mat[..., 2, 2])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2),
+                                       mat[..., 2, 2])
         euler[..., 2] = _numpy.arctan2(mat[..., 2, 0], mat[..., 2, 1])
     elif order == "zyz":
         euler[..., 0] = _numpy.arctan2(mat[..., 1, 2], mat[..., 0, 2])
-        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2), mat[..., 2, 2])
+        euler[..., 1] = _numpy.arctan2(_numpy.sqrt(1.-mat[..., 2, 2]**2),
+                                       mat[..., 2, 2])
         euler[..., 2] = _numpy.arctan2(mat[..., 2, 1], -mat[..., 2, 0])
     else:
         raise ValueError("unrecognized order: {0}".format(order))
-        
+
     return euler
 
-from . import refactor
+
 rotate_array = refactor.new_to_old(rotate, "rotate_array")
+
 
 random_quaternion = refactor.new_to_old(random, "random_quaternion")
 quaternion_from_dir_and_angle = refactor.new_to_old(

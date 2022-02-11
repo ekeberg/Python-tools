@@ -1,7 +1,7 @@
 """Parallelise the execution of a single function with many inputs."""
-from future import standard_library
 import multiprocessing as _multiprocessing
 import queue as _queue
+
 
 class Worker(_multiprocessing.Process):
     """Runs a single function for many different outputs."""
@@ -12,31 +12,20 @@ class Worker(_multiprocessing.Process):
         self.process = process
         self.result = []
         self.quiet = quiet
+
     def run(self):
-        # while not self.working_queue.empty():
-        #     try:
-        #         print "%s get new, approx %d left" % (self.name,self.working_queue.qsize())
-        #     except NotImplementedError:
-        #         pass
-        #     try:
-        #         i,data = self.working_queue.get_nowait()
-        #         print self.name, " got data ", i
-        #     except _Queue.Empty:
-        #         print self.name, " didn't get data"
-        #         break
-        #     self.return_dict[i] = self.process(*data)
-        # print "%s done" % self.name
-        # return
         while True:
             try:
-                tmp = self.working_queue.get(timeout=0.1) #timeout of 0.1 is choosen adhoc.
+                # timeout of 0.1 is choosen adhoc.
+                tmp = self.working_queue.get(timeout=0.1)
             except _queue.Empty:
                 break
-            if tmp == None:
+            if tmp is None:
                 break
             if not self.quiet:
                 try:
-                    print("%s process %d, approx %d left" % (self.name, tmp[0], self.working_queue.qsize()))
+                    print(f"{self.name} process {tmp[0]}, approx "
+                          f"{self.working_queue.qsize()} left")
                 except NotImplementedError:
                     print("%s process %d" % (self.name, tmp[0]))
             print(tmp[0])
@@ -48,12 +37,13 @@ class Worker(_multiprocessing.Process):
 
 
 def run_parallel(jobs, function, n_cpu=0, quiet=False):
-    """Execute the function for each input given in the array jobs and return the results in an array.
-    Jobs must be iterable and the jobs should be a tuple containing the function arguments."""
+    """Execute the function for each input given in the array jobs and
+    return the results in an array.  Jobs must be iterable and the
+    jobs should be a tuple containing the function arguments.
+    """
     if not n_cpu:
         n_cpu = _multiprocessing.cpu_count()
     working_queue = _multiprocessing.Queue()
-    #return_queue = _multiprocessing.Queue()
     my_manager = _multiprocessing.Manager()
     return_dict = my_manager.dict()
     workers = []
@@ -74,6 +64,7 @@ def run_parallel(jobs, function, n_cpu=0, quiet=False):
     values = list(return_dict.values())
     my_manager.shutdown()
     return values
+
 
 def function_square(value):
     """Return the square of the input."""

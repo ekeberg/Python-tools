@@ -3,7 +3,15 @@
 
 import argparse
 
-ELEMENTS = ['Ru', 'Re', 'Ra', 'Rb', 'Rn', 'Rh', 'Be', 'Ba', 'Bi', 'Br', 'H', 'P', 'Os', 'Ge', 'Gd', 'Ga', 'Pr', 'Pt', 'C', 'Pb', 'Pa', 'Pd', 'Xe', 'Po', 'Pm', 'Ho', 'Hf', 'Hg', 'He', 'Mg', 'K', 'Mn', 'O', 'S', 'W', 'Zn', 'Eu', 'Zr', 'Er', 'Ni', 'Na', 'Nb', 'Nd', 'Ne', 'Fr', 'Fe', 'B', 'F', 'Sr', 'N', 'Kr', 'Si', 'Sn', 'Sm', 'V', 'Sc', 'Sb', 'Se', 'Co', 'Cl', 'Ca', 'Ce', 'Cd', 'Tm', 'Cs', 'Cr', 'Cu', 'La', 'Li', 'Tl', 'Lu', 'Th', 'Ti', 'Te', 'Tb', 'Tc', 'Ta', 'Yb', 'Dy', 'I', 'U', 'Y', 'Ac', 'Ag', 'Ir', 'Al', 'As', 'Ar', 'Au', 'At', 'In', 'Mo']
+ELEMENTS = ['Ru', 'Re', 'Ra', 'Rb', 'Rn', 'Rh', 'Be', 'Ba', 'Bi', 'Br', 'H',
+            'P', 'Os', 'Ge', 'Gd', 'Ga', 'Pr', 'Pt', 'C', 'Pb', 'Pa', 'Pd',
+            'Xe', 'Po', 'Pm', 'Ho', 'Hf', 'Hg', 'He', 'Mg', 'K', 'Mn', 'O',
+            'S', 'W', 'Zn', 'Eu', 'Zr', 'Er', 'Ni', 'Na', 'Nb', 'Nd', 'Ne',
+            'Fr', 'Fe', 'B', 'F', 'Sr', 'N', 'Kr', 'Si', 'Sn', 'Sm', 'V',
+            'Sc', 'Sb', 'Se', 'Co', 'Cl', 'Ca', 'Ce', 'Cd', 'Tm', 'Cs', 'Cr',
+            'Cu', 'La', 'Li', 'Tl', 'Lu', 'Th', 'Ti', 'Te', 'Tb', 'Tc', 'Ta',
+            'Yb', 'Dy', 'I', 'U', 'Y', 'Ac', 'Ag', 'Ir', 'Al', 'As', 'Ar',
+            'Au', 'At', 'In', 'Mo']
 
 parser = argparse.ArgumentParser()
 parser.add_argument("input_file",  type=str)
@@ -30,4 +38,3 @@ with open(input_file, "r") as file_handle:
 
 with open(output_file, "w") as file_handle:
     file_handle.write("\n".join(new_lines))
-

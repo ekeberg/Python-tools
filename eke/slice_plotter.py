@@ -6,6 +6,7 @@ from . import vtk_tools
 from . import rotmodule
 from . import diffraction
 
+
 def downsample_pattern(image, factor):
     """Image shape must be exact multiples of downsample factor"""
     raise NotImplementedError()
@@ -22,22 +23,27 @@ class Generate(object):
     """Generate slices of Fourier space. image_shape is in pixels and
     curvature is also given in pixels. Cutoff determines what part of
     Fourier space that will be used. Should be in the range of (0. 0.5]."""
-    def __init__(self, real_volume, real_pixel_size, image_shape, wavelength, detector_distance, detector_pixel_size, cutoff=0.5):
+    def __init__(self, real_volume, real_pixel_size, image_shape,
+                 wavelength, detector_distance, detector_pixel_size,
+                 cutoff=0.5):
         self._real_volume = real_volume
         self._image_shape = image_shape
         self._real_pixel_size = float(real_pixel_size)
         self._wavelength = float(wavelength)
         self._detector_distance = float(detector_distance)
         self._detector_pixel_size = float(detector_pixel_size)
-        self._coordinates = diffraction.ewald_coordinates(self._image_shape, self._wavelength,
-                                                          self._detector_distance, self._detector_pixel_size)
+        self._coordinates = diffraction.ewald_coordinates_fourier(
+            self._image_shape, self._wavelength,
+            self._detector_distance, self._detector_pixel_size)
 
     def _rotated_coordinates(self, rot):
         """Return base coordinates rotated by rot. Rot is a quaternion."""
-        rotated_coordinates = rotmodule.rotate(rot, self._coordinates)
-        z_rotated = rotated_coordinates[:, 0].reshape(self._image_shape)
-        y_rotated = rotated_coordinates[:, 1].reshape(self._image_shape)
-        x_rotated = rotated_coordinates[:, 2].reshape(self._image_shape)
+        npixels = self._coordinates.shape[1] * self._coordinates.shape[2]
+        flat_coordinates = self._coordinates.reshape((3, npixels))
+        rotated_coordinates = rotmodule.rotate(rot, flat_coordinates)
+        z_rotated = rotated_coordinates[0, ...].reshape(self._image_shape)
+        y_rotated = rotated_coordinates[1, ...].reshape(self._image_shape)
+        x_rotated = rotated_coordinates[2, ...].reshape(self._image_shape)
 
         coordinates = _numpy.transpose(_numpy.array((z_rotated.flatten(),
                                                      y_rotated.flatten(),
@@ -54,7 +60,9 @@ class Generate(object):
             rot = rotmodule.random_quaternion()
         coordinates = self._rotated_coordinates(rot)
 
-        pattern_flat = _nfft.nfft(self._real_volume, self._real_pixel_size, coordinates)
+        pattern_flat = _nfft.nfft(self._real_volume,
+                                  self._real_pixel_size,
+                                  coordinates)
 
         pattern = pattern_flat.reshape(self._image_shape)
         if output_type == "complex":
@@ -75,18 +83,19 @@ class Generate(object):
 class SliceGenerator(object):
     """Generate multiple vtkPolyData objects corresponding to a curved
     slice throug Fourier space."""
-    def __init__(self, shape, wavelength, detector_distance, detector_pixel_size, slice_shape="square"):
+    def __init__(self, shape, wavelength, detector_distance,
+                 detector_pixel_size, slice_shape="square"):
         self._shape = shape
         # self._curvature = curvature
         self._wavelength = float(wavelength)
         self._detector_distance = float(detector_distance)
         self._detector_pixel_size = float(detector_pixel_size)
 
-        self._coordinates = diffraction.ewald_coordinates(self._shape, self._wavelength, self._detector_distance,
-                                                          self._detector_pixel_size).reshape(self._shape + (3, ))
+        self._coordinates = diffraction.ewald_coordinates_fourier(
+            self._shape, self._wavelength, self._detector_distance,
+            self._detector_pixel_size)
         self._coordinates *= 1./abs(self._coordinates).max()
-        
-        
+
         self._image_values = _vtk.vtkFloatArray()
         self._image_values.SetNumberOfComponents(1)
         self._image_values.SetName("Intensity")
@@ -94,9 +103,9 @@ class SliceGenerator(object):
         self._points = _vtk.vtkPoints()
         for i in range(self._shape[0]):
             for j in range(self._shape[1]):
-                self._points.InsertNextPoint(self._coordinates[i, j, 0],
-                                             self._coordinates[i, j, 1],
-                                             self._coordinates[i, j, 2])
+                self._points.InsertNextPoint(self._coordinates[0, i, j],
+                                             self._coordinates[1, i, j],
+                                             self._coordinates[2, i, j])
                 self._image_values.InsertNextTuple1(0.)
 
         self._polygons = _vtk.vtkCellArray()
@@ -122,8 +131,8 @@ class SliceGenerator(object):
                 polygon = _vtk.vtkPolygon()
                 polygon.GetPointIds().SetNumberOfIds(4)
                 for index, corner in enumerate(corners):
-                    polygon.GetPointIds().SetId(index,
-                                                corner[0]*self._shape[1]+corner[1])
+                    polygon.GetPointIds().SetId(
+                        index, corner[0]*self._shape[1]+corner[1])
                 self._polygons.InsertNextCell(polygon)
 
         self._template_poly_data = _vtk.vtkPolyData()
@@ -138,13 +147,17 @@ class SliceGenerator(object):
         self._polygons.Initialize()
         for i in range(self._shape[0]-1):
             for j in range(self._shape[1]-1):
-                if (i-self._shape[0]/2 + 0.5)**2 + (j-self._shape[1]/2 + 0.5)**2 < radius**2:
+                if (
+                        (i-self._shape[0]/2 + 0.5)**2
+                        + (j-self._shape[1]/2 + 0.5)**2
+                        < radius**2
+                ):
                     corners = [(i, j), (i+1, j), (i+1, j+1), (i, j+1)]
                     polygon = _vtk.vtkPolygon()
                     polygon.GetPointIds().SetNumberOfIds(4)
                     for index, corner in enumerate(corners):
-                        polygon.GetPointIds().SetId(index,
-                                                    corner[0]*self._shape[1]+corner[1])
+                        polygon.GetPointIds().SetId(
+                            index, corner[0]*self._shape[1]+corner[1])
                     self._polygons.InsertNextCell(polygon)
 
         self._template_poly_data = _vtk.vtkPolyData()
@@ -180,9 +193,14 @@ class SliceGenerator(object):
 class Plot(object):
     """Create vtk actors of curved slices and add them to the
     given vtkRenderer."""
-    def __init__(self, renderer, image_shape, wavelength, detector_distance, detector_pixel_size, cmap="jet", slice_shape="square"):
+    def __init__(self, renderer, image_shape, wavelength, detector_distance,
+                 detector_pixel_size, cmap="jet", slice_shape="square"):
         self._renderer = renderer
-        self._generator = SliceGenerator(image_shape, wavelength, detector_distance, detector_pixel_size, slice_shape)
+        self._generator = SliceGenerator(image_shape,
+                                         wavelength,
+                                         detector_distance,
+                                         detector_pixel_size,
+                                         slice_shape)
         self._lut = vtk_tools.get_lookup_table(1., 1., log=True,
                                                colorscale=cmap)
         self._custom_lut_range = {"min": False, "max": False}

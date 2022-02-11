@@ -1,6 +1,8 @@
-"""Functions to interact with spimage h5py files without loading the spimage package."""
+"""Functions to interact with spimage h5py files without loading the
+spimage package."""
 import h5py as _h5py
 import numpy as _numpy
+
 
 def import_spimage(filename, fields=('image',)):
     """Import image part of an spimage file"""
@@ -9,7 +11,8 @@ def import_spimage(filename, fields=('image',)):
         """Read an image from a file_handle"""
         if name == "image":
             if file_handle["phased"][0]:
-                image = _numpy.squeeze(file_handle['real'][...] + 1.j*file_handle['imag'][...])
+                image = _numpy.squeeze(file_handle['real'][...]
+                                       + 1.j*file_handle['imag'][...])
             else:
                 image = _numpy.real(_numpy.squeeze(file_handle['real'][...]))
         elif name == "mask":
@@ -28,11 +31,17 @@ def import_spimage(filename, fields=('image',)):
         single = file_handle[name][...][0]
         return single
 
-    allowed_fields = {'image' : _read_image, 'mask' : _read_image, 'detector_distance' : _read_single,
-                      'image_center' :_read_array, 'lambda' : _read_single,
-                      'num_dimensions' : _read_single, 'phased' : _read_single,
-                      'pixel_size' : _read_single, 'scaled' : _read_single,
-                      'shifted' : _read_single, 'version' : _read_single}
+    allowed_fields = {'image': _read_image,
+                      'mask': _read_image,
+                      'detector_distance': _read_single,
+                      'image_center': _read_array,
+                      'lambda': _read_single,
+                      'num_dimensions': _read_single,
+                      'phased': _read_single,
+                      'pixel_size': _read_single,
+                      'scaled': _read_single,
+                      'shifted': _read_single,
+                      'version': _read_single}
     field_values = []
     with _h5py.File(filename, 'r') as file_handle:
         for this_field in fields:
@@ -44,6 +53,7 @@ def import_spimage(filename, fields=('image',)):
         return field_values[0]
     else:
         return field_values
+
 
 def save_spimage(image, filename, mask=None):
     """Create an spimage hdf5 file from an image and optionally a mask."""
@@ -61,7 +71,8 @@ def save_spimage(image, filename, mask=None):
                 raise ValueError("Mask and image have to be the same size")
             file_handle['mask'] = mask
         else:
-            file_handle['mask'] = _numpy.ones(_numpy.shape(image), dtype='int32')
+            file_handle['mask'] = _numpy.ones(_numpy.shape(image),
+                                              dtype='int32')
         file_handle['detector_distance'] = [0.]
         file_handle['image_center'] = _numpy.array(_numpy.shape(image))/2.-0.5
         file_handle['lambda'] = [0.]
@@ -71,14 +82,10 @@ def save_spimage(image, filename, mask=None):
         file_handle['shifted'] = [0]
         file_handle['version'] = [2]
 
-        #file_handle.close()
 
 def read_tiff(filename):
     """Read a tiff image."""
     import gdal
-    # with gdal.Open(filename) as image_handle:
-    #     image = image_handle.ReadAsArray()
-    # return image
     image_handle = gdal.Open(filename)
     image = image_handle.ReadAsArray()
     return image

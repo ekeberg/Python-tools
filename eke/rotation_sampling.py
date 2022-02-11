@@ -1,59 +1,73 @@
-
+"""Tools to create rotational sampling based on the methods from Loh
+and Elser (2009)"""
 import numpy as _numpy
 import itertools as _itertools
 import pathlib as _pathlib
 import h5py as _h5py
 
+
 DATA_FILE = _pathlib.Path(__file__).parents[0] / "data/600_cell.h5"
 
+
 def _create_and_save_data():
-    print("600-cell data does not exist. Generating. This can take a few minutes.")
+    print("600-cell data does not exist. Generating. This can take "
+          "a few minutes.")
     DATA_FILE.parents[0].mkdir(exist_ok=True)
     with _h5py.File(DATA_FILE, "w") as file_handle:
-        file_handle.create_dataset("vertices", data=_base_vertices(allow_cached=False))
-        file_handle.create_dataset("edge_indices", data=_edge_indices(allow_cached=False))
-        file_handle.create_dataset("face_indices", data=_face_indices(allow_cached=False))
-        file_handle.create_dataset("cell_indices", data=_cell_indices(allow_cached=False))
+        file_handle.create_dataset("vertices",
+                                   data=_base_vertices(allow_cached=False))
+        file_handle.create_dataset("edge_indices",
+                                   data=_edge_indices(allow_cached=False))
+        file_handle.create_dataset("face_indices",
+                                   data=_face_indices(allow_cached=False))
+        file_handle.create_dataset("cell_indices",
+                                   data=_cell_indices(allow_cached=False))
+
 
 def local_rotations(angle_max, angle_step):
     if angle_max > 0.65:
         raise Warning("local_rotation doesn't support angles higher than 0.65")
-        
+
     golden_ratio = (1. + _numpy.sqrt(5))/2.
 
     vertices = []
-
     vertices += _itertools.product((-0.5, 0.5),
-                                  (-0.5, 0.5),
-                                  (-0.5, 0.5),
-                                  (-0.5, 0.5))
-
-
+                                   (-0.5, 0.5),
+                                   (-0.5, 0.5),
+                                   (-0.5, 0.5))
     vertices += [_numpy.roll((1., 0., 0., 0.), i) for i in range(4)]
     vertices += [_numpy.roll((-1., 0., 0., 0.), i) for i in range(4)]
 
     # all even permutations
-    permutations = _numpy.array([(0,1,2,3),
-                                (0,3,1,2),
-                                (0,2,3,1),
-                                (1,2,0,3),
-                                (1,3,2,0),
-                                (1,0,3,2),
-                                (2,0,1,3),
-                                (2,3,0,1),
-                                (2,1,3,0),
-                                (3,1,0,2),
-                                (3,2,1,0),
-                                (3,0,2,1)])
+    permutations = _numpy.array([(0, 1, 2, 3),
+                                (0, 3, 1, 2),
+                                (0, 2, 3, 1),
+                                (1, 2, 0, 3),
+                                (1, 3, 2, 0),
+                                (1, 0, 3, 2),
+                                (2, 0, 1, 3),
+                                (2, 3, 0, 1),
+                                (2, 1, 3, 0),
+                                (3, 1, 0, 2),
+                                (3, 2, 1, 0),
+                                (3, 0, 2, 1)])
 
     for s1, s2, s3 in _itertools.product((-1, 1), (-1, 1), (-1, 1)):
-        vertices += [(0.5*_numpy.array([s1*golden_ratio, s2*1., s3*1./golden_ratio, 0.]))[this_permutation] for this_permutation in permutations]
+        vertices = []
+        for this_permutation in permutations:
+            coords = [s1*golden_ratio, s2*1., s3*1./golden_ratio, 0.]
+            coords = _numpy.array(coords)
+            coords *= 0.5
+            vertices.append(coords[this_permutation])
 
     vertices = _numpy.array(vertices)
 
     cutoff = 1./golden_ratio + 0.001
 
-    region = vertices[_numpy.linalg.norm(vertices - _numpy.array((1., 0., 0., 0.)), axis=1) < cutoff]
+    base_vertex = _numpy.array((1., 0., 0., 0.))
+    vertex_norm = _numpy.linalg.norm(vertices - base_vertex, axis=1)
+
+    region = vertices[vertex_norm < cutoff]
 
     origin = region[0]
     directions = (_numpy.array(region[1:]) - origin)*golden_ratio
@@ -67,36 +81,52 @@ def local_rotations(angle_max, angle_step):
     # Identify neighbour pairs
 
     all_pairs = _numpy.array(list(_itertools.combinations(directions, 2)))
-    pairs = all_pairs[_numpy.array([_numpy.linalg.norm(p1 - p2) for p1, p2 in all_pairs]) < 1.01]
+    close_pair_index = _numpy.array([_numpy.linalg.norm(p1 - p2)
+                                     for p1, p2 in all_pairs]) < 1.01
+    pairs = all_pairs[close_pair_index]
 
     # Identify triplets
 
     all_triplets = _numpy.array(list(_itertools.combinations(directions, 3)))
-    tripplets = all_triplets[_numpy.array([_numpy.linalg.norm(p1 + p2 + p3) for p1, p2, p3 in all_triplets]) > 2.4]
+    close_triplet_index = _numpy.array([_numpy.linalg.norm(p1 + p2 + p3)
+                                        for p1, p2, p3 in all_triplets]) > 2.4
+    tripplets = all_triplets[close_triplet_index]
 
     # Lines
+    line_steps = _numpy.arange(step_size, cutoff_radius, step_size)
+    line_steps_1d = line_steps[:, _numpy.newaxis]
     lines = []
     for this_direction in directions:
-        lines.append(origin + _numpy.arange(step_size, cutoff_radius, step_size)[:, _numpy.newaxis] * this_direction[_numpy.newaxis, :])
+        lines.append(origin
+                     + line_steps_1d
+                     * this_direction[_numpy.newaxis, :])
 
     # Planes
+    line_steps_2d = line_steps[:, _numpy.newaxis, _numpy.newaxis]
     planes = []
     for direction0, direction1 in pairs:
-        this_plane = (_numpy.arange(step_size, cutoff_radius, step_size)[:, _numpy.newaxis, _numpy.newaxis] * direction0 +
-                      _numpy.arange(step_size, cutoff_radius, step_size)[_numpy.newaxis, :, _numpy.newaxis] * direction1)
-        this_plane = this_plane.reshape((this_plane.shape[0]*this_plane.shape[1], this_plane.shape[2]))
-        this_plane_pruned = this_plane[_numpy.linalg.norm(this_plane, axis=1) < cutoff_radius]
+        this_plane = (line_steps_2d * direction0 +
+                      line_steps_2d * direction1)
+        new_shape = (this_plane.shape[0]*this_plane.shape[1],
+                     this_plane.shape[2])
+        this_plane = this_plane.reshape(new_shape)
+        this_plane_pruned = this_plane[_numpy.linalg.norm(this_plane, axis=1)
+                                       < cutoff_radius]
         planes.append(origin + this_plane_pruned)
 
     # Volumes
-
+    line_steps_3d = line_steps[:, _numpy.newaxis, _numpy.newaxis,
+                               _numpy.newaxis]
     volumes = []
     for direction0, direction1, direction2 in tripplets:
-        this_volume = (_numpy.arange(step_size, cutoff_radius, step_size)[:, _numpy.newaxis, _numpy.newaxis, _numpy.newaxis] * direction0 +
-                       _numpy.arange(step_size, cutoff_radius, step_size)[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis] * direction1 +
-                       _numpy.arange(step_size, cutoff_radius, step_size)[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis] * direction2)
-        this_volume = this_volume.reshape((_numpy.prod(this_volume.shape[:-1]), this_volume.shape[-1]))
-        this_volume_pruned = this_volume[_numpy.linalg.norm(this_volume, axis=1) < cutoff_radius]
+        this_volume = (line_steps_3d * direction0 +
+                       line_steps_3d * direction1 +
+                       line_steps_3d * direction2)
+        new_shape = (_numpy.prod(this_volume.shape[:-1]),
+                     this_volume.shape[-1])
+        this_volume = this_volume.reshape(new_shape)
+        close_index = _numpy.linalg.norm(this_volume, axis=1) < cutoff_radius
+        this_volume_pruned = this_volume[close_index]
         volumes.append(origin + this_volume_pruned)
 
     local_rots = _numpy.vstack((_numpy.array([origin]),
@@ -104,7 +134,6 @@ def local_rotations(angle_max, angle_step):
                                _numpy.concatenate(planes),
                                _numpy.concatenate(volumes)))
     local_rots = _numpy.array(local_rots)
-
     local_rots /= _numpy.linalg.norm(local_rots, axis=1)[:, _numpy.newaxis]
 
     return local_rots
@@ -115,7 +144,8 @@ def _base_vertices_backend():
     rotations = _numpy.zeros((120, 4))
 
     # first 16
-    rotations[:16, :] = _numpy.array(list(_itertools.product(*((-0.5, 0.5), )*4)))
+    rotations[:16, :] = _numpy.array(list(
+        _itertools.product(*((-0.5, 0.5), )*4)))
 
     # next 8
     rotations[16:20] = _numpy.identity(4)
@@ -126,10 +156,12 @@ def _base_vertices_backend():
                     (1, 2, 0, 3), (1, 3, 2, 0), (1, 0, 3, 2),
                     (2, 0, 1, 3), (2, 3, 0, 1), (2, 1, 3, 0),
                     (3, 1, 0, 2), (3, 2, 1, 0), (3, 0, 2, 1))
-    
+
     base = ((-0.5, 0.5),
-            (-0.5*scipy.constants.golden_ratio, 0.5*scipy.constants.golden_ratio),
-            (-0.5/scipy.constants.golden_ratio, 0.5/scipy.constants.golden_ratio),
+            (-0.5*scipy.constants.golden_ratio,
+             0.5*scipy.constants.golden_ratio),
+            (-0.5/scipy.constants.golden_ratio,
+             0.5/scipy.constants.golden_ratio),
             0)
 
     counter = 0
@@ -139,6 +171,7 @@ def _base_vertices_backend():
             rotations[24+counter] = (b[p[0]], b[p[1]], b[p[2]], b[p[3]])
             counter += 1
     return rotations
+
 
 def _base_vertices(allow_cached=True):
     if not allow_cached:
@@ -151,7 +184,8 @@ def _base_vertices(allow_cached=True):
 
 def _edge_indices_backend():
     verts = _base_vertices()
-    products = _numpy.linalg.norm(verts[:, _numpy.newaxis, :] + verts[_numpy.newaxis, :, :], axis=2)
+    products = _numpy.linalg.norm(verts[:, _numpy.newaxis, :] +
+                                  verts[_numpy.newaxis, :, :], axis=2)
 
     products *= ~_numpy.triu(_numpy.ones((120, )*2, dtype="bool8"))
     mask = products > 1.8
@@ -161,6 +195,7 @@ def _edge_indices_backend():
     all_i2 = i2[mask]
     return _numpy.stack((all_i1, all_i2))
 
+
 def _edge_indices(allow_cached=True):
     if not allow_cached:
         return _edge_indices_backend()
@@ -169,24 +204,31 @@ def _edge_indices(allow_cached=True):
     with _h5py.File(DATA_FILE, "r") as file_handle:
         return file_handle["edge_indices"][...]
 
+
 def _face_indices_backend():
     verts = _base_vertices()
-    products = _numpy.linalg.norm(verts[:, _numpy.newaxis, _numpy.newaxis, :] +
-                                  verts[_numpy.newaxis, :, _numpy.newaxis, :] +
-                                  verts[_numpy.newaxis, _numpy.newaxis, :, :], axis=3)
+    products = _numpy.linalg.norm(
+        verts[:, _numpy.newaxis, _numpy.newaxis, :] +
+        verts[_numpy.newaxis, :, _numpy.newaxis, :] +
+        verts[_numpy.newaxis, _numpy.newaxis, :, :], axis=3
+    )
 
     mask_1d = _numpy.arange(120)
-    mask = ((mask_1d[_numpy.newaxis, _numpy.newaxis, :] > mask_1d[_numpy.newaxis, :, _numpy.newaxis]) * 
-            (mask_1d[_numpy.newaxis, :, _numpy.newaxis] > mask_1d[:, _numpy.newaxis, _numpy.newaxis]))
+    mask = ((mask_1d[_numpy.newaxis, _numpy.newaxis, :]
+             > mask_1d[_numpy.newaxis, :, _numpy.newaxis]) *
+            (mask_1d[_numpy.newaxis, :, _numpy.newaxis]
+             > mask_1d[:, _numpy.newaxis, _numpy.newaxis]))
     products *= mask
 
     mask = products > 2.7
 
-    i1, i2, i3 = _numpy.meshgrid(range(120), range(120), range(120), indexing="ij")
+    i1, i2, i3 = _numpy.meshgrid(range(120), range(120), range(120),
+                                 indexing="ij")
     all_i1 = i1[mask]
     all_i2 = i2[mask]
     all_i3 = i3[mask]
     return _numpy.stack((all_i1, all_i2, all_i3))
+
 
 def _face_indices(allow_cached=True):
     if not allow_cached:
@@ -199,27 +241,30 @@ def _face_indices(allow_cached=True):
 
 def _cell_indices_backend():
     verts = _base_vertices()
-    products = _numpy.linalg.norm(verts[:, _numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :] +
-                                  verts[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis, :] +
-                                  verts[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis, :] +
-                                  verts[_numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :, :], axis=4)
+    products = _numpy.linalg.norm(
+        verts[:, _numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :] +
+        verts[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis, :] +
+        verts[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis, :] +
+        verts[_numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :, :], axis=4
+    )
     mask_1d = _numpy.arange(120)
     mask = ((mask_1d[_numpy.newaxis, _numpy.newaxis, _numpy.newaxis, :] >
-             mask_1d[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis]) * 
+             mask_1d[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis]) *
             (mask_1d[_numpy.newaxis, _numpy.newaxis, :, _numpy.newaxis] >
              mask_1d[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis]) *
             (mask_1d[_numpy.newaxis, :, _numpy.newaxis, _numpy.newaxis] >
              mask_1d[:, _numpy.newaxis, _numpy.newaxis, _numpy.newaxis]))
     products *= mask
     mask = products > 3.67
-    # mask = products > 
 
-    i1, i2, i3, i4 = _numpy.meshgrid(range(120), range(120), range(120), range(120), indexing="ij")
+    i1, i2, i3, i4 = _numpy.meshgrid(range(120), range(120),
+                                     range(120), range(120), indexing="ij")
     all_i1 = i1[mask]
     all_i2 = i2[mask]
     all_i3 = i3[mask]
     all_i4 = i4[mask]
     return _numpy.stack((all_i1, all_i2, all_i3, all_i4))
+
 
 def _cell_indices(allow_cached=True):
     if not allow_cached:
@@ -228,7 +273,7 @@ def _cell_indices(allow_cached=True):
         _create_and_save_data()
     with _h5py.File(DATA_FILE, "r") as file_handle:
         return file_handle["cell_indices"][...]
-    
+
 
 def _check_rot(rot):
     for r in rot:
@@ -251,7 +296,7 @@ def rotation_sampling(n):
     for v in verts:
         if _check_rot(v):
             all_points.append(v)
-    
+
     for v1, v2 in zip(*edges):
         for i in range(1, n):
             new_point = (verts[v1] + (verts[v2]-verts[v1]) * (i/n))
@@ -259,16 +304,19 @@ def rotation_sampling(n):
                 all_points.append(new_point)
 
     for v1, v2, v3 in zip(*faces):
-        for i1, i2 in _itertools.product(range(1, n), range(1, n)):
+        for i1, i2 in _itertools.product(range(1, n),
+                                         range(1, n)):
             if i1 + i2 < n:
                 new_point = (verts[v1] +
                              (verts[v2] - verts[v1]) * (i1/n) +
                              (verts[v3] - verts[v1]) * (i2/n))
                 if _check_rot(new_point):
                     all_points.append(new_point)
-    
+
     for v1, v2, v3, v4 in zip(*cells):
-        for i1, i2, i3 in _itertools.product(range(1, n), range(1, n), range(1, n)):
+        for i1, i2, i3 in _itertools.product(range(1, n),
+                                             range(1, n),
+                                             range(1, n)):
             if i1 + i2 + i3 < n:
                 new_point = (verts[v1] +
                              (verts[v2]-verts[v1]) * (i1/n) +
@@ -280,4 +328,3 @@ def rotation_sampling(n):
     all_points = _numpy.array(all_points)
     all_points /= _numpy.linalg.norm(all_points, axis=1)[:, _numpy.newaxis]
     return all_points
-    
