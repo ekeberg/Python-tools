@@ -58,9 +58,6 @@ def local_rotations(angle_max, angle_step):
     origin = region[0]
     directions = (_numpy.array(region[1:]) - origin)*golden_ratio
 
-    angle_max = 0.5
-    angle_step = 0.05
-
     cutoff_radius = _numpy.sqrt(1. - _numpy.cos(angle_max/2.)**2)
     step_size = _numpy.sqrt(1. - _numpy.cos(angle_step/2.)**2)
 
