@@ -1,9 +1,13 @@
-"""Module to create point coordinates that sample the surface of a sphere close to uniformly.
-Also contains functions to generate face and edge coordinates of an icosahedron."""
+"""Module to create point coordinates that sample the surface of a
+sphere close to uniformly.  Also contains functions to generate face
+and edge coordinates of an icosahedron.
+"""
 import numpy as _numpy
 import itertools as _itertools
 
+
 _PHI = (1.+_numpy.sqrt(5))/2.
+
 
 def n_to_points(sampling_n):
     """How many sampling points corresponds to a specific n."""
@@ -11,12 +15,14 @@ def n_to_points(sampling_n):
         raise ValueError("sampling_n must be positive.")
     return 2+10*sampling_n**2
 
+
 def points_to_n(n_points):
     sampling_n = (n_points-2.) / 10.
     if sampling_n != int(sampling_n):
         print(sampling_n)
-        raise ValueError("{0} points does not correspond to any n".format(n_points))
+        raise ValueError(f"{n_points} points does not correspond to any n")
     return int(sampling_n)
+
 
 def icosahedron_vertices():
     """Retern the coordinates of the 12 vertices of an icosahedron
@@ -37,37 +43,48 @@ def icosahedron_vertices():
     coordinates.append(_numpy.array((-_PHI, 0., +1)))
     coordinates.append(_numpy.array((-_PHI, 0., -1)))
 
-    #coordinates = _numpy.array(coordinates)
     return coordinates
 
+
 def icosahedron_edges():
-    """Return a list of all the 30 edges in an icosahedron. Each edge is a two-length tuple
-    with the coordinates of the start and end point."""
+    """Return a list of all the 30 edges in an icosahedron. Each edge is a
+    two-length tuple with the coordinates of the start and end point.
+    """
     coordinates = icosahedron_vertices()
     edges = []
     # for c1 in coordinates:
     #     for c2 in coordinates:
-    for vertex_1, vertex_2 in _itertools.combinations(coordinates, 2):
-        if ((vertex_1 == vertex_2).sum() < 3) and (_numpy.linalg.norm(vertex_1 - vertex_2) < 3.):
-            edges.append((vertex_1, vertex_2))
+    for vertex1, vertex2 in _itertools.combinations(coordinates, 2):
+        if (
+                ((vertex1 == vertex2).sum() < 3) and
+                (_numpy.linalg.norm(vertex1 - vertex2) < 3.)
+        ):
+            edges.append((vertex1, vertex2))
     return edges
 
+
 def icosahedron_faces():
-    """Return a list of all the 20 faces in an icosahedron. Each face is a three-length tuple
-    with the coordinates of the three vertices."""
+    """Return a list of all the 20 faces in an icosahedron. Each face is a
+    three-length tuple with the coordinates of the three vertices.
+    """
     coordinates = icosahedron_vertices()
     face_cutoff = 1.5
     faces = []
-    for vertex_1, vertex_2, vertex_3 in _itertools.combinations(coordinates, 3):
-        if  ((vertex_1 == vertex_2).sum() < 3 and
-             (vertex_1 == vertex_3).sum() < 3 and
-             (vertex_2 == vertex_3).sum() < 3):
-            center = (vertex_1+vertex_2+vertex_3)/3.
-            if  (_numpy.linalg.norm(center-vertex_1) < face_cutoff and
-                 _numpy.linalg.norm(center-vertex_2) < face_cutoff and
-                 _numpy.linalg.norm(center-vertex_3) < face_cutoff):
-                faces.append((vertex_1, vertex_2, vertex_3))
+    for vertex1, vertex2, vertex3 in _itertools.combinations(coordinates, 3):
+        if (
+                (vertex1 == vertex2).sum() < 3 and
+                (vertex1 == vertex3).sum() < 3 and
+                (vertex2 == vertex3).sum() < 3
+        ):
+            center = (vertex1 + vertex2 + vertex3) / 3.
+            if (
+                    _numpy.linalg.norm(center-vertex1) < face_cutoff and
+                    _numpy.linalg.norm(center-vertex2) < face_cutoff and
+                    _numpy.linalg.norm(center-vertex3) < face_cutoff
+            ):
+                faces.append((vertex1, vertex2, vertex3))
     return faces
+
 
 def sphere_sampling(n):
     """Return a sampling on the sphere based on an icosahedron with a fine
@@ -105,7 +122,8 @@ def sphere_sampling(n):
                     point = origin + i/float(n)*base_1 + j/float(n)*base_2
                     face_points.append(point)
 
-    full_list = [_numpy.array(c) for c in coordinates] + edge_points + face_points
-    normalized_list = [l/_numpy.linalg.norm(l) for l in full_list]
+    full_list = ([_numpy.array(c) for c in coordinates]
+                 + edge_points
+                 + face_points)
+    normalized_list = [p/_numpy.linalg.norm(p) for p in full_list]
     return normalized_list
-

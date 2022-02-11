@@ -1,4 +1,5 @@
-"""X-ray material properties. Calculate cross section, attenuation length and more."""
+"""X-ray material properties. Calculate cross section, attenuation
+length and more."""
 import sys
 import numpy as _numpy
 import pickle as _pickle
@@ -6,14 +7,18 @@ import os as _os
 from . import conversions as _conversions
 from . import constants as _constants
 
+
 if sys.version_info >= (3, 0):
     pickle_arguments = {"encoding": "latin1"}
 else:
     pickle_arguments = {}
 
-with open(_os.path.join(_os.path.split(__file__)[0], "elements.dat"), "rb") as _ELEMENTS_FILE:
-    ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE, **pickle_arguments)
+data_file = _os.path.join(_os.path.split(__file__)[0], "elements.dat")
+with open(data_file, "rb") as _ELEMENTS_FILE:
+    ATOMIC_MASS, SCATTERING_FACTORS = _pickle.load(_ELEMENTS_FILE,
+                                                   **pickle_arguments)
 ELEMENTS = list(ATOMIC_MASS.keys())
+
 
 class ChemicalComposition(object):
     """This class contains a set of relative abundances of materials."""
@@ -32,7 +37,8 @@ class ChemicalComposition(object):
         return self._elements
 
     def element_ratio_sum(self):
-        """Returns the sum of all relative ratios of elements (not relative masses)"""
+        """Returns the sum of all relative ratios of elements (not
+        relative masses)"""
         return sum(self._elements.values())
 
     def element_mass_ratios(self):
@@ -43,13 +49,15 @@ class ChemicalComposition(object):
         return mass_ratios
 
     def element_mass_ratio_sum(self):
-        """Returns the sum of all relative mass ratios returned bu element_mass_ratios()"""
+        """Returns the sum of all relative mass ratios returned bu
+        element_mass_ratios()"""
         mass_ratios = self.element_mass_ratios()
         return sum(mass_ratios.values())
 
 
 class Material(object):
-    """Contains both the density and the chemical composition of the material"""
+    """Contains both the density and the chemical composition of the
+    material"""
     def __init__(self, density, **kwargs):
         self._density = density
         self._chemical_composition = ChemicalComposition(**kwargs)
@@ -59,7 +67,8 @@ class Material(object):
         return self._chemical_composition.element_ratios()
 
     def element_ratio_sum(self):
-        """Returns the sum of all relative ratios of elements (not relative masses)"""
+        """Returns the sum of all relative ratios of elements (not relative
+        masses)"""
         return self._chemical_composition.element_ratio_sum()
 
     def element_mass_ratios(self):
@@ -67,7 +76,8 @@ class Material(object):
         return self._chemical_composition.element_mass_ratios()
 
     def element_mass_ratio_sum(self):
-        """Returns the sum of all relative mass ratios returned bu element_mass_ratios()"""
+        """Returns the sum of all relative mass ratios returned bu
+        element_mass_ratios()"""
         return self._chemical_composition.element_mass_ratio_sum()
 
     def material_density(self):
@@ -76,12 +86,16 @@ class Material(object):
 
     def __repr__(self):
         ratios = self.element_ratios()
-        return ' '.join([i+":"+str(ratios[i]) for i in ratios]) + ", density: " + str(self._density)
+        return (' '.join([i+":"+str(ratios[i]) for i in ratios])
+                + ", density: "
+                + str(self._density))
 
-MATERIALS = {"protein" : Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
-             "water" : Material(1000, O=1, H=2),
-             "virus" : Material(1455, H=72.43, C=47.52, N=13.55, O=17.17, P=1.11, S=0.7),
-             "cell" : Material(1000, H=23, C=3, N=1, O=10, P=0, S=1),
+
+MATERIALS = {"protein": Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
+             "water": Material(1000, O=1, H=2),
+             "virus": Material(1455, H=72.43, C=47.52, N=13.55, O=17.17,
+                               P=1.11, S=0.7),
+             "cell": Material(1000, H=23, C=3, N=1, O=10, P=0, S=1),
              "silicon_nitride": Material(3440, Si=3, N=4),
              "air": Material(1.225, N=78, O=21, Ar=1),
              "gold": Material(19300, Au=1),
@@ -90,16 +104,22 @@ MATERIALS = {"protein" : Material(1350, H=86, C=52, N=13, O=15, P=0, S=3),
 
 
 def get_scattering_factor(element, photon_energy):
+    """get the scattering factor for an element through linear
+    interpolation. Photon energy is given in eV.
     """
-    get the scattering factor for an element through linear interpolation. Photon energy is given in eV.
-    """
-    f_1 = _numpy.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 1])
-    f_2 = _numpy.interp(photon_energy, SCATTERING_FACTORS[element][:, 0], SCATTERING_FACTORS[element][:, 2])
-    #return [f1,f2]
+    f_1 = _numpy.interp(photon_energy,
+                        SCATTERING_FACTORS[element][:, 0],
+                        SCATTERING_FACTORS[element][:, 1])
+    f_2 = _numpy.interp(photon_energy,
+                        SCATTERING_FACTORS[element][:, 0],
+                        SCATTERING_FACTORS[element][:, 2])
     return f_1+f_2*1.j
 
-def get_scattering_power(photon_energy, material, complex_scattering_factor=False):
-    """Returns the scattering factor for a volume of 1 m^3 of the material"""
+
+def get_scattering_power(photon_energy, material,
+                         complex_scattering_factor=False):
+    """Returns the scattering factor for a volume of 1 m^3 of the
+    material"""
     average_density = 0.0
     total_atomic_ammounts = 0.0
     f_1 = 0.0
@@ -110,8 +130,6 @@ def get_scattering_power(photon_energy, material, complex_scattering_factor=Fals
         total_atomic_ammounts += value
         # sum up average scattering factor
         scattering_factor = get_scattering_factor(element, photon_energy)
-#        f_1 += value*scattering_factor[0]
-#        f_2 += value*scattering_factor[1]
         f_1 += value*_numpy.real(scattering_factor)
         f_2 += value*_numpy.imag(scattering_factor)
 
@@ -119,13 +137,12 @@ def get_scattering_power(photon_energy, material, complex_scattering_factor=Fals
     f_1 /= total_atomic_ammounts
     f_2 /= total_atomic_ammounts
 
-    #n0 = material.material_density()/average_density
     refractive_index = material.material_density()/average_density
-    #return [refractive_index*f1,n0*f2,n0]
     if complex_scattering_factor:
         return refractive_index*f_1 + 1.0j*refractive_index*f_2
     else:
         return refractive_index*f_1
+
 
 def get_attenuation_length(photon_energy, material):
     """Returns the attenuation length for the material in meters"""
@@ -142,13 +159,17 @@ def get_attenuation_length(photon_energy, material):
     average_density /= total_atomic_ammounts
     f_2 /= total_atomic_ammounts
 
-    return 1.0/(2.0*_constants.re*_conversions.ev_to_nm(photon_energy)*
-                1e-9*f_2*material.material_density()/average_density)
+    return 1.0 / (2 * _constants.re*_conversions.ev_to_nm(photon_energy)
+                  * 1e-9 * f_2 * material.material_density()
+                  / average_density)
+
 
 def get_transmission(photon_energy, material, thickness):
-    """Return the transmission of the given material of the given thickness."""
+    """Return the transmission of the given material of the given
+    thickness."""
     attenuation_length = get_attenuation_length(photon_energy, material)
     return _numpy.exp(-thickness / attenuation_length)
+
 
 def get_index_of_refraction(photon_energy, material):
     """Returns the refractive index of the material"""
@@ -169,26 +190,24 @@ def get_index_of_refraction(photon_energy, material):
 
     refractive_index = material.material_density()/average_density
 
-    return 1. - refractive_index*_constants.re*_conversions.ev_to_m(photon_energy)**2/(2.*_numpy.pi)*(f_1+1.j*f_2)
+    return 1. - (refractive_index
+                 * _constants.re
+                 * _conversions.ev_to_m(photon_energy)**2
+                 / (2.*_numpy.pi)
+                 * (f_1+1.j*f_2))
+
 
 def get_phase_shift(photon_energy, material, distance):
     """Returns the phase shift that that amount of material will cause."""
     index_of_refraction = get_index_of_refraction(photon_energy, material)
-    phase_shift_per_period = (1.-_numpy.real(index_of_refraction)) * (2.*_numpy.pi)
-    number_of_wavelengths = float(distance) / (_conversions.ev_to_m(photon_energy) *
-                                               _numpy.real(index_of_refraction))
+    phase_shift_per_period = ((1 - _numpy.real(index_of_refraction))
+                              * (2.*_numpy.pi))
+    number_of_wavelengths = (float(distance)
+                             / _conversions.ev_to_m(photon_energy)
+                             * _numpy.real(index_of_refraction))
     total_phase_shift = number_of_wavelengths*phase_shift_per_period
     return total_phase_shift
-    
-# class Atom5G(object):
-#     """This class is used as a container for the CCP4 scattering factors.
-#     They are 2D scattering factors using the 5 gaussian model at the Cu K-alpha
-#     wavelength (1.5418 A)."""
-#     def __init__(self, element):
-#         self.element = element
-#         self.coefs_a = None
-#         self.coefs_b = None
-#         self.coefs_c = None
+
 
 def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
     """Evaluate the scattering factor. s should be given in m"""
@@ -200,6 +219,7 @@ def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
              atom["a"][3]*_numpy.exp(-atom["b"][3]*scattering_vector**2)) *
             _numpy.exp(-b_factor*scattering_vector**2/4.) + atom["c"])
 
+
 def read_atomsf():
     """Read pickled element properties"""
     file_name = _os.path.join(_os.path.split(__file__)[0], "atomsf.dat")
@@ -207,7 +227,9 @@ def read_atomsf():
         atomsf_data = _pickle.load(_atomsf_file, **pickle_arguments)
     return atomsf_data
 
+
 ATOMSF_DATA = read_atomsf()
+
 
 def write_atomsf(data_dict):
     """Pickle element properties (read by parse_atomsf)"""
@@ -217,17 +239,17 @@ def write_atomsf(data_dict):
             _pickle.dump(data_dict, _atomsf_file, protocol=2)
             _pickle.dump(data_dict, _atomsf_file)
 
+
 def parse_atomsf(file_path='atomsf.lib'):
     """Read atomsf.lib libraray"""
     file_handle = open(file_path)
     file_lines = file_handle.readlines()
     data_lines = [line for line in file_lines if line[:2] != 'AD']
-    
+
     data_dict = {}
 
     for i in range(len(data_lines)//5):
         element = data_lines[i*5].split()[0]
-        #atom_cont = Atom5G(element)
         atom_cont = {}
 
         variables = _numpy.float32(data_lines[i*5+1].split())
@@ -248,6 +270,7 @@ def parse_atomsf(file_path='atomsf.lib'):
         data_dict[element] = atom_cont
 
     return data_dict
+
 
 def structure_factor(element, q, debye_waller=0.):
     """q and debye_waller is given in m^-1"""

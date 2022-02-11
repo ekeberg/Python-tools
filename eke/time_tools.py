@@ -1,10 +1,12 @@
-"""Toosl dealing with time, such as timing a function and plotting a progress bar."""
+"""Toosl dealing with time, such as timing a function and plotting a
+progress bar."""
 import time as _time
 import datetime as _datetime
 import sys as _sys
 from collections import defaultdict as _defaultdict
 import inspect as _inspect
 import functools as _functools
+
 
 class Progress(object):
     """Simple progress bar implementation"""
@@ -30,22 +32,28 @@ class Progress(object):
         _sys.stdout.write("\n")
 
     def iteration_completed(self):
-        """Call after every iteration. This function plots the otuput if a significant
-        time passed since last plot."""
+        """Call after every iteration. This function plots the otuput if a
+        significant time passed since last plot.
+        """
         self._tasks_completed += 1
         new_time = _time.time()
         self._last_iteration_time = new_time - self._time
         self._time = new_time
-        self._expected_time_left = self._last_iteration_time * (self._number_of_iterations -
-                                                                self._tasks_completed)
+        self._expected_time_left = (self._last_iteration_time
+                                    * (self._number_of_iterations -
+                                       self._tasks_completed))
+
     def print_message(self, always_output=False):
         new_time = self._time
-        if always_output or new_time > (self._last_output_time + self._max_output_period):
+        if always_output or new_time > (self._last_output_time
+                                        + self._max_output_period):
             bar_length = 50
-            done_length = int(float(self._tasks_completed) / float(self._number_of_iterations) * bar_length)
+            done_length = int(float(self._tasks_completed)
+                              / float(self._number_of_iterations)
+                              * bar_length)
             not_done_length = bar_length - done_length
-            _sys.stdout.write("\r[{done}{not_done}] {time_left} seconds left".format(done="#"*done_length, not_done="-"*not_done_length,
-                                                                                     time_left=int(self._expected_time_left)))
+            _sys.stdout.write(f"\r[{'#'*done_length}{'-'*not_done_length}] "
+                              f"{int(self._expected_time_left)} seconds left")
             _sys.stdout.flush()
             self._last_output_time = new_time
             self._last_output_index = self._tasks_completed

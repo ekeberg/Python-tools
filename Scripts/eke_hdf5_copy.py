@@ -1,4 +1,3 @@
-import numpy
 import h5py
 import argparse
 import re
@@ -11,16 +10,22 @@ parser.add_argument("--overwrite", type=bool, default=False)
 
 args = parser.parse_args()
 
-#print(args.input_file)
-input_file, input_key = re.search("^(.+\.h5)(/.+)?$", args.input_file).groups()
-output_file, output_key = re.search("^(.+\.h5)(/.+)?$", args.output_file).groups()
+file_search_pattern = r"^(.+\.h5)(/.+)?$"
+
+match = re.search(file_search_pattern, args.input_file)
+input_file, input_key = match.groups()
+match = re.search(file_search_pattern, args.output_file)
+output_file, output_key = match.groups()
 
 if input_key is None:
-    raise ValueError(f"Must provide a location in the hdf5 file: file.h5/location")
+    raise ValueError("Must provide a location in the hdf5 file: "
+                     "file.h5/location")
+
 
 if output_key is None:
     output_key = input_key
-    
+
+
 # Read data
 with h5py.File(input_file, "r") as file_handle:
     data_set = file_handle[input_key]
@@ -29,12 +34,13 @@ with h5py.File(input_file, "r") as file_handle:
     else:
         input_data = data_set[...]
 
-        
+
 with h5py.File(output_file, "a") as file_handle:
     if output_key in file_handle.keys():
         if args.overwrite:
             del file_handle[output_key]
         else:
-            raise ValueError(f"Dataset or group {output_key} already exist in {output_file}")
+            raise ValueError(f"Dataset or group {output_key} already exist "
+                             f"in {output_file}")
     else:
         file_handle.create_dataset(output_key, data=input_data)

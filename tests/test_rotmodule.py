@@ -1,20 +1,19 @@
 from eke import rotmodule
-from eke import compare_rotations
 import numpy
 import unittest
+
 
 class TestRotmodule(unittest.TestCase):
     def test_random(self):
         """Check that all quaternions have non-negative x-component and that
         the average is close to the x-axis"""
         nrots = 100
-        #rots = numpy.array([rotmodule.random() for _ in range(nrots)])
         rots = rotmodule.random(number_of_quaternions=nrots)
         self.assertGreaterEqual(rots[:, 0].min(), 0)
         numpy.testing.assert_array_almost_equal(rots.mean(axis=0)[1:],
                                                 numpy.array((0., 0., 0.,)),
                                                 decimal=1)
-        
+
     def test_from_angle_and_dir(self):
         rot = rotmodule.from_angle_and_dir(0, (1, 0, 0))
         numpy.testing.assert_array_almost_equal(
@@ -32,7 +31,7 @@ class TestRotmodule(unittest.TestCase):
         # Array
         rots = rotmodule.random(number_of_quaternions=10)
         inv_1 = rotmodule.inverse(rots)
-        inv_2 = rots.copy();
+        inv_2 = rots.copy()
         inv_2[:, 0] = -inv_2[:, 0]
         rotmodule.fix_sign(inv_2)
         numpy.testing.assert_array_almost_equal(inv_1, inv_2)
@@ -85,7 +84,7 @@ class TestRotmodule(unittest.TestCase):
         self.assertAlmostEqual(rotmodule.quaternion_to_angle(
             rotmodule.relative(rot_1, rot_2)),
                          2.*angle)
-        
+
     def test_rotate_array(self):
         # Single rot, Single point
         rot = rotmodule.from_angle_and_dir(numpy.pi/2, (1., 0., 0.))
@@ -97,11 +96,11 @@ class TestRotmodule(unittest.TestCase):
         rot = rotmodule.from_angle_and_dir(numpy.pi/2, (1., 0., 0.))
         points = numpy.zeros((10, 3))
         points[:, 1] = numpy.arange(10)
-        rotated = rotmodule.rotate(rot, points)
+        rotated = rotmodule.rotate(rot, points.T).T
         target = numpy.zeros((10, 3))
         target[:, 2] = numpy.arange(10)
         numpy.testing.assert_array_almost_equal(rotated, target)
 
-        
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,7 @@
 import importlib.util as _util
 import os as _os
 
+
 def import_module(filename):
     """Load and return a specific python file as a module, even if
     the file is not in your pythonpath or current dir"""
@@ -9,6 +10,7 @@ def import_module(filename):
     module = _util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
 
 def module_path(module_name):
     spec = _util.find_spec(module_name)

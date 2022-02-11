@@ -3,8 +3,8 @@
 from __future__ import print_function
 import numpy
 import spimage
-import sys
 from eke import image_manipulation
+
 
 def crop_image(in_file, out_file, side, center=None):
     """Function to crop an h5 image and pad with zeros around it"""
@@ -20,8 +20,10 @@ def crop_image(in_file, out_file, side, center=None):
         img = spimage.sp_image_shift(img)
 
     cropped = spimage.sp_image_alloc(side, side, 1)
-    cropped.image[:,:] = image_manipulation.crop_and_pad(img.image, center, side)
-    cropped.mask[:,:] = image_manipulation.crop_and_pad(img.mask, center, side)
+    cropped.image[:, :] = image_manipulation.crop_and_pad(
+        img.image, center, side)
+    cropped.mask[:, :] = image_manipulation.crop_and_pad(
+        img.mask, center, side)
 
     if shifted:
         cropped = spimage.sp_image_shift(cropped)
@@ -33,6 +35,7 @@ def crop_image(in_file, out_file, side, center=None):
 
     print("end")
 
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser()
@@ -40,13 +43,15 @@ if __name__ == "__main__":
     parser.add_argument("outfile", help="Output file")
     parser.add_argument("side", type=int, help="New side in pixels.")
     parser.add_argument("-c", "--center", default=None,
-                      help="Image center to crop around. If not given the center specified in the image is used.")
+                        help="Image center to crop around. If not given the "
+                        "center specified in the image is used.")
     args = parser.parse_args()
 
     if args.center:
         center = args.center.split('x')
         if len(center) != 2:
-            raise ValueError("crop_image: Center must be of the form form NxN.")
+            raise ValueError("crop_image: Center must be of the form form "
+                             "NxN.")
         center = numpy.array([float(center[0]), float(center[1])])
     else:
         center = None

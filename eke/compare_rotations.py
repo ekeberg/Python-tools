@@ -1,6 +1,7 @@
 import numpy as _numpy
 import itertools as _itertools
 from . import rotmodule as _rotmodule
+from . import refactor
 
 
 def relative_orientation_error(correct_rotations,
@@ -19,58 +20,75 @@ def relative_orientation_error(correct_rotations,
             index_2 = (index_1 + 1) % number_of_rotations
 
         if shallow_ewald:
-            friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1)),
-                                _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))]
+            friedel_rotation = [
+                _rotmodule.from_angle_and_dir(0, (0, 0, 1)),
+                _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))
+            ]
         else:
-            friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1))]
+            friedel_rotation = [
+                _rotmodule.from_angle_and_dir(0, (0, 0, 1))
+            ]
 
         comparison_results = []
         for f1 in friedel_rotation:
             for f2 in friedel_rotation:
                 for s in symmetry_operations:
-                    this_rot = _rotmodule.multiply(_rotmodule.inverse(correct_rotations[index_2]),
-                                                   _rotmodule.inverse(s),
-                                                   correct_rotations[index_1],
-                                                   _rotmodule.inverse(f1),
-                                                   _rotmodule.inverse(recovered_rotations[index_1]),
-                                                   recovered_rotations[index_2],
-                                                   f2)
+                    this_rot = _rotmodule.multiply(
+                        _rotmodule.inverse(correct_rotations[index_2]),
+                        _rotmodule.inverse(s),
+                        correct_rotations[index_1],
+                        _rotmodule.inverse(f1),
+                        _rotmodule.inverse(recovered_rotations[index_1]),
+                        recovered_rotations[index_2],
+                        f2
+                    )
 
                     comparison_results.append(_rotmodule.angle(this_rot))
         average_angle += min(comparison_results)
     average_angle /= number_of_samples
     return average_angle
 
+
 def average_relative_orientation(correct_rotations,
                                  recovered_rotations,
                                  symmetry_operations=((1., 0., 0., 0.), ),
                                  shallow_ewald=False):
     number_of_patterns = len(recovered_rotations)
-    average_angular_diff = 0.
     symmetry_operations = _numpy.array(symmetry_operations)
     if shallow_ewald:
-        friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1)),
-                            _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))]
+        friedel_rotation = [
+            _rotmodule.from_angle_and_dir(0, (0, 0, 1)),
+            _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))
+        ]
     else:
-        friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1))]
+        friedel_rotation = [
+            _rotmodule.from_angle_and_dir(0, (0, 0, 1))
+        ]
 
-    all_symmetries = list(_itertools.product(symmetry_operations, friedel_rotation))
-        
+    all_symmetries = list(_itertools.product(symmetry_operations,
+                                             friedel_rotation))
+
     relative_rotations = _numpy.zeros((recovered_rotations.shape[0], 4))
-    symmetry_version = _numpy.zeros(recovered_rotations.shape[0], dtype=_numpy.int32)
+    symmetry_version = _numpy.zeros(recovered_rotations.shape[0],
+                                    dtype=_numpy.int32)
 
-    relative_rotations[0] = _rotmodule.multiply(correct_rotations[0], _rotmodule.inverse(recovered_rotations[0]))
+    relative_rotations[0] = _rotmodule.multiply(
+        correct_rotations[0],
+        _rotmodule.inverse(recovered_rotations[0])
+    )
     symmetry_version[0] = 0
 
     for index in range(1, number_of_patterns):
         relative_rot_sym = []
         for s, f in all_symmetries:
-            this_relative_rot = _rotmodule.multiply(s,
-                                                    correct_rotations[index],
-                                                    _rotmodule.inverse(f),
-                                                    _rotmodule.inverse(recovered_rotations[index]))
+            this_relative_rot = _rotmodule.multiply(
+                s,
+                correct_rotations[index],
+                _rotmodule.inverse(f),
+                _rotmodule.inverse(recovered_rotations[index])
+            )
             relative_rot_sym.append(this_relative_rot)
-        
+
         for this_relative_rot_sym in relative_rot_sym:
             _rotmodule.fix_sign(this_relative_rot_sym)
 
@@ -79,8 +97,10 @@ def average_relative_orientation(correct_rotations,
         for sym_index, this_relative_rot in enumerate(relative_rot_sym):
             # Try both positive and negative version of the rotation
             # since we don't know which one matches
-            fit_quality_1 = _numpy.linalg.norm(relative_rotations[0] - this_relative_rot)
-            fit_quality_2 = _numpy.linalg.norm(relative_rotations[0] + this_relative_rot)
+            fit_quality_1 = _numpy.linalg.norm(relative_rotations[0] -
+                                               this_relative_rot)
+            fit_quality_2 = _numpy.linalg.norm(relative_rotations[0] +
+                                               this_relative_rot)
             if fit_quality_1 < fit_quality_2:
                 fit_quality[sym_index] = fit_quality_1
                 flip[sym_index] = False
@@ -107,31 +127,41 @@ def absolute_orientation_error(correct_rotations,
                                shallow_ewald=False,
                                return_individual_errors=False):
     number_of_patterns = len(recovered_rotations)
-    average_angular_diff = 0.
     symmetry_operations = _numpy.array(symmetry_operations)
     if shallow_ewald:
-        friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1)),
-                            _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))]
+        friedel_rotation = [
+            _rotmodule.from_angle_and_dir(0, (0, 0, 1)),
+            _rotmodule.from_angle_and_dir(_numpy.pi, (0, 0, 1))
+        ]
     else:
-        friedel_rotation = [_rotmodule.from_angle_and_dir(0, (0, 0, 1))]
+        friedel_rotation = [
+            _rotmodule.from_angle_and_dir(0, (0, 0, 1))
+        ]
 
-    all_symmetries = list(_itertools.product(symmetry_operations, friedel_rotation))
-        
+    all_symmetries = list(_itertools.product(symmetry_operations,
+                                             friedel_rotation))
+
     relative_rotations = _numpy.zeros((recovered_rotations.shape[0], 4))
-    symmetry_version = _numpy.zeros(recovered_rotations.shape[0], dtype=_numpy.int32)
+    symmetry_version = _numpy.zeros(recovered_rotations.shape[0],
+                                    dtype=_numpy.int32)
 
-    relative_rotations[0] = _rotmodule.multiply(correct_rotations[0], _rotmodule.inverse(recovered_rotations[0]))
+    relative_rotations[0] = _rotmodule.multiply(
+        correct_rotations[0],
+        _rotmodule.inverse(recovered_rotations[0])
+    )
     symmetry_version[0] = 0
 
     for index in range(1, number_of_patterns):
         relative_rot_sym = []
         for s, f in all_symmetries:
-            this_relative_rot = _rotmodule.multiply(s,
-                                                    correct_rotations[index],
-                                                    _rotmodule.inverse(f),
-                                                    _rotmodule.inverse(recovered_rotations[index]))
+            this_relative_rot = _rotmodule.multiply(
+                s,
+                correct_rotations[index],
+                _rotmodule.inverse(f),
+                _rotmodule.inverse(recovered_rotations[index])
+            )
             relative_rot_sym.append(this_relative_rot)
-        
+
         for this_relative_rot_sym in relative_rot_sym:
             _rotmodule.fix_sign(this_relative_rot_sym)
 
@@ -140,8 +170,10 @@ def absolute_orientation_error(correct_rotations,
         for sym_index, this_relative_rot in enumerate(relative_rot_sym):
             # Try both positive and negative version of the rotation
             # since we don't know which one matches
-            fit_quality_1 = _numpy.linalg.norm(relative_rotations[0] - this_relative_rot)
-            fit_quality_2 = _numpy.linalg.norm(relative_rotations[0] + this_relative_rot)
+            fit_quality_1 = _numpy.linalg.norm(relative_rotations[0] -
+                                               this_relative_rot)
+            fit_quality_2 = _numpy.linalg.norm(relative_rotations[0] +
+                                               this_relative_rot)
             if fit_quality_1 < fit_quality_2:
                 fit_quality[sym_index] = fit_quality_1
                 flip[sym_index] = False
@@ -160,15 +192,18 @@ def absolute_orientation_error(correct_rotations,
     average_rot = _rotmodule.normalize(average_rot)
 
     diff_angles = _numpy.zeros(number_of_patterns)
-    
+
     for index in range(number_of_patterns):
-        diff_angle = _rotmodule.relative_angle(_rotmodule.multiply(all_symmetries[symmetry_version[index]][0], # s
-                                                                   correct_rotations[index]),
-                                               _rotmodule.multiply(average_rot,
-                                                                   recovered_rotations[index],
-                                                                   all_symmetries[symmetry_version[index]][1])) # f
+        # relative_angle(s, f)
+        diff_angle = _rotmodule.relative_angle(
+            _rotmodule.multiply(all_symmetries[symmetry_version[index]][0],
+                                correct_rotations[index]),
+            _rotmodule.multiply(average_rot,
+                                recovered_rotations[index],
+                                all_symmetries[symmetry_version[index]][1])
+        )
         diff_angles[index] = diff_angle
-        
+
     average_diff = diff_angles.mean()
     if return_individual_errors:
         return diff_angles
@@ -176,8 +211,6 @@ def absolute_orientation_error(correct_rotations,
         return average_diff
 
 
-
-from . import refactor
 get_absolute_orientation_error = refactor.new_to_old(
     absolute_orientation_error,
     "get_absolute_orientation_error")

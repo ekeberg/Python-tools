@@ -1,5 +1,4 @@
 import os
-#from distutils.core import setup
 from setuptools import setup
 
 
@@ -54,18 +53,19 @@ scripts = ["eke_attenuation_length.py",
            "eke_view_pnccd.py",
            "eke_pdb_fix_element.py",
            "eke_hdf5_copy.py",
-           "eke_hdf5_del.py"]
+           "eke_hdf5_del.py",
+           "eke_plot_3d.py",
+           "eke_plot_radial_average.py"]
 
 scripts_dir = "Scripts"
 scripts_full_path = [os.path.join(scripts_dir, this_script)
                      for this_script in scripts]
 
 
-setup(name = "python-tools",
-      version = "1.0",
-      author = "Tomas Ekeberg",
+setup(name="python-tools",
+      version="1.0",
+      author="Tomas Ekeberg",
       packages=["eke"],
       package_data={"eke": ["eke/atomsf.dat", "eke/elements.dat"]},
       include_package_data=True,
       scripts=scripts_full_path)
-

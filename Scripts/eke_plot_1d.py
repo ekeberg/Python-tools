@@ -3,8 +3,9 @@ import sys
 import pylab
 import argparse
 
+
 def plot_1d(arguments):
-    if isinstance(arguments,str):
+    if isinstance(arguments, str):
         arguments = [arguments]
     if len(arguments) < 1:
         print("Need at least one data set")
@@ -16,18 +17,17 @@ def plot_1d(arguments):
     for f in arguments:
         try:
             data = pylab.loadtxt(f)
-        except:
+        except IOError:
             print("Error %s is not a readable file.\n" % (f))
             sys.exit(1)
 
-        #data = pylab.transpose(data)
-
-        ax.plot(data,label=f)
+        ax.plot(data, label=f)
 
     if len(arguments) > 1:
         ax.legend()
 
     return data
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

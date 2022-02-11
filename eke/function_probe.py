@@ -1,12 +1,12 @@
-"""
-To probe a functions variables, create a container object and pass it as a variable
-to the function. Also add the following line at the point you which to probe.
-"exec <Container>._get_code("<Container>")"
+"""To probe a functions variables, create a container object and pass
+it as a variable to the function. Also add the following line at the
+point you which to probe.  "exec <Container>._get_code("<Container>")"
 """
 
 
 class Container(object):
-    """Stores function variables to make them accessable outside the function"""
+    """Stores function variables to make them accessable outside the
+    function"""
     def __init__(self):
         pass
 
@@ -26,4 +26,3 @@ if %s:
         variables = self.__dict__.copy()
         for variable in variables:
             exec("del self.%s" % variable)
-

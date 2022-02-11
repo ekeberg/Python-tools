@@ -22,6 +22,7 @@ if variant == 'PySide':
     from PySide import QtGui, QtCore, QtOpenGL
     # This will be passed on to new versions of matplotlib
     os.environ['QT_API'] = 'pyside'
+
     def QtLoadUI(uifile):
         from PySide import QtUiTools
         loader = QtUiTools.QUiLoader()
@@ -46,6 +47,7 @@ elif variant == 'PyQt4':
     QtCore.Slot = QtCore.pyqtSlot
     QtCore.QString = str
     os.environ['QT_API'] = 'pyqt'
+
     def QtLoadUI(uifile):
         from PyQt4 import uic
         return uic.loadUi(uifile)
@@ -65,6 +67,7 @@ elif variant == 'PyQt5':
     QtCore.Slot = QtCore.pyqtSlot
     QtCore.QString = str
     os.environ['QT_API'] = 'pyqt'
+
     def QtLoadUI(uifile):
         from PyQt5 import uic
         return uic.loadUi(uifile)

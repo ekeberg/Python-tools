@@ -2,6 +2,7 @@ from eke import dft
 import numpy
 import unittest
 
+
 class TestDft(unittest.TestCase):
     def test_dft_1d(self):
         image_side = 10
@@ -10,7 +11,7 @@ class TestDft(unittest.TestCase):
         dft_matrix = dft.dft_1d(image_side)
         ft_new = dft_matrix.dot(sample).squeeze()
         numpy.testing.assert_array_almost_equal(ft_true, ft_new, decimal=6)
-        
+
     def test_dft_2d(self):
         shape = (10, 20)
         sample = numpy.random.random(shape)
@@ -43,7 +44,8 @@ class TestDft(unittest.TestCase):
         dft_full = dft.dft(*shape)
         dft_partial = dft.dft_masked(mask_real, mask_fourier)
         numpy.testing.assert_array_almost_equal(
-            dft_partial, dft_full[mask_fourier.flatten()][:, mask_real.flatten()])
+            dft_partial,
+            dft_full[mask_fourier.flatten()][:, mask_real.flatten()])
 
     def test_dft_masked_for_3d(self):
         shape = (5, 10, 15)
@@ -52,7 +54,8 @@ class TestDft(unittest.TestCase):
         dft_full = dft.dft(*shape)
         dft_partial = dft.dft_masked(mask_real, mask_fourier)
         numpy.testing.assert_array_almost_equal(
-            dft_partial, dft_full[mask_fourier.flatten()][:, mask_real.flatten()])
+            dft_partial,
+            dft_full[mask_fourier.flatten()][:, mask_real.flatten()])
 
     def test_dft_masked_real_for_3d(self):
         shape = (5, 10, 15)
@@ -65,9 +68,12 @@ class TestDft(unittest.TestCase):
         dft_partial_real = dft_partial[0::2, :]
         dft_partial_imag = dft_partial[1::2, :]
         numpy.testing.assert_array_almost_equal(
-            dft_partial_real, dft_full_real[mask_fourier.flatten()][:, mask_real.flatten()])
+            dft_partial_real,
+            dft_full_real[mask_fourier.flatten()][:, mask_real.flatten()])
         numpy.testing.assert_array_almost_equal(
-            dft_partial_imag, dft_full_imag[mask_fourier.flatten()][:, mask_real.flatten()])
+            dft_partial_imag,
+            dft_full_imag[mask_fourier.flatten()][:, mask_real.flatten()])
+
 
 if __name__ == "__main__":
     unittest.main()
