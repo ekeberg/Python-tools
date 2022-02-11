@@ -34,6 +34,7 @@ parser.add_argument("--min", type=float,
                     help="Lower limit of plot values")
 parser.add_argument("--max", type=float,
                     help="Upper limit of plot values")
+parser.add_argument("--slice", type=str, default=None)
 
 args = parser.parse_args()
 
@@ -44,8 +45,13 @@ if input_key is None:
     sys.exit(1)
 
 with h5py.File(input_file, "r") as file_handle:
-    data = file_handle[input_key][...]
-
+    # data = file_handle[input_key][...]
+    data_set = file_handle[input_key]
+    if args.slice:
+        data = eval(f"data_set[{args.slice}]")
+    else:
+        data = data_set[...]
+    
 
 show_colorbar = True
 
