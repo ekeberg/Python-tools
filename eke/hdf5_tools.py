@@ -41,6 +41,6 @@ def read_dataset(filename, loc):
         array = file_handle[loc][...]
     return array
 
-def write_datset(filename, loc, data):
+def write_dataset(filename, loc, data):
     with _h5py.File(filename, "a") as file_handle:
         file_handle.create_dataset(loc, data=data)
