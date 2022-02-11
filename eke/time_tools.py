@@ -2,6 +2,9 @@
 import time as _time
 import datetime as _datetime
 import sys as _sys
+from collections import defaultdict as _defaultdict
+import inspect as _inspect
+import functools as _functools
 
 class Progress(object):
     """Simple progress bar implementation"""
@@ -86,3 +89,47 @@ class StopWatch(object):
             return "{0} ms".format(time_diff*1000.)
         else:
             return str(_datetime.timedelta(seconds=time_diff))
+
+class Timer:
+    def __init__(self):
+        self._records = _defaultdict(lambda: 0)
+        self._start = _defaultdict(lambda: None)
+    
+    def start(self, name):
+        self._start[name] = _time.time()
+
+    def stop(self, name):
+        if self._start[name] is None:
+            raise ValueError(f"Trying to stop inactive timer: {name}")
+        self._records[name] += _time.time() - self._start[name]
+        self._start[name] = None
+
+    def get_total(self):
+        return self._records
+
+    def print(self):
+        print(f"Timing:")
+        for n, v in self.get_total().items():
+            print(f"{n}: {v}")
+
+timer = Timer()
+
+# def timed():
+# def decorator(func):
+def timed(func):
+    func_signature = _inspect.signature(func)
+
+    @_functools.wraps(func)
+    def new_func(*args, **kwargs):
+        bound_arguments_no_default = func_signature.bind(*args, **kwargs)
+        bound_arguments = func_signature.bind(*args, **kwargs)
+        bound_arguments.apply_defaults()
+        args = bound_arguments.args
+        
+        timer.start(func.__name__)
+        ret = func(*args)
+        timer.stop(func.__name__)
+
+        return ret
+    return new_func
+#     return decorator
