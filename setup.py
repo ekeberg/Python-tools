@@ -2,25 +2,6 @@ import os
 from setuptools import setup
 
 
-# modules = ["QtVersions",
-#            "constants",
-#            "conversions",
-#            "do_prtfs",
-#            "elements",
-#            "elser_particles",
-#            "function_probe",
-#            "gui",
-#            "icosahedral_sphere",
-#            "image_manipulation",
-#            "parallel",
-#            "parse_libconfig",
-#            "rotations"
-#            "shell_functions"
-#            "sphelper"
-#            "spimage_tools"
-#            "time_tools"
-#            "tools"
-#            "vtk_tools"]
 scripts = ["eke_attenuation_length.py",
            "eke_center_image.py",
            "eke_copy_final.py",

@@ -4,8 +4,7 @@ import numpy as _numpy
 import scipy as _scipy
 import scipy.interpolate
 
-
-from .QtVersions import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 
 

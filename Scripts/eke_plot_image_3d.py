@@ -5,7 +5,7 @@ import scipy.interpolate
 from eke import sphelper
 import sys
 import argparse
-from eke.QtVersions import QtCore, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 import vtk
 from eke import vtk_tools
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor

@@ -3,7 +3,7 @@ implementation of the Manipulator looks weirt, but it works. Needs non
 integer manipulation.
 
 """
-from .QtVersions import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 import sys as _sys
 
 
