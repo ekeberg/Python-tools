@@ -56,7 +56,8 @@ scripts = ["eke_attenuation_length.py",
            "eke_hdf5_del.py",
            "eke_plot_3d.py",
            "eke_plot_radial_average.py",
-           "eke_pdb_size.py"]
+           "eke_pdb_size.py",
+           "eke_remove_all_but_last.py"]
 
 scripts_dir = "Scripts"
 scripts_full_path = [os.path.join(scripts_dir, this_script)
