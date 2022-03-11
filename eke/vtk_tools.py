@@ -825,12 +825,6 @@ class SynchronizedInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick):
         if not self.GetInteractor().GetShiftKey():
             self._shift_pressed = False
 
-    def call(self, function):
-        def new_function(obj, event):
-            self._render_all()
-            function()
-        return new_function
-
     def add_renderer(self, renderer):
         self._renderers.append(renderer)
 

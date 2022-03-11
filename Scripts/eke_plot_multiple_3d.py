@@ -1,13 +1,34 @@
 #!/usr/bin/env python
 import sys
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtWidgets
 import vtk
 from eke import vtk_tools
 from eke import sphelper
-# from vtk.qt4.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
 from vtk.qt.QVTKRenderWindowInteractor import QVTKRenderWindowInteractor
-from functools import partial
 import argparse
+
+
+class ObjectInteractorStyle(vtk.vtkInteractorStyleTrackballActor):
+    def __init__(self):
+        self.AddObserver("MiddleButtonPressEvent",
+                         self._do_nothing)
+        self.AddObserver("MiddleButtonReleaseEvent",
+                         self._do_nothing)
+        self.AddObserver("RightButtonPressEvent",
+                         self._do_nothing)
+        self.AddObserver("RightButtonReleaseEvent",
+                         self._do_nothing)
+        # self.AddObserver("KeyPressEvent",
+        #                  self._do_nothing)
+        self.AddObserver("KeyReleaseEvent",
+                         self._do_nothing)
+        self.AddObserver("MouseWheelForwardEvent",
+                         self._do_nothing)
+        self.AddObserver("MouseWheelBackwardEvent",
+                         self._do_nothing)
+
+    def _do_nothing(self, obj, event):
+        pass
 
 
 class MainWindow(QtWidgets.QMainWindow):
@@ -41,15 +62,12 @@ class MainWindow(QtWidgets.QMainWindow):
         self._surface_slider.setRange(1, self._slider_levels)
         self._surface_slider.setValue(self._slider_levels//2)
 
-        def on_slider_change(self, new_slider_value):
-            new_surface_value = self._value_calculator(
-                float(new_slider_value) / float(self._slider_levels))
-            for surface_generator, volume_max in zip(self._surface_generator,
-                                                     self._volume_max):
-                surface_generator.set_level(0, new_surface_value*volume_max)
+        self._surface_slider.valueChanged.connect(self.on_slider_change)
 
-        self._surface_slider.valueChanged.connect(partial(on_slider_change,
-                                                          self))
+        self._checkbox = QtWidgets.QCheckBox("Free")
+        self._checkbox.setTristate(False)
+        self._checkbox.setCheckState(0)
+        self._checkbox.stateChanged.connect(self.on_checkbox)
 
         plot_layout = QtWidgets.QHBoxLayout()
         for vtk_widget in self._vtk_widget:
@@ -57,9 +75,31 @@ class MainWindow(QtWidgets.QMainWindow):
 
         layout = QtWidgets.QVBoxLayout()
         layout.addLayout(plot_layout)
+        layout.addWidget(self._checkbox)
         layout.addWidget(self._surface_slider)
 
-        vtk_tools.synchronize_renderers(self._renderer)
+        self._synchronized_interactor_style = [
+            vtk_tools.SynchronizedInteractorStyle()
+            for _ in range(len(self._vtk_widget))]
+        self._single_interactor_style = [
+            ObjectInteractorStyle()
+            for _ in range(len(self._vtk_widget))]
+
+        # vtk_tools.synchronize_renderers(self._renderer)
+        renderer_list = self._renderer
+        for index, renderer in enumerate(renderer_list):
+            render_window = renderer.GetRenderWindow()
+            interactor = render_window.GetInteractor()
+            # my_interactor_style = SynchronizedInteractorStyle()
+            my_interactor_style = self._synchronized_interactor_style[index]
+            interactor.SetInteractorStyle(my_interactor_style)
+            my_interactor_style.add_renderer(renderer)
+            for other_renderer in renderer_list:
+                if other_renderer is not renderer:
+                    my_interactor_style.add_renderer(other_renderer)
+        camera = renderer_list[0].GetActiveCamera()
+        for renderer in renderer_list:
+            renderer.SetActiveCamera(camera)
 
         self._central_widget.setLayout(layout)
         self.setCentralWidget(self._central_widget)
@@ -73,6 +113,27 @@ class MainWindow(QtWidgets.QMainWindow):
             vtk_widget.Initialize()
         for renderer in self._renderer:
             renderer.Render()
+
+    def on_slider_change(self, new_slider_value):
+        new_surface_value = self._value_calculator(
+            float(new_slider_value) / float(self._slider_levels))
+        for surface_generator, volume_max in zip(self._surface_generator,
+                                                 self._volume_max):
+            surface_generator.set_level(0, new_surface_value*volume_max)
+
+    def on_checkbox(self, state):
+        print(f"checkbox: {state}")
+        iterator = zip(self._synchronized_interactor_style,
+                       self._single_interactor_style,
+                       self._vtk_widget)
+        if state:
+            for synchronized_style, single_style, interactor in iterator:
+                synchronized_style.SetInteractor(None)
+                single_style.SetInteractor(interactor)
+        else:
+            for synchronized_style, single_style, interactor in iterator:
+                single_style.SetInteractor(None)
+                synchronized_style.SetInteractor(interactor)
 
 
 if __name__ == "__main__":
