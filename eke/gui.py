@@ -3,11 +3,11 @@ implementation of the Manipulator looks weirt, but it works. Needs non
 integer manipulation.
 
 """
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore as _QtCore, QtGui as _QtGui, QtWidgets as _QtWidgets
 import sys as _sys
 
 
-class Manipulator(QtWidgets.QMainWindow):
+class Manipulator(_QtWidgets.QMainWindow):
     """Run a function with varying numerical input using a slider to
     change the value.  Designed for use with matplotlib.
 
@@ -43,11 +43,11 @@ class Manipulator(QtWidgets.QMainWindow):
     def _create_window(self):
         """Contains all the Qt stuff to create a window and connect sliders to
         _VariableChanger objects."""
-        self.window = QtGui.QWidget()
+        self.window = _QtWidgets.QWidget()
 
-        hbox = QtGui.QHBoxLayout()
+        hbox = _QtWidgets.QHBoxLayout()
         for variable in range(self._number_of_variables):
-            slider = QtGui.QSlider(QtCore.Qt.Vertical)
+            slider = _QtWidgets.QSlider(_QtCore.Qt.Vertical)
             slider.setMinimum(self._ranges[variable][0])
             slider.setMaximum(self._ranges[variable][1])
             slider.setValue(self._values[variable])
@@ -62,11 +62,11 @@ class Manipulator(QtWidgets.QMainWindow):
                 self._manipulate_functions[variable].change_this_signal
             )
 
-            title_label = QtGui.QLabel(self._value_names[variable])
-            min_label = QtGui.QLabel(str(self._ranges[variable][0]))
-            max_label = QtGui.QLabel(str(self._ranges[variable][1]))
+            title_label = _QtWidgets.QLabel(self._value_names[variable])
+            min_label = _QtWidgets.QLabel(str(self._ranges[variable][0]))
+            max_label = _QtWidgets.QLabel(str(self._ranges[variable][1]))
 
-            vbox = QtGui.QVBoxLayout()
+            vbox = _QtWidgets.QVBoxLayout()
             vbox.addWidget(title_label)
             vbox.addWidget(max_label)
             vbox.addWidget(slider)
@@ -79,17 +79,22 @@ class Manipulator(QtWidgets.QMainWindow):
 
 def manipulate(function, value_range, value_name=None):
     """Manipulate a single variable."""
-    if not value_name:
+    if value_name is None:
         value_name = ['Variable']
-    app = QtGui.QApplication(_sys.argv)
+    # app = _QtGui.QApplication(_sys.argv)
+    app = _QtWidgets.QApplication(_sys.argv)
     manipulator = Manipulator(function, [value_range], [value_name])
     manipulator.show()
     app.exec_()
+    app = _QtWidgets.QApplication.instance()
+    if app is None:
+        app = _QtWidgets.QApplication(["Foo"])
+
 
 
 def manipulate_multi(function, value_ranges, value_names=None):
     """Manipulate multiple variables at the same time."""
-    app = QtGui.QApplication(_sys.argv)
+    app = _QtWidgets.QApplication(_sys.argv)
     if not value_names:
         value_names = [str(i) for i in range(len(value_ranges))]
     manipulator = Manipulator(function, value_ranges, value_names)
