@@ -7,7 +7,7 @@ import matplotlib.widgets
 import matplotlib.colors
 import itertools as _itertools
 import abc as _abc
-from six import with_metaclass
+from six import with_metaclass as _with_metaclass
 
 
 def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
@@ -26,7 +26,7 @@ def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
     return scatter_plot
 
 
-class BaseBrowser(with_metaclass(_abc.ABCMeta)):
+class BaseBrowser(_with_metaclass(_abc.ABCMeta)):
     def __init__(self, data, layout=(1, 1)):
         self._data = data
         self._layout = layout
@@ -152,7 +152,7 @@ class PlotBrowser(BaseBrowser):
             self._fig.canvas.draw()
 
 
-class BaseScatterplotPick(with_metaclass(_abc.ABCMeta)):
+class BaseScatterplotPick(_with_metaclass(_abc.ABCMeta)):
     def __init__(self, x, y, data):
         self._data = data
         self._fig = _matplotlib.pyplot.figure("ScatterPick")
@@ -212,14 +212,18 @@ class PlotScatterplotPick(BaseScatterplotPick):
         self._fig.canvas.draw()
 
 
-def complex_plot(array, vmin=None, vmax=None):
+def complex_plot(array, vmin=None, vmax=None, log=False):
     if vmin is None:
         vmin = abs(array).min()
     if vmax is None:
         vmax = abs(array).max()
     h = _numpy.mod(_numpy.angle(array), 2.*_numpy.pi)/(2.*_numpy.pi)
-    s = 0.85 * _numpy.ones_like(abs(array))
-    v = (abs(array) - vmin) / (vmax - vmin)
+    if log:
+        s = 0.85 * _numpy.ones_like(_numpy.log(abs(array)))
+        v = _numpy.log(abs(array)) / _numpy.log(vmax)
+    else:
+        s = 0.85 * _numpy.ones_like(abs(array))
+        v = (abs(array) - vmin) / (vmax - vmin)
     return _matplotlib.colors.hsv_to_rgb(_numpy.dstack((h, s, v)))
 
 
@@ -240,5 +244,5 @@ def complex_to_rgb(data, vmax=None):
     hsv[..., 0] = _numpy.angle(data) / (2 * _numpy.pi) % 1
     hsv[..., 1] = 1
     hsv[..., 2] = _numpy.clip(abs(data) / absmax, 0, 1)
-    rgb = matplotlib.colors.hsv_to_rgb(hsv)
+    rgb = _matplotlib.colors.hsv_to_rgb(hsv)
     return rgb
