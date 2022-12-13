@@ -692,6 +692,7 @@ def plot_planes(array_in, spacing=(1., 1., 1.), log=False, cmap=None):
     interactor = _vtk.vtkRenderWindowInteractor()
     interactor.SetRenderWindow(render_window)
     interactor.SetInteractorStyle(_vtk.vtkInteractorStyleRubberBandPick())
+    interactor.SetRenderWindow(render_window)
 
     if cmap is None:
         import matplotlib as _matplotlib
