@@ -175,14 +175,16 @@ def relative(quat_1, quat_2):
 
 def angle(quat):
     """Angle of the rotation"""
-    w = quat[0]
-    if w > 1:
-        w = 1.
-    if w < -1:
-        w = -1.
+    quat = _numpy.array(quat)
+    if len(quat.shape) == 1:
+        quat = quat.reshape((1, 4))
+    w = quat[:, 0]
+    w[w > 1] = 1
+    w[w < -1] = -1
     diff_angle = 2.*_numpy.arccos(w)
-    abs_diff_angle = min(abs(diff_angle), abs(diff_angle-2.*_numpy.pi))
-    return abs_diff_angle
+    abs_diff_angle = _numpy.minimum(abs(diff_angle),
+                                    abs(diff_angle-2.*_numpy.pi))
+    return abs_diff_angle.squeeze()
 
 
 def relative_angle(rot1, rot2):
