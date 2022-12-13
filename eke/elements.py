@@ -164,6 +164,13 @@ def get_attenuation_length(photon_energy, material):
                   / average_density)
 
 
+def get_absorption(element, photon_energy):
+    f = get_scattering_factor(element, photon_energy)
+    wavelength = _conversions.ev_to_m(photon_energy)
+    mu = 2*_constants.re*wavelength/ATOMIC_MASS[element]*_numpy.imag(f)
+    return mu
+
+
 def get_transmission(photon_energy, material, thickness):
     """Return the transmission of the given material of the given
     thickness."""
