@@ -248,7 +248,7 @@ def radial_distance(shape):
     return radius
 
 
-def radial_average(image, mask=None):
+def radial_average(image, mask=None, center=None):
     """Calculates the radial average of an array of any shape, the center
     is assumed to be at the physical center.
 
@@ -257,7 +257,12 @@ def radial_average(image, mask=None):
         mask = _numpy.ones(image.shape, dtype='bool8')
     else:
         mask = _numpy.bool8(mask)
-    axis_values = [_numpy.arange(s) - s/2. + 0.5 for s in image.shape]
+
+    if center is None:
+        center = [c/2-0.5 for c in image.shape]
+
+    #axis_values = [_numpy.arange(s) - s/2. + 0.5 for s in image.shape]
+    axis_values = [_numpy.arange(s) - c for s, c in zip(image.shape, center)]
     radius = _numpy.zeros((image.shape[-1]))
     for i in range(len(image.shape)):
         radius = (radius +
