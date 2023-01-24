@@ -52,7 +52,9 @@ class Progress(object):
                               / float(self._number_of_iterations)
                               * bar_length)
             not_done_length = bar_length - done_length
-            _sys.stdout.write(f"\r[{'#'*done_length}{'-'*not_done_length}] "
+            _sys.stdout.write(f"\r{self._message}: "
+                              f"[{'#'*done_length}{'-'*not_done_length}] "
+                              f"({self._tasks_completed}/{self._number_of_iterations}) "
                               f"{int(self._expected_time_left)} seconds left")
             _sys.stdout.flush()
             self._last_output_time = new_time
