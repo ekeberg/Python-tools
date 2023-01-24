@@ -270,7 +270,7 @@ def radial_average(image, mask=None, center=None):
                                        (_numpy.newaxis, )*i])**2)
     radius = _numpy.int32(_numpy.sqrt(radius))
     number_of_bins = radius[mask].max() + 1
-    radial_sum = _numpy.zeros(number_of_bins)
+    radial_sum = _numpy.zeros(number_of_bins, dtype=image.dtype)
     weight = _numpy.zeros(number_of_bins)
     for value, this_radius in zip(image[mask], radius[mask]):
         radial_sum[this_radius] += value
