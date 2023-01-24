@@ -3,8 +3,29 @@ import argparse
 from Bio.PDB import PDBParser
 from Bio.PDB.PDBExceptions import PDBConstructionWarning
 import warnings
-
 warnings.filterwarnings("ignore", category=PDBConstructionWarning)
+
+def get_cartesian_size():
+    x_size = coords[:, 0].max() - coords[:, 0].min()
+    y_size = coords[:, 1].max() - coords[:, 1].min()
+    z_size = coords[:, 2].max() - coords[:, 2].min()
+    return x_size, y_size, z_size
+
+def get_pca_size():
+    pca = sklearn.decomposition.PCA()
+    coords_rotated = pca.fit_transform(coords)
+    x_size = coords_rotated[:, 0].max() - coords_rotated[:, 0].min()
+    y_size = coords_rotated[:, 1].max() - coords_rotated[:, 1].min()
+    z_size = coords_rotated[:, 2].max() - coords_rotated[:, 2].min()
+    return x_size, y_size, z_size
+
+try:
+    import sklearn.decomposition
+    sizing_function = get_pca_size
+    print("Printing size along principal components")
+except ImportError:
+    sizing_function = get_cartesian_size
+    print("Printing size along xyz axes")
 
 arg_parser = argparse.ArgumentParser()
 arg_parser.add_argument("infile", help="Input file")
@@ -28,11 +49,9 @@ for index, this_atom in enumerate(atoms):
 
 coords /= 10  # Convert from Ångström to nm.
 
-x_size = coords[:, 0].max() - coords[:, 0].min()
-y_size = coords[:, 1].max() - coords[:, 1].min()
-z_size = coords[:, 2].max() - coords[:, 2].min()
+x_size, y_size, z_size = sizing_function()
 
-print("Warning: the result will depend on the orientation of the protein")
+# print("Warning: the result will depend on the orientation of the protein")
 print(f"x: {x_size} nm")
 print(f"y: {y_size} nm")
 print(f"z: {z_size} nm")
