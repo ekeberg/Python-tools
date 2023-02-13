@@ -9,11 +9,21 @@ class MapRotater:
     consistent with how rotations are used in EMC.
 
     """
-    def __init__(self, data, fill_value=0):
+    def __init__(self, data, center=None, fill_value=0):
         self._data = data
 
-        grid_points = [_numpy.arange(-s/2 + 0.5, s/2+0.5)
-                       for s in self._data.shape]
+        if center is None:
+            self._center = [s/2 - 0.5 for s in self._data.shape]
+        else:
+            self._center = center
+            if len(self._center) != len(self._data.shape):
+                raise ValueError("Center must have one element for each "
+                                 "dimension of data")
+
+        grid_points = [_numpy.arange(s) - c
+                       for s, c in zip(self._data.shape, self._center)]
+        # grid_points = [_numpy.arange(-s/2 + 0.5, s/2+0.5)
+        #                for s in self._data.shape]
         self._interpolater = RegularGridInterpolator(
             grid_points, self._data, fill_value=fill_value, bounds_error=False)
 
@@ -29,9 +39,9 @@ class MapRotater:
         return rotated_data
 
 
-def rotate_map(data, rot):
+def rotate_map(data, rot, center=None):
     """Rotate the data by the given quaternion."""
-    return MapRotater(data).rotate(rot)
+    return MapRotater(data, center=center).rotate(rot)
 
 
 def align_map(data, correct_rotations, recovered_rotations,
