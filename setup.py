@@ -1,4 +1,4 @@
-import os
+import pathlib
 from setuptools import setup
 
 
@@ -40,10 +40,9 @@ scripts = ["eke_attenuation_length.py",
            "eke_pdb_size.py",
            "eke_remove_all_but_last.py"]
 
-scripts_dir = "Scripts"
-scripts_full_path = [os.path.join(scripts_dir, this_script)
+scripts_dir = pathlib.Path("Scripts")
+scripts_full_path = [str(scripts_dir / this_script)
                      for this_script in scripts]
-
 
 setup(name="python-tools",
       version="1.0",
