@@ -260,6 +260,9 @@ def radial_average(image, mask=None, center=None):
 
     if center is None:
         center = [c/2-0.5 for c in image.shape]
+    if len(center) != len(image.shape):
+        raise ValueError(f"center of length {len(center)} does not match "
+                         f"image.shape of length {len(image.shape)}.")
 
     #axis_values = [_numpy.arange(s) - s/2. + 0.5 for s in image.shape]
     axis_values = [_numpy.arange(s) - c for s, c in zip(image.shape, center)]
