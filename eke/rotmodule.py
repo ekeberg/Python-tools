@@ -54,6 +54,7 @@ def quaternion_to_euler_angle(quat):
 
 def quaternion_to_matrix(quat):
     """Dummy docstring"""
+    quat = _numpy.array(quat)
     if len(quat.shape) < 2:
         matrix = _numpy.zeros((3, 3), dtype=quat.dtype)
     else:
@@ -195,7 +196,10 @@ def relative_angle(rot1, rot2):
 def rotate(quat, coordinates):
     rotation_matrix = quaternion_to_matrix(quat)
     # return rotation_matrix.dot(coordinates.T).T
-    return rotation_matrix.dot(coordinates)
+    # return rotation_matrix.dot(coordinates)
+    coordinates_flat = coordinates.reshape((coordinates.shape[0], _numpy.product(coordinates.shape[1:])))
+    rotated_flat = rotation_matrix.dot(coordinates_flat)
+    return rotated_flat.reshape(coordinates.shape)
 
 
 def rotate_array_bw(quat, x_coordinates, y_coordinates, z_coordinates):
