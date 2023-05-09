@@ -131,10 +131,13 @@ def klein_nishina(energy, scattering_angle, polarization_angle):
 
     relative_energy_change = 1. / (1. + rescaled_energy *
                                    (1. - _numpy.cos(scattering_angle)))
+
+    angle_terms = 2 * (_numpy.sin(scattering_angle)**2 *
+                       _numpy.cos(polarization_angle)**2)
     cross_section = ((_constants.re**2 * relative_energy_change**2)/2. *
-                     (relative_energy_change + 1./relative_energy_change -
-                      (_numpy.sin(scattering_angle)**2
-                       * _numpy.cos(polarization_angle)**2)))
+                     (relative_energy_change +
+                      1./relative_energy_change -
+                      angle_terms))
     return cross_section
 
 
