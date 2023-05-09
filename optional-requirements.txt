@@ -1,0 +1,4 @@
+nfft==?
+mpi4py>=3.0
+vtk>=6.0
+PyQt5>=5.6
