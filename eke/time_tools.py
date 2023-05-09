@@ -10,16 +10,19 @@ import functools as _functools
 
 class Progress(object):
     """Simple progress bar implementation"""
-    def __init__(self, message, number_of_iterations, output_period=1.0):
+    def __init__(self, number_of_iterations, message=None, output_period=1.0):
         self._message = message
         self._number_of_iterations = number_of_iterations
         self._tasks_completed = 0
         self._time = _time.time()
+        self._last_output_time = self._time
         self._last_iteration_time = 0.0
         self._expected_time_left = 0.0
         self._last_output_time = 0.0
         self._last_output_index = 0
         self._max_output_period = output_period
+        self._done_char = "\u25a0"
+        self._not_done_char = "\u25a1"
 
     def start(self):
         """Call before starting task."""
@@ -29,9 +32,10 @@ class Progress(object):
 
     def finished(self):
         """Call when task is done."""
+        self.print_message(always_output=True)
         _sys.stdout.write("\n")
 
-    def iteration_completed(self):
+    def iteration_completed(self, silent=False):
         """Call after every iteration. This function plots the otuput if a
         significant time passed since last plot.
         """
@@ -42,6 +46,8 @@ class Progress(object):
         self._expected_time_left = (self._last_iteration_time
                                     * (self._number_of_iterations -
                                        self._tasks_completed))
+        if not silent:
+            self.print_message()
 
     def print_message(self, always_output=False):
         new_time = self._time
@@ -52,9 +58,11 @@ class Progress(object):
                               / float(self._number_of_iterations)
                               * bar_length)
             not_done_length = bar_length - done_length
-            _sys.stdout.write(f"\r{self._message}: "
-                              f"[{'#'*done_length}{'-'*not_done_length}] "
-                              f"({self._tasks_completed}/{self._number_of_iterations}) "
+            _sys.stdout.write(f"\r" +
+                              (f"{self._message}: " if self._message is not None else "") +
+                              f"{self._done_char*done_length}{self._not_done_char*not_done_length} " +
+                              f"({self._tasks_completed}/{self._number_of_iterations} | " +
+                              f"{100*self._tasks_completed/self._number_of_iterations:.2f}%) " +
                               f"{int(self._expected_time_left)} seconds left")
             _sys.stdout.flush()
             self._last_output_time = new_time
