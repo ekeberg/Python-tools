@@ -22,7 +22,7 @@ def scatterplot_dense(x, y, s=100, cmap="YlGnBu_r", ax=None):
     y_sorted = y[idx]
     z_sorted = z[idx]
     scatter_plot = ax.scatter(x_sorted, y_sorted,
-                              c=z_sorted, s=s, edgecolor='', cmap=cmap)
+                              c=z_sorted, s=s, edgecolor='none', cmap=cmap)
     return scatter_plot
 
 
