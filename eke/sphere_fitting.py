@@ -45,7 +45,7 @@ class TemplateMatcher:
     def match(self, pattern, mask=None):
         """Find the template that best matches the pattern."""
         radial_average = tools.radial_average(pattern, mask)[:self.npixels]
-        mask_radial_average = tools.radial_average(mask)[:self.npixels] > 0
+        mask_radial_average = tools.radial_average(numpy.float_(mask))[:self.npixels] > 0
         radial_average[~mask_radial_average] = 0
         dotprod = (self.templates @ radial_average)
         score = dotprod / numpy.sqrt(((self.templates*mask_radial_average)**2).sum(axis=1))
