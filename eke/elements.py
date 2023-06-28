@@ -66,6 +66,10 @@ class Material(object):
         """Returns relative ratios of elements (not relative masses)"""
         return self._chemical_composition.element_ratios()
 
+    def element_composition(self):
+        """Returns relative ratios of elements (not relative masses)"""
+        return self._chemical_composition.element_ratios()
+
     def element_ratio_sum(self):
         """Returns the sum of all relative ratios of elements (not relative
         masses)"""
@@ -178,30 +182,34 @@ def get_transmission(photon_energy, material, thickness):
     return _numpy.exp(-thickness / attenuation_length)
 
 
-def get_index_of_refraction(photon_energy, material):
+def get_delta_beta(photon_energy, material):
     """Returns the refractive index of the material"""
     average_density = 0.
     total_atomic_ammounts = 0.
-    f_1 = 0.
-    f_2 = 0.
+    f = 0
     for element, value in material.element_ratios().items():
         average_density += value*ATOMIC_MASS[element]*_constants.u
         total_atomic_ammounts += value
         # sum up average scattering factor
-        scattering_factor = get_scattering_factor(element, photon_energy)
-        f_1 += value*_numpy.real(scattering_factor)
-        f_2 += value*_numpy.imag(scattering_factor)
+        f += value*get_scattering_factor(element, photon_energy)
     average_density /= total_atomic_ammounts
-    f_1 /= total_atomic_ammounts
-    f_2 /= total_atomic_ammounts
+    f /= total_atomic_ammounts
 
-    refractive_index = material.material_density()/average_density
+    number_density = material.material_density()/average_density
 
-    return 1. - (refractive_index
-                 * _constants.re
-                 * _conversions.ev_to_m(photon_energy)**2
-                 / (2.*_numpy.pi)
-                 * (f_1+1.j*f_2))
+    factor = (number_density
+              * _constants.re
+              * _conversions.ev_to_m(photon_energy)**2
+              / (2.*_numpy.pi))
+    delta = factor*_numpy.real(f)
+    beta = factor*_numpy.imag(f)
+
+    return delta, beta
+
+
+def get_index_of_refraction(photon_energy, material):
+    delta, beta = get_delta_beta(photon_energy, material)
+    return 1. - delta + 1.j*beta
 
 
 def get_phase_shift(photon_energy, material, distance):
