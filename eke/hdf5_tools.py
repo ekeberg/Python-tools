@@ -3,6 +3,7 @@ import numpy as _numpy
 
 
 def dictionary_to_hdf5(file_name, dict_in):
+    """Write a dictionary to an HDF5 file."""
     def write_group(group_handle, dict_in):
         for name, value in dict_in.items():
             if isinstance(value, dict):
@@ -15,6 +16,7 @@ def dictionary_to_hdf5(file_name, dict_in):
 
 
 def hdf5_to_dictionary(file_name):
+    """Read the entire contents of an HDF5 file into a dictionary."""
     def read_group(group):
         return_dictionary = {}
         for name, value in group.items():
@@ -32,21 +34,25 @@ def hdf5_to_dictionary(file_name):
 
 
 def save_numpy(filename, array):
-    with _h5py.File(filename, "w") as file_handle:
-        file_handle.create_dataset("data", data=_numpy.array(array))
+    """Save a numpy array to an HDF5 file."""
+    raise DeprecationWarning("Use write_dataset instead")
+    write_dataset(filename, "data", array)
 
 
 def read_numpy(filename):
-    with _h5py.File(filename, "r") as file_handle:
-        array = file_handle["data"][...]
-    return array
+    """Read a numpy array from an HDF5 file."""
+    raise DeprecationWarning("Use read_dataset instead")
+    return read_dataset(filename, "data")
 
 
 def read_dataset(filename, loc):
+    """Read a dataset from an HDF5 file."""
     with _h5py.File(filename, "r") as file_handle:
         array = file_handle[loc][...]
     return array
 
+
 def write_dataset(filename, loc, data):
+    """Write a dataset to an HDF5 file."""
     with _h5py.File(filename, "a") as file_handle:
         file_handle.create_dataset(loc, data=data)
