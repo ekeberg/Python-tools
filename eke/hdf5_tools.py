@@ -52,7 +52,11 @@ def read_dataset(filename, loc):
     return array
 
 
-def write_dataset(filename, loc, data):
+def write_dataset(filename, loc, data, overwrite=False):
     """Write a dataset to an HDF5 file."""
     with _h5py.File(filename, "a") as file_handle:
+        if loc in file_handle and not overwrite:
+            raise IOError(f"Dataset {loc} already exists in file {filename}")
+        elif loc in file_handle and overwrite:
+            del file_handle[loc]
         file_handle.create_dataset(loc, data=data)
