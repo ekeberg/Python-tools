@@ -8,3 +8,5 @@ build/*
 dist/*
 *DS_Store
 python_tools.egg-info/
+Scratch/*
+eke/.#slurm_tools.py
