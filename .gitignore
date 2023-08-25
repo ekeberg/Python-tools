@@ -8,3 +8,14 @@ build/*
 dist/*
 *DS_Store
 python_tools.egg-info/
+.idea/.name
+.idea/encodings.xml
+.idea/misc.xml
+.idea/modules.xml
+.idea/pylint.xml
+.idea/Python-tools.iml
+.idea/vcs.xml
+.vscode/settings.json
+eke/pdb_tools.py
+eke/cxifile_tools.py
+.idea/.gitignore
