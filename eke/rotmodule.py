@@ -140,7 +140,7 @@ def _multiply_single(quat_1, quat_2):
         quat_out = _numpy.zeros(quat_2.shape)
     else:
         quat_out = _numpy.zeros(quat_1.shape)
-        
+
     quat_out[..., 0] = (quat_1[..., 0]*quat_2[..., 0] -
                         quat_1[..., 1]*quat_2[..., 1] -
                         quat_1[..., 2]*quat_2[..., 2] -
@@ -197,7 +197,8 @@ def rotate(quat, coordinates):
     rotation_matrix = quaternion_to_matrix(quat)
     # return rotation_matrix.dot(coordinates.T).T
     # return rotation_matrix.dot(coordinates)
-    coordinates_flat = coordinates.reshape((coordinates.shape[0], _numpy.product(coordinates.shape[1:])))
+    coordinates_flat = coordinates.reshape(
+        (coordinates.shape[0], _numpy.product(coordinates.shape[1:])))
     rotated_flat = rotation_matrix.dot(coordinates_flat)
     return rotated_flat.reshape(coordinates.shape)
 

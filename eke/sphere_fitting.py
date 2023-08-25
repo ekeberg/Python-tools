@@ -18,7 +18,8 @@ class TemplateMatcher:
         self.wavelength = wavelength
         self.detector_distance = detector_distance
         self.pixel_size = pixel_size
-        self.templates, self.sizes = self._generate_templates(size_start, size_end, ntemplates)
+        self.templates, self.sizes = self._generate_templates(
+            size_start, size_end, ntemplates)
 
     def _template_radial_average(self, size: float):
         """Generate radial average of the diffraction from a sphere
@@ -29,7 +30,8 @@ class TemplateMatcher:
             self.detector_distance, self.pixel_size, 1))**2
         return sphere_diffraction.flatten()[self.npixels:]
 
-    def _generate_templates(self, start_size: float, end_size: float, ntemplates: int):
+    def _generate_templates(self, start_size: float,
+                            end_size: float, ntemplates: int):
         """Generate a set of templates from the given size range."""
         templates = numpy.zeros((ntemplates, self.npixels))
         sizes = numpy.zeros(ntemplates)
@@ -45,10 +47,13 @@ class TemplateMatcher:
     def match(self, pattern, mask=None):
         """Find the template that best matches the pattern."""
         radial_average = tools.radial_average(pattern, mask)[:self.npixels]
-        mask_radial_average = tools.radial_average(numpy.float_(mask))[:self.npixels] > 0
+        mask_radial_average = tools.radial_average(numpy.float_(mask))
+        mask_radial_average = mask_radial_average[:self.npixels] > 0
         radial_average[~mask_radial_average] = 0
         dotprod = (self.templates @ radial_average)
-        score = dotprod / numpy.sqrt(((self.templates*mask_radial_average)**2).sum(axis=1))
+        norm = numpy.sqrt(
+            ((self.templates*mask_radial_average)**2).sum(axis=1))
+        score = dotprod / norm
         # from IPython import embed; embed()
         best_index = score.argmax()
         self.last_scaling = score[best_index]

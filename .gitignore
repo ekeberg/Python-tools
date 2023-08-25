@@ -10,3 +10,7 @@ dist/*
 python_tools.egg-info/
 Scratch/*
 eke/.#slurm_tools.py
+.idea/*
+.vscode/settings.json
+eke/pdb_tools.py
+eke/cxifile_tools.py

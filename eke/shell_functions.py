@@ -4,6 +4,7 @@ import errno as _errno
 import pathlib as _pathlib
 import re as _re
 
+
 def mkdir_p(path):
     """Create a directory without returning an error if it already exists."""
     try:
@@ -13,7 +14,6 @@ def mkdir_p(path):
             pass
         else:
             raise IOError(f"Problem creating directory: {path}")
-
 
 
 def remove_all_but_last(path, ext=None, quiet=False):

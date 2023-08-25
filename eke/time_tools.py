@@ -58,12 +58,16 @@ class Progress(object):
                               / float(self._number_of_iterations)
                               * bar_length)
             not_done_length = bar_length - done_length
-            _sys.stdout.write(f"\r" +
-                              (f"{self._message}: " if self._message is not None else "") +
-                              f"{self._done_char*done_length}{self._not_done_char*not_done_length} " +
-                              f"({self._tasks_completed}/{self._number_of_iterations} | " +
-                              f"{100*self._tasks_completed/self._number_of_iterations:.2f}%) " +
-                              f"{int(self._expected_time_left)} seconds left")
+
+            message = f"{self._message}: " if self._message is not None else ""
+            bar = (f"{self._done_char*done_length}"
+                   f"{self._not_done_char*not_done_length} ")
+            counter = (f"({self._tasks_completed}"
+                       f"/{self._number_of_iterations} | ")
+            ratio_value = self._tasks_completed/self._number_of_iterations
+            percent = f"{100*ratio_value:.2f}%) "
+            time = f"{int(self._expected_time_left)} seconds left"
+            _sys.stdout.write("\r" + message + bar + counter + percent + time)
             _sys.stdout.flush()
             self._last_output_time = new_time
             self._last_output_index = self._tasks_completed
@@ -77,9 +81,9 @@ class StopWatch(object):
     """Uses wall time."""
     def __init__(self):
         self._running = False
-        self._start_time = None
-        self._end_time = None
-        self._time_diff = None
+        self._start_time = 0
+        self._end_time = 0
+        self._time_diff = 0
 
     def start(self):
         """Start watch"""
@@ -108,29 +112,32 @@ class StopWatch(object):
         else:
             return str(_datetime.timedelta(seconds=time_diff))
 
+
 class Timer:
     def __init__(self):
         self._records = _defaultdict(lambda: 0)
         self._start = _defaultdict(lambda: None)
-    
+
     def start(self, name):
-        self._start[name] = _time.time()
+        self._start[name] = _time.time()  # type: ignore
 
     def stop(self, name):
         if self._start[name] is None:
             raise ValueError(f"Trying to stop inactive timer: {name}")
-        self._records[name] += _time.time() - self._start[name]
+        self._records[name] += _time.time() - self._start[name]  # type: ignore
         self._start[name] = None
 
     def get_total(self):
         return self._records
 
     def print(self):
-        print(f"Timing:")
+        print("Timing:")
         for n, v in self.get_total().items():
             print(f"{n}: {v}")
 
+
 timer = Timer()
+
 
 # def timed():
 # def decorator(func):
@@ -139,7 +146,7 @@ def timed(func):
 
     @_functools.wraps(func)
     def new_func(*args, **kwargs):
-        bound_arguments_no_default = func_signature.bind(*args, **kwargs)
+        # bound_arguments_no_default = func_signature.bind(*args, **kwargs)
         bound_arguments = func_signature.bind(*args, **kwargs)
         bound_arguments.apply_defaults()
         args = bound_arguments.args

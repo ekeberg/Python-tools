@@ -65,4 +65,3 @@ def align_map(data, correct_rotations, recovered_rotations,
         return rotated_data, average_error
     else:
         return rotated_data
-
