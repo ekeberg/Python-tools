@@ -30,3 +30,11 @@ def J_to_ev(joule):
 def ev_to_J(electronvolt):
     """Electronvolt to Joule."""
     return electronvolt*_constants.e
+
+def m_to_inch(meter):
+    """Meter to inch."""
+    return meter/0.0254
+
+def inch_to_m(inch):
+    """Inch to meter."""
+    return inch*0.0254
