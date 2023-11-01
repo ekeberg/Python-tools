@@ -246,3 +246,15 @@ def complex_to_rgb(data, vmax=None):
     hsv[..., 2] = _numpy.clip(abs(data) / absmax, 0, 1)
     rgb = _matplotlib.colors.hsv_to_rgb(hsv)
     return rgb
+
+def imshow_array(fig, data, **kwargs):
+    nimages = len(data)
+    row_col_ratio = fig.get_figheight() / fig.get_figwidth()
+
+    ncols = int(round(_numpy.sqrt(nimages/row_col_ratio)))
+    nrows = (nimages-1) // ncols + 1
+
+    for i in range(nimages):
+        ax = fig.add_subplot(nrows, ncols, i+1)
+        ax.imshow(data[i], **kwargs)
+        ax.axis("off")
