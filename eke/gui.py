@@ -3,7 +3,7 @@ implementation of the Manipulator looks weirt, but it works. Needs non
 integer manipulation.
 
 """
-from PyQt5 import QtCore as _QtCore, QtGui as _QtGui, QtWidgets as _QtWidgets
+from PyQt5 import QtCore as _QtCore, QtWidgets as _QtWidgets
 import sys as _sys
 
 
@@ -81,7 +81,6 @@ def manipulate(function, value_range, value_name=None):
     """Manipulate a single variable."""
     if value_name is None:
         value_name = ['Variable']
-    # app = _QtGui.QApplication(_sys.argv)
     app = _QtWidgets.QApplication(_sys.argv)
     manipulator = Manipulator(function, [value_range], [value_name])
     manipulator.show()
