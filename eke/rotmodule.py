@@ -193,14 +193,29 @@ def relative_angle(rot1, rot2):
     return angle(relative(rot1, rot2))
 
 
-def rotate(quat, coordinates):
-    rotation_matrix = quaternion_to_matrix(quat)
-    # return rotation_matrix.dot(coordinates.T).T
-    # return rotation_matrix.dot(coordinates)
-    coordinates_flat = coordinates.reshape(
-        (coordinates.shape[0], _numpy.product(coordinates.shape[1:])))
-    rotated_flat = rotation_matrix.dot(coordinates_flat)
-    return rotated_flat.reshape(coordinates.shape)
+def rotate(quat, vec):
+    """Rotate the vector by the quaternion. Quat is expected to have shape
+    (..., 4) and vec is expected to have shape (..., 3)."""
+    rot_matrix = quaternion_to_matrix(quat)
+    
+    # What is the shape of the input, in addition to the
+    # minimal quaternion and vector (3D) shapes?
+    # This expects the extra dims to be at the beginning
+    quat_extra_dim = quat.shape[:-1]
+    vec_extra_dim = vec.shape[:-1]
+
+    # Transpose the vector so the first dimension is the 3D vector
+    # so that it's ready for matrix multiplication
+    vec_transpose = vec.transpose((-1, ) + tuple(range(len(vec.shape) - 1)))
+    result = rot_matrix @ vec_transpose
+
+    # Transpose the result back so that the 3D vector is the last dimension
+    reorder = list(range(len(quat_extra_dim)))
+    reorder += list(range(len(quat_extra_dim) + 1, len(vec_extra_dim) + len(quat_extra_dim) + 1))
+    reorder.append(len(quat_extra_dim))
+
+    result = result.transpose(reorder)
+    return result
 
 
 def rotate_array_bw(quat, x_coordinates, y_coordinates, z_coordinates):
