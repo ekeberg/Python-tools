@@ -14,3 +14,4 @@ eke/.#slurm_tools.py
 .vscode/settings.json
 eke/pdb_tools.py
 eke/cxifile_tools.py
+Scripts/eke_plot_double_3d.py
