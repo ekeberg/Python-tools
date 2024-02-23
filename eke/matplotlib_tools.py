@@ -247,7 +247,7 @@ def complex_to_rgb(data, vmax=None):
     rgb = _matplotlib.colors.hsv_to_rgb(hsv)
     return rgb
 
-def imshow_array(fig, data, **kwargs):
+def imshow_array(fig, data, titles=None, **kwargs):
     nimages = len(data)
     row_col_ratio = fig.get_figheight() / fig.get_figwidth()
 
@@ -258,3 +258,6 @@ def imshow_array(fig, data, **kwargs):
         ax = fig.add_subplot(nrows, ncols, i+1)
         ax.imshow(data[i], **kwargs)
         ax.axis("off")
+        if titles is not None:
+            ax.set_title(titles[i])
+    fig.tight_layout()
