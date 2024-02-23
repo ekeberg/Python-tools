@@ -1,18 +1,10 @@
+import pathlib
 import numpy
 import h5py
 from eke import vtk_tools
+from eke import hdf5_tools
 import argparse
-import re
 import sys
-
-
-def print_3d_datasets(file_name):
-    def visitor_func(name, node):
-        if isinstance(node, h5py.Dataset):
-            if len(node.shape) == 3:
-                print(f"   {node.name}")
-    with h5py.File(file_name, "r") as file_handle:
-        file_handle.visititems(visitor_func)
 
 
 parser = argparse.ArgumentParser()
@@ -25,10 +17,19 @@ parser.add_argument("-a", "--abs", action="store_true",
                     help="Plot in absolue value.")
 args = parser.parse_args()
 
-input_file, input_key = re.search(r"^(.+\.h5)(/.+)?$", args.filename).groups()
+input_file, input_key = hdf5_tools.parse_name_and_key(args.filename)
+
+if not pathlib.Path(input_file).exists():
+    print(f"File {input_file} does not exist.")
+    sys.exit(1)
+
 if input_key is None:
     print("You must specify a dataset to plot. Available 3D datasets are:")
-    print_3d_datasets(input_file)
+    print("\n".join(hdf5_tools.list_datasets(args.filename, dimensions=3)))
+    sys.exit(1)
+
+if input_key not in hdf5_tools.list_datasets(input_file, dimensions=3):
+    print(f"Dataset {input_key} not found in file {input_file}")
     sys.exit(1)
 
 with h5py.File(input_file, "r") as file_handle:
