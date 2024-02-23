@@ -1,3 +1,4 @@
+import re
 import h5py as _h5py
 import numpy as _numpy
 
@@ -60,3 +61,25 @@ def write_dataset(filename, loc, data, overwrite=False):
         elif loc in file_handle and overwrite:
             del file_handle[loc]
         file_handle.create_dataset(loc, data=data)
+
+
+def parse_name_and_key(name_and_key):
+    """Parse a string of the form name/key into name and key."""
+    match = re.search(r"^(.+\.h5)(/.+)?$", name_and_key)
+    if match is None:
+        raise IOError(f"Can't parse {name_and_key}")
+    input_file, input_key = match.groups()
+    return input_file, input_key
+
+def list_datasets(file_name, dimensions=None):
+    """List datasets in an HDF5 file. Optionally filter by number of dimensions."""
+    datasets = []
+    def visitor_func(name, node):
+        if isinstance(node, _h5py.Dataset):
+            if dimensions is None or len(node.shape) == dimensions:
+                datasets.append(node.name)
+    with _h5py.File(file_name, "r") as file_handle:
+        file_handle.visititems(visitor_func)
+    return datasets
+
+        
