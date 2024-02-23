@@ -1,1 +1,3 @@
 recursive-include eke *.py *.dat
+include eke/atomsf.dat
+include eke/elements.dat

@@ -1,0 +1,39 @@
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "python-tools"
+version = "1.0"
+authors = [{ name = "Tomas Ekeberg" }]
+description = "Commonly used tools"  # Add your project description here
+
+[project.scripts]
+eke_attenuation_length = "eke_scripts.eke_attenuation_length:main"
+eke_center_image = "eke_scripts.eke_center_image:main"
+eke_copy_final = "eke_scripts.eke_copy_final:main"
+eke_dic_advanced = "eke_scripts.eke_dic_advanced:main"
+eke_dic = "eke_scripts.eke_dic:main"
+eke_error_reduction = "eke_scripts.eke_error_reduction:main"
+eke_ev_to_nm = "eke_scripts.eke_ev_to_nm:main"
+eke_hdf5_copy = "eke_scripts.eke_hdf5_copy:main"
+eke_hdf5_del = "eke_scripts.eke_hdf5_del:main"
+eke_image_to_png = "eke_scripts.eke_image_to_png:main"
+eke_merge_pdf = "eke_scripts.eke_merge_pdf:main"
+eke_nm_to_ev = "eke_scripts.eke_nm_to_ev:main"
+eke_pdb_fix_element = "eke_scripts.eke_pdb_fix_element:main"
+eke_pdb_size = "eke_scripts.eke_pdb_size:main"
+eke_plot_2d = "eke_scripts.eke_plot_2d:main"
+eke_plot_3d = "eke_scripts.eke_plot_3d:main"
+eke_plot_image_3d = "eke_scripts.eke_plot_image_3d:main"
+eke_plot_multiple_3d = "eke_scripts.eke_plot_multiple_3d:main"
+eke_plot_phases = "eke_scripts.eke_plot_phases:main"
+eke_plot_radial_average = "eke_scripts.eke_plot_radial_average:main"
+eke_remove_all_but_last = "eke_scripts.eke_remove_all_but_last:main"
+eke_shift_image = "eke_scripts.eke_shift_image:main"
+eke_split_pnccd = "eke_scripts.eke_split_pnccd:main"
+eke_to_png = "eke_scripts.eke_to_png:main"
+eke_view_pnccd = "eke_scripts.eke_view_pnccd:main"
+
+[tool.setuptools]
+packages = ["eke", "eke_scripts"]
