@@ -28,7 +28,7 @@ class ChemicalComposition(object):
         for key in self._elements:
             if key not in ATOMIC_MASS.keys():
                 bad_elements.append(key)
-                raise IndexError("%s is not an element." % key)
+                raise IndexError(f"{key} is not an element.")
         for element in bad_elements:
             self._elements.pop(element)
 
@@ -222,17 +222,6 @@ def get_phase_shift(photon_energy, material, distance):
                              * _numpy.real(index_of_refraction))
     total_phase_shift = number_of_wavelengths*phase_shift_per_period
     return total_phase_shift
-
-
-def atomic_scattering_factor(atom, scattering_vector, b_factor=0.):
-    """Evaluate the scattering factor. s should be given in m"""
-    raise NotImplementedError
-    scattering_vector * 1e10
-    return ((atom["a"][0]*_numpy.exp(-atom["b"][0]*scattering_vector**2) +
-             atom["a"][1]*_numpy.exp(-atom["b"][1]*scattering_vector**2) +
-             atom["a"][2]*_numpy.exp(-atom["b"][2]*scattering_vector**2) +
-             atom["a"][3]*_numpy.exp(-atom["b"][3]*scattering_vector**2)) *
-            _numpy.exp(-b_factor*scattering_vector**2/4.) + atom["c"])
 
 
 def read_atomsf():
