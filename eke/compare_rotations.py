@@ -93,7 +93,7 @@ def average_relative_orientation(correct_rotations,
             _rotmodule.fix_sign(this_relative_rot_sym)
 
         fit_quality = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.float64)
-        flip = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.bool8)
+        flip = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.bool_)
         for sym_index, this_relative_rot in enumerate(relative_rot_sym):
             # Try both positive and negative version of the rotation
             # since we don't know which one matches
@@ -166,7 +166,7 @@ def absolute_orientation_error(correct_rotations,
             _rotmodule.fix_sign(this_relative_rot_sym)
 
         fit_quality = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.float64)
-        flip = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.bool8)
+        flip = _numpy.zeros(len(relative_rot_sym), dtype=_numpy.bool_)
         for sym_index, this_relative_rot in enumerate(relative_rot_sym):
             # Try both positive and negative version of the rotation
             # since we don't know which one matches

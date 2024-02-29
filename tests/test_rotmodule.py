@@ -96,7 +96,7 @@ class TestRotmodule(unittest.TestCase):
         rot = rotmodule.from_angle_and_dir(numpy.pi/2, (1., 0., 0.))
         points = numpy.zeros((10, 3))
         points[:, 1] = numpy.arange(10)
-        rotated = rotmodule.rotate(rot, points.T).T
+        rotated = rotmodule.rotate(rot, points)
         target = numpy.zeros((10, 3))
         target[:, 2] = numpy.arange(10)
         numpy.testing.assert_array_almost_equal(rotated, target)

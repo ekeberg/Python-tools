@@ -39,8 +39,8 @@ class TestDft(unittest.TestCase):
 
     def test_dft_masked_for_1d(self):
         shape = (10, )
-        mask_real = numpy.bool8(numpy.random.randint(2, size=shape))
-        mask_fourier = numpy.bool8(numpy.random.randint(2, size=shape))
+        mask_real = numpy.bool_(numpy.random.randint(2, size=shape))
+        mask_fourier = numpy.bool_(numpy.random.randint(2, size=shape))
         dft_full = dft.dft(*shape)
         dft_partial = dft.dft_masked(mask_real, mask_fourier)
         numpy.testing.assert_array_almost_equal(
@@ -49,8 +49,8 @@ class TestDft(unittest.TestCase):
 
     def test_dft_masked_for_3d(self):
         shape = (5, 10, 15)
-        mask_real = numpy.bool8(numpy.random.randint(2, size=shape))
-        mask_fourier = numpy.bool8(numpy.random.randint(2, size=shape))
+        mask_real = numpy.bool_(numpy.random.randint(2, size=shape))
+        mask_fourier = numpy.bool_(numpy.random.randint(2, size=shape))
         dft_full = dft.dft(*shape)
         dft_partial = dft.dft_masked(mask_real, mask_fourier)
         numpy.testing.assert_array_almost_equal(
@@ -59,8 +59,8 @@ class TestDft(unittest.TestCase):
 
     def test_dft_masked_real_for_3d(self):
         shape = (5, 10, 15)
-        mask_real = numpy.bool8(numpy.random.randint(2, size=shape))
-        mask_fourier = numpy.bool8(numpy.random.randint(2, size=shape))
+        mask_real = numpy.bool_(numpy.random.randint(2, size=shape))
+        mask_fourier = numpy.bool_(numpy.random.randint(2, size=shape))
         dft_full = dft.dft_real(*shape)
         dft_partial = dft.dft_masked_real(mask_real, mask_fourier)
         dft_full_real = dft_full[0::2, :]

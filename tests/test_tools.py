@@ -6,7 +6,7 @@ import unittest
 class TestTools(unittest.TestCase):
     def test_round_mask(self):
         """Compare output with predicted output. Use non-cube input"""
-        reference = numpy.bool8([[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
+        reference = numpy.bool_([[[0, 0, 0, 0], [0, 0, 0, 0], [0, 0, 0, 0]],
                                  [[0, 1, 1, 0], [0, 1, 1, 0], [0, 1, 1, 0]],
                                  [[0, 1, 1, 0], [1, 1, 1, 1], [0, 1, 1, 0]],
                                  [[0, 1, 1, 0], [0, 1, 1, 0], [0, 1, 1, 0]],

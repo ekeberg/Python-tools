@@ -121,7 +121,7 @@ def normalize(quat):
 def fix_sign(quat):
     shape = (1, 4) if len(quat.shape) == 1 else quat.shape
     quat_array = quat.reshape(shape)
-    under_consideration = _numpy.ones(quat_array.shape[0], dtype="bool8")
+    under_consideration = _numpy.ones(quat_array.shape[0], dtype="bool")
     for index in range(4):
         do_flip = under_consideration & (quat_array[..., index] < 0)
         quat_array[do_flip, :] = -quat_array[do_flip, :]

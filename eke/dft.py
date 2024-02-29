@@ -81,10 +81,10 @@ def dft_2d_masked(y_side, x_side, mask_real, mask_fourier):
         j[x_side*k:x_side*(k+1)] = _numpy.arange(x_side)
     for k in range(x_side):
         i[k::x_side] = _numpy.arange(y_side)
-    i_mask_real = i[_numpy.bool8(mask_real.flatten())]
-    i_mask_fourier = i[_numpy.bool8(mask_fourier.flatten())]
-    j_mask_real = j[_numpy.bool8(mask_real.flatten())]
-    j_mask_fourier = j[_numpy.bool8(mask_fourier.flatten())]
+    i_mask_real = i[_numpy.bool_(mask_real.flatten())]
+    i_mask_fourier = i[_numpy.bool_(mask_fourier.flatten())]
+    j_mask_real = j[_numpy.bool_(mask_real.flatten())]
+    j_mask_fourier = j[_numpy.bool_(mask_fourier.flatten())]
     dft = (o_1**(i_mask_real[:, _numpy.newaxis] *
                  i_mask_fourier[_numpy.newaxis, :]) *
            o_2**(j_mask_real[:, _numpy.newaxis] *
@@ -171,8 +171,8 @@ def dft_masked(mask_real, mask_fourier):
     in the real and Fourier mask respectively are calculated.
     """
     shape = mask_real.shape
-    mask_real = _numpy.bool8(mask_real)
-    mask_fourier = _numpy.bool8(mask_fourier)
+    mask_real = _numpy.bool_(mask_real)
+    mask_fourier = _numpy.bool_(mask_fourier)
     omega = [_numpy.exp(-2.j*_numpy.pi/s) for s in shape]
     index = [element.flatten()
              for element in _numpy.meshgrid(
@@ -180,9 +180,9 @@ def dft_masked(mask_real, mask_fourier):
 
     dft = _numpy.ones((mask_fourier.sum(), mask_real.sum()),
                       dtype=_numpy.complex128)
-    index_mask_real = [this_index[_numpy.bool8(mask_real.flatten())]
+    index_mask_real = [this_index[_numpy.bool_(mask_real.flatten())]
                        for this_index in index]
-    index_mask_fourier = [this_index[_numpy.bool8(mask_fourier.flatten())]
+    index_mask_fourier = [this_index[_numpy.bool_(mask_fourier.flatten())]
                           for this_index in index]
     for i, this_omega, this_index_mask_real, this_index_mask_fourier in zip(
             range(len(shape)), omega, index_mask_real, index_mask_fourier):
@@ -198,8 +198,8 @@ def dft_masked_real(mask_real, mask_fourier):
     as [a_real, a_imag, b_real, b_imag, ...]. Data is stored
     consistent with numpys flatten().
     """
-    mask_real = _numpy.bool8(mask_real)
-    mask_fourier = _numpy.bool8(mask_fourier)
+    mask_real = _numpy.bool_(mask_real)
+    mask_fourier = _numpy.bool_(mask_fourier)
     dft_full = dft_masked(mask_real, mask_fourier)
     dft = _numpy.zeros((2*mask_fourier.sum(), mask_real.sum()),
                        dtype=_numpy.float64)
