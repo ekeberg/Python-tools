@@ -184,7 +184,7 @@ def _edge_indices_backend():
     products = _numpy.linalg.norm(verts[:, _numpy.newaxis, :] +
                                   verts[_numpy.newaxis, :, :], axis=2)
 
-    products *= ~_numpy.triu(_numpy.ones((120, )*2, dtype="bool8"))
+    products *= ~_numpy.triu(_numpy.ones((120, )*2, dtype="bool"))
     mask = products > 1.8
 
     i1, i2 = _numpy.meshgrid(range(120), range(120), indexing="ij")

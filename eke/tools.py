@@ -153,7 +153,7 @@ def square_mask(side, mask_side):
     specified half of the array side is used.
 
     """
-    mask = _numpy.zeros((side, )*2, dtype="bool8")
+    mask = _numpy.zeros((side, )*2, dtype="bool")
     slicing_1d = slice(side//2-mask_side//2, side//2+(mask_side+1)//2)
     mask[slicing_1d, slicing_1d] = True
     return mask
@@ -254,9 +254,9 @@ def radial_average(image, mask=None, center=None):
 
     """
     if mask is None:
-        mask = _numpy.ones(image.shape, dtype='bool8')
+        mask = _numpy.ones(image.shape, dtype='bool')
     else:
-        mask = _numpy.bool8(mask)
+        mask = _numpy.bool_(mask)
 
     if center is None:
         center = [c/2-0.5 for c in image.shape]

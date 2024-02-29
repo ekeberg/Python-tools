@@ -16,7 +16,7 @@ def import_spimage(filename, fields=('image',)):
             else:
                 image = _numpy.real(_numpy.squeeze(file_handle['real'][...]))
         elif name == "mask":
-            image = _numpy.bool8(_numpy.squeeze(file_handle["mask"][...]))
+            image = _numpy.bool_(_numpy.squeeze(file_handle["mask"][...]))
         else:
             raise ValueError("Can not load {0}.".format(name))
         return image

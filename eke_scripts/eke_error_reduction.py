@@ -46,11 +46,11 @@ def main():
 
     fourier_space = _spimage.sp_image_ifftw3(real_space)
 
-    support = _numpy.bool8(support.image)
+    support = _numpy.bool(support.image)
     ereal_start = _numpy.sqrt((abs(real_space.image[~support])**2).sum() /
                               (abs(real_space.image)**2).sum())
 
-    mask = _numpy.bool8(amplitudes.mask)
+    mask = _numpy.bool(amplitudes.mask)
     efourier_start = _numpy.sqrt(
         ((abs(fourier_space.image[mask])
           - abs(amplitudes.image[mask]))**2).sum()
